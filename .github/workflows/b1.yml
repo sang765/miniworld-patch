@@ -1,0 +1,28 @@
+name: b1-header-min
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: >-
+          Optional override: an APKMirror release page (or a /download/?key=
+          link). Leave empty to use the release page pinned in scripts/env.sh.
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: miniworld-mod-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      SOURCE_URL: ${{ inputs.source_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "SOURCE_URL=$SOURCE_URL"
