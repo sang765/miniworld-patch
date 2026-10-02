@@ -1,0 +1,19 @@
+# build output and scratch trees
+work/
+*.part
+
+# must never be committed
+*.jks
+*.keystore
+
+# the apktool jar is downloaded and checksum-verified by CI
+tools/apktool.jar
+
+# source bundles
+*.apkm
+*.apks
+*.apk
+
+__pycache__/
+*.pyc
+notes.md

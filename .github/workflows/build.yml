@@ -1,0 +1,142 @@
+name: build
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_url:
+        description: >-
+          APKMirror download URL for the source .apkm. The key= query expires,
+          so paste a fresh one if a run dies at "fetch source".
+        required: true
+        default: https://www.apkmirror.com/apk/minovate-hong-kong-limited/mini-world-block-art/mini-world-block-art-1-7-15-release/mini-world-creata-1-7-15-android-apk-download/download/?key=0ac820531ffd67bf6838f77b75d155b872c6bfd7
+
+permissions:
+  contents: write
+
+# builds share a single release tag, so never let two run at once
+concurrency:
+  group: miniworld-mod-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # source (874M) + two decodes + rebuilt splits + bundle land near 7GB
+    timeout-minutes: 240
+    env:
+      SOURCE_URL: ${{ inputs.source_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: select build-tools
+        run: |
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          echo "build-tools: $BT"
+          "$BT/aapt2" version
+          "$BT/apksigner" --version
+          echo "$BT" >> "$GITHUB_PATH"
+
+      - name: cache apktool
+        id: apktool-cache
+        uses: actions/cache@v4
+        with:
+          path: tools/apktool.jar
+          key: apktool-3.0.3
+
+      - name: download apktool
+        if: steps.apktool-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p tools
+          curl -fsSL --retry 3 -o tools/apktool.jar \
+            https://github.com/iBotPeaches/Apktool/releases/download/v3.0.3/apktool_3.0.3.jar
+
+      - name: pin apktool
+        # The pipeline was developed against a Termux build reporting
+        # "3.0.3-dirty"; this is the official 3.0.3. scripts/verify.sh is what
+        # proves the two produce the same mod, not this checksum.
+        run: |
+          echo "dbf930b076c6b9be08d57c449cacefc3bdd6b71ebd59b3066fc0e1f5b14f9423  tools/apktool.jar" \
+            | sha256sum -c -
+          java -jar tools/apktool.jar --version
+
+      - name: decode signing key
+        env:
+          APK_KEYSTORE: ${{ secrets.APK_KEYSTORE }}
+          APK_KEYSTORE_PASS: ${{ secrets.APK_KEYSTORE_PASS }}
+          APK_KEY_ALIAS: ${{ secrets.APK_KEY_ALIAS }}
+          APK_KEY_PASS: ${{ secrets.APK_KEY_PASS }}
+        run: |
+          if [ -z "$APK_KEYSTORE" ] || [ -z "$APK_KEYSTORE_PASS" ]; then
+            echo "::error::set APK_KEYSTORE (base64 .jks) and APK_KEYSTORE_PASS"
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$APK_KEYSTORE" | base64 -d > "$RUNNER_TEMP/modkey.jks"
+          # wrong password must fail here, not after a 40 minute build
+          keytool -list -keystore "$RUNNER_TEMP/modkey.jks" \
+            -storepass "$APK_KEYSTORE_PASS" -alias "${APK_KEY_ALIAS:-mod}" >/dev/null
+          {
+            echo "KS=$RUNNER_TEMP/modkey.jks"
+            echo "KS_ALIAS=${APK_KEY_ALIAS:-mod}"
+            echo "KS_PASS=$APK_KEYSTORE_PASS"
+            echo "KS_KEY_PASS=${APK_KEY_PASS:-$APK_KEYSTORE_PASS}"
+          } >> "$GITHUB_ENV"
+
+      - name: build
+        run: bash scripts/build.sh "$SOURCE_URL"
+
+      - name: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BUNDLE="$PWD/work/out/MiniWorld-mod.apkm"
+          TAG="mini-world-1.7.15-mod"
+          SUM=$(sha256sum "$BUNDLE" | cut -d' ' -f1)
+          SIZE=$(wc -c < "$BUNDLE")
+          {
+            echo "## Mini World: CREATA 1.7.15 - modded"
+            echo
+            echo "arm64-v8a + Vietnamese only (120-640dpi). Blocks the in-game"
+            echo "browser and spoofs the client-side device identifiers."
+            echo
+            echo "> [!IMPORTANT]"
+            echo "> Uninstall the original app before installing this. The bundle is"
+            echo "> re-signed with a different key, so it will not install over the"
+            echo "> original and installing it wipes local saves."
+            echo
+            echo '```'
+            echo "sha256  $SUM"
+            echo "size    $SIZE bytes"
+            echo '```'
+          } > "$RUNNER_TEMP/notes.md"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$BUNDLE" --clobber
+            gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
+          else
+            gh release create "$TAG" "$BUNDLE" \
+              --title "Mini World 1.7.15 (arm64-v8a + vi) mod" \
+              --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+
+      - name: summary
+        if: always()
+        run: |
+          {
+            echo "### artifact"
+            if [ -f work/out/MiniWorld-mod.apkm ]; then
+              ls -lh work/out/MiniWorld-mod.apkm
+              sha256sum work/out/MiniWorld-mod.apkm
+            else
+              echo "not produced"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
