@@ -39,6 +39,10 @@ WANT_VNAME="${WANT_VNAME:-1.7.15}"
 WANT_APK_ID="${WANT_APK_ID:-8053176}"
 WANT_RELEASE_ID="${WANT_RELEASE_ID:-8053149}"
 WANT_SIZE="${WANT_SIZE:-916916904}"
+# The APKMirror release page behind that source. The /download/?key= query on
+# its button expires within the hour, so fetch_source.sh scrapes a fresh link
+# from here on every run rather than being handed one that is already dead.
+SOURCE_PAGE="${SOURCE_PAGE:-https://www.apkmirror.com/apk/minovate-hong-kong-limited/mini-world-block-art/mini-world-block-art-1-7-15-release/mini-world-creata-1-7-15-android-apk-download/}"
 # SHA-256 of the signer certificate every split must carry. A keystore that
 # does not match it produces bundles that cannot be installed over earlier
 # builds, so verify_bundle.sh fails rather than merely counting distinct certs.

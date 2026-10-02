@@ -17,18 +17,20 @@
 # Called with no argument it just validates an already-downloaded file, which
 # is how build.sh gets the identity assertion even when it never fetches.
 #
-# usage: fetch_source.sh [apkmirror download url]
+# The argument may be either a /download/?key=... link or the release page it
+# belongs to. Only the release page is stable - the key= query expires within
+# the hour - so the second form is the default (SOURCE_PAGE in env.sh) and the
+# link is scraped fresh on every run.
+#
+# usage: fetch_source.sh [apkmirror release page or download url]
 set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
-SRC_URL="${1:-${SOURCE_URL:-}}"
+SRC_URL="${1:-${SOURCE_URL:-${SOURCE_PAGE:-}}}"
 SIZE_EXPECT="${SIZE_EXPECT:-$WANT_SIZE}"
 UA="${UA:-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36}"
 ORIGIN="https://www.apkmirror.com/"
-
-# the listing page the download url belongs to: same path minus /download/
-LIST_URL="${SRC_URL%%/download/*}/"
 
 # Read only info.json - decompressing 874MB to check CRCs is worth doing once
 # after a download, not every time an existing file is reused.
@@ -77,17 +79,49 @@ if [ -f "$SRC_FILE" ]; then
 fi
 
 if [ -z "$SRC_URL" ]; then
-  echo "FAIL: no source at $SRC_FILE and no download url given." >&2
-  echo "       usage: fetch_source.sh <apkmirror download url>" >&2
+  echo "FAIL: no source at $SRC_FILE and no release page given." >&2
+  echo "       usage: fetch_source.sh <apkmirror release page>" >&2
   exit 2
 fi
 
 JAR=$(mktemp "${TMPDIR:-/tmp}/apkm-cookies.XXXXXX")
 trap 'rm -f "$JAR" "$WORK/landing.html"' EXIT
 
+# the listing page the download url belongs to: same path minus /download/,
+# or the argument itself when it is a release page
+case "$SRC_URL" in
+  */download/*) LIST_URL="${SRC_URL%%/download/*}/" ;;
+  *)            LIST_URL="${SRC_URL%/}/" ;;
+esac
+
 echo "priming cookies from the release page"
 curl -fsSL --retry 3 --max-time 90 -A "$UA" -c "$JAR" -b "$JAR" \
   -e "$ORIGIN" "$LIST_URL" -o "$WORK/landing.html"
+
+# The release page renders the download button once, pointing at the same
+# path with a fresh key=. There is no other candidate to choose between.
+if [[ "$SRC_URL" != */download/* ]]; then
+  rel=$(grep -oE '/apk/[^"]*/download/\?key=[0-9a-f]+' "$WORK/landing.html" \
+    | head -1 || true)
+  if [ -z "$rel" ]; then
+    chal=$(grep -ciE 'cf-browser-verification|challenge-platform|just a moment|cf-chl' \
+      "$WORK/landing.html" || true)
+    {
+      echo "FAIL: no download link on the release page"
+      echo "      bytes=$(wc -c < "$WORK/landing.html")  challenge_markers=$chal"
+      if [ "$chal" -gt 0 ]; then
+        echo "      -> Cloudflare challenged this request. Re-run from a different IP,"
+        echo "         or download the .apkm by hand and pass SRC_FILE=<path>."
+      else
+        echo "      -> APKMirror changed the page markup; update the scrape in"
+        echo "         scripts/fetch_source.sh."
+      fi
+    } >&2
+    exit 1
+  fi
+  SRC_URL="$ORIGIN${rel#/}"
+  echo "resolved download link: $SRC_URL"
+fi
 
 echo "fetching download landing page"
 curl -fsSL --retry 3 --max-time 90 -A "$UA" -c "$JAR" -b "$JAR" \
@@ -111,8 +145,9 @@ if [ -z "$direct" ]; then
       echo "      -> Cloudflare challenged this request. Download the .apkm by hand"
       echo "         and pass SRC_FILE=<path>, or re-run from a different IP."
     else
-      echo "      -> usually an expired key= query. Open the release page on"
-      echo "         apkmirror.com and copy a fresh download link."
+      echo "      -> the key= was scraped fresh from the release page, so this is"
+      echo "         usually changed page markup. Update the scrape in"
+      echo "         scripts/fetch_source.sh."
     fi
   } >&2
   exit 1

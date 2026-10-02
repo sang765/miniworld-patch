@@ -8,7 +8,7 @@
 # coming from different releases - a mix that verifies clean here and then
 # fails to install.
 #
-# usage: build.sh [apkmirror download url]
+# usage: build.sh [apkmirror release page]
 #   SOURCE_URL / SRC_FILE are read from the environment as alternatives.
 set -euo pipefail
 
@@ -21,7 +21,9 @@ say() { echo; echo "### $*"; }
 
 say "1/8 fetch source"
 # Always goes through fetch_source.sh: with a url it downloads, without one it
-# still asserts that SRC_FILE is the release this pipeline is pinned to.
+# still asserts that SRC_FILE is the release this pipeline is pinned to. The
+# default source is the pinned release page (env.sh SOURCE_PAGE); the expiring
+# download link is scraped from it at run time.
 if [ -n "$SOURCE_URL" ]; then
   bash "$SCRIPTS/fetch_source.sh" "$SOURCE_URL"
 else

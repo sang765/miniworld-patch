@@ -60,7 +60,8 @@ scripts/verify_bundle.sh  gate on the finished bundle
 ### Locally
 
 ```bash
-bash scripts/build.sh '<apkmirror download url>'
+bash scripts/build.sh            # fetches from the release page pinned in scripts/env.sh
+bash scripts/build.sh '<apkmirror release page>'   # a different release
 ```
 
 Or point it at a bundle you already have:
@@ -97,8 +98,9 @@ Push the repo, set these secrets, then run the **build** workflow:
 
 The workflow downloads apktool 3.0.3 with a pinned SHA-256, runs
 `scripts/build.sh`, and publishes `MiniWorld-mod.apkm` to a release. The
-default source URL's `key=` query expires — if the run fails at *fetch
-source*, copy a fresh download link from the release page on apkmirror.com.
+source is the release page pinned in `scripts/env.sh`; its download link
+carries a `key=` that expires within the hour, so `fetch_source.sh` scrapes a
+fresh one on every run — dispatching the workflow needs no input.
 
 > [!NOTE]
 > The pipeline was developed against a Termux apktool reporting `3.0.3-dirty`;
@@ -108,13 +110,16 @@ source*, copy a fresh download link from the release page on apkmirror.com.
 
 ## Source
 
-`scripts/fetch_source.sh` does not fetch the URL directly, for two reasons.
-APKMirror's `/download/?key=...` endpoint only renders the download landing
-page when the request carries the site's cookies — without them it hands back
-the release listing page, whose download button points at the very URL you
-just requested, so there is no link to parse at all. The script therefore
-visits the listing page first with a cookie jar, then the download URL, parses
-the `download.php?id=...&key=...` link out of that page, and follows its
+`scripts/fetch_source.sh` takes either a release page or a
+`/download/?key=...` link (the release page is the default, pinned as
+`SOURCE_PAGE` in `env.sh`). It does not fetch either directly, for two
+reasons. APKMirror's `/download/?key=...` endpoint only renders the download
+landing page when the request carries the site's cookies — without them it
+hands back the release listing page, whose download button points at the very
+URL you just requested, so there is no link to parse at all. The script
+therefore visits the release page first with a cookie jar, scrapes the fresh
+`download/?key=` link off it if it was given a bare page, then fetches that
+page, parses the `download.php?id=...&key=...` link out of it, and follows its
 redirect to the object store.
 
 The download is then checked three ways: byte count, `testzip()` over every

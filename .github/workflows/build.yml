@@ -5,10 +5,10 @@ on:
     inputs:
       source_url:
         description: >-
-          APKMirror download URL for the source .apkm. The key= query expires,
-          so paste a fresh one if a run dies at "fetch source".
-        required: true
-        default: https://www.apkmirror.com/apk/minovate-hong-kong-limited/mini-world-block-art/mini-world-block-art-1-7-15-release/mini-world-creata-1-7-15-android-apk-download/download/?key=0ac820531ffd67bf6838f77b75d155b872c6bfd7
+          Optional override: an APKMirror release page (or a /download/?key=
+          link). Leave empty to use the release page pinned in scripts/env.sh.
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -94,7 +94,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: build
-        run: bash scripts/build.sh "$SOURCE_URL"
+        run: bash scripts/build.sh
 
       - name: release
         env:
