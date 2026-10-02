@@ -21,7 +21,12 @@ fail=0
 step() { echo; echo "### $*"; }
 
 step "1. archive integrity"
-unzip -tqq "$BUNDLE" && echo "zip OK"
+# `A && B` does not abort under set -e, so the flag has to be set explicitly
+if unzip -tqq "$BUNDLE"; then
+  echo "zip OK"
+else
+  echo "FAIL: corrupt archive"; fail=1
+fi
 
 step "2. contents: $EXPECT_APKS apks + info.json + icon.png"
 names=$(unzip -Z1 "$BUNDLE")
@@ -52,7 +57,37 @@ step "4. extract every apk"
 mkdir -p "$T/x"
 unzip -o -q "$BUNDLE" '*.apk' -d "$T/x"
 
-step "5. no leftover source stamp"
+step "5. every split declares the pinned package and versionCode"
+# A bundle whose base came from one source and whose splits from another passes
+# everything else in this file - member count, stamps and signer all look right
+# - and then dies at install with INSTALL_FAILED_INVALID_APK. Reading all 11
+# badging dumps is what catches it, along with a mangled manifest.
+: > "$T/badging"
+for f in "$T"/x/*.apk; do
+  b=$(basename "$f")
+  line=$("$AAPT2" dump badging "$f" 2>/dev/null | grep -m1 '^package: ' || true)
+  if [ -z "$line" ]; then
+    echo "  FAIL: no badging for $b"
+    fail=1
+    continue
+  fi
+  # anchored: a greedy `.*name='` matches the last `...Codename='14'` on the
+  # line and silently reports the compile SDK as the package name
+  pkg=$(printf '%s' "$line" | sed -n "s/^package: name='\([^']*\)'.*/\1/p")
+  vc=$(printf '%s' "$line" | sed -n "s/^package: name='[^']*' versionCode='\([^']*\)'.*/\1/p")
+  printf '%s\t%s\t%s\n' "$b" "$pkg" "$vc" >> "$T/badging"
+done
+bad=$(awk -F'\t' -v p="$WANT_PKG" -v c="$WANT_VCODE" \
+  '$2 != p || $3 != c' "$T/badging")
+if [ -n "$bad" ]; then
+  echo "  FAIL: split(s) not matching $WANT_PKG versionCode=$WANT_VCODE:"
+  echo "$bad" | sed 's/^/    /'
+  fail=1
+else
+  echo "  $(grep -c . "$T/badging")/$EXPECT_APKS splits: $WANT_PKG versionCode=$WANT_VCODE"
+fi
+
+step "6. no leftover source stamp"
 stamps=0
 for f in "$T"/x/*.apk; do
   if unzip -Z1 "$f" | grep -qx 'stamp-cert-sha256'; then
@@ -62,7 +97,7 @@ done
 [ "$stamps" -eq 0 ] || fail=1
 echo "checked $(ls "$T"/x/*.apk | wc -l) apks"
 
-step "6. exactly one signer across every split"
+step "7. every split is signed by the pinned key"
 : > "$T/certs"
 for f in "$T"/x/*.apk; do
   d=$(run_apksigner verify --print-certs "$f" 2>&1 \
@@ -76,11 +111,24 @@ for f in "$T"/x/*.apk; do
 done
 sort -u "$T/certs" > "$T/certs.uniq"
 n=$(grep -c . "$T/certs.uniq" || true)
-echo "distinct signer certs: $n (expect 1)"
+only=$(head -1 "$T/certs.uniq" || true)
+echo "distinct signer certs: $n"
 cat "$T/certs.uniq" | sed 's/^/  /'
-[ "$n" -eq 1 ] || fail=1
+# Counting distinct certs only proves consistency. The bundle is also required
+# to install over every earlier build, so the cert has to be the expected one.
+if [ "$n" -eq 1 ] && [ "$only" = "$WANT_SIGNER" ]; then
+  echo "  matches the pinned key -> OK"
+elif [ "$n" -eq 1 ]; then
+  echo "  FAIL: signed by an unexpected key"
+  echo "        got    $only"
+  echo "        want   $WANT_SIGNER"
+  echo "        A bundle with this key cannot be installed over earlier builds."
+  fail=1
+else
+  fail=1
+fi
 
-step "7. base.apk inside the bundle passes the full verification gate"
+step "8. base.apk inside the bundle passes the full verification gate"
 mkdir -p "$T/base"
 unzip -o -q "$BUNDLE" base.apk -d "$T/base"
 bash "$SCRIPTS/verify.sh" "$T/base/base.apk" || fail=1

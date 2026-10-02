@@ -36,7 +36,20 @@ fi
 
 mkdir -p "$OUT/signed"
 
-if [ ! -f "$OUT/.extracted_min" ]; then
+[ -f "$SRC_FILE" ] || { echo "FAIL: source not found at $SRC_FILE" >&2; exit 1; }
+
+# The marker records WHICH source the splits came from, not merely that an
+# extraction happened once. Without that, a base rebuilt from a newer release
+# could be bundled with older splits - which passes every check here (member
+# count, stamps, signer) and then refuses to install with
+# INSTALL_FAILED_INVALID_APK. A marker left by an older script is empty and
+# therefore never matches, so it re-extracts.
+src_id=$(wc -c < "$SRC_FILE" | tr -d ' ')
+marker="$OUT/.extracted_min"
+if [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$src_id" ]; then
+  if [ -f "$marker" ]; then
+    echo "splits came from a different source ($(cat "$marker") bytes, now $src_id) - re-extracting"
+  fi
   rm -rf "$OUT/apks"
   mkdir -p "$OUT/apks"
   unzip -o -q "$SRC_FILE" \
@@ -44,7 +57,7 @@ if [ ! -f "$OUT/.extracted_min" ]; then
     'split_config.*dpi.apk' split_mini_asset_pack.apk \
     info.json icon.png -d "$OUT/apks"
   mv -f "$OUT/apks/info.json" "$OUT/apks/icon.png" "$OUT/" 2>/dev/null || true
-  touch "$OUT/.extracted_min"
+  printf '%s\n' "$src_id" > "$marker"
 fi
 
 count=$(find "$OUT/apks" -name '*.apk' | wc -l)

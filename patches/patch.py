@@ -102,6 +102,19 @@ def head_is_clean(lines, locals_idx, proto):
     return False, None
 
 
+def is_patched(lines, locals_idx, body):
+    """True when the whole stub already sits at the insertion offset.
+
+    The stub is always written at exactly locals_idx+1, so testing the full
+    contiguous body there is the only sound test. Matching just the first line
+    anywhere in a small window would read a pristine method that returns void
+    within its first few instructions as already patched and skip it - which
+    would silently drop one of the browser-block entries while still exiting 0.
+    """
+    got = [line.strip() for line in lines[locals_idx + 1:locals_idx + 1 + len(body)]]
+    return got == body
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--decoded", type=Path, default=DEFAULT_DECODED,
@@ -110,6 +123,8 @@ def main():
                     help="identity constants file (default: %(default)s)")
     ap.add_argument("--apply", action="store_true",
                     help="write changes (default is a dry run)")
+    ap.add_argument("--check", action="store_true",
+                    help="assert every stub is present instead of applying anything")
     args = ap.parse_args()
 
     spoof = dict(
@@ -124,6 +139,7 @@ def main():
         return 1
 
     changed = set()
+    missing = []
     errors = []
     for pid, rel, proto, need_regs, body in patches:
         path = dec / rel
@@ -139,12 +155,19 @@ def main():
         if nlocals < need_regs:
             errors.append(f"{pid}: .locals {nlocals} < required {need_regs} for {proto}")
             continue
+        if is_patched(lines, locals_idx, body):
+            if args.check:
+                print(f"{pid}: present  {proto}")
+            else:
+                print(f"{pid}: ALREADY PATCHED {proto}")
+            continue
+        if args.check:
+            missing.append(f"{pid}: stub absent in {rel} :: {proto}")
+            print(f"{pid}: MISSING  {proto}")
+            continue
         clean, bad = head_is_clean(lines, locals_idx, proto)
         if not clean:
             errors.append(f"{pid}: dirty head (.param/.annotation) at line {bad} in {proto}")
-            continue
-        if any(lines[locals_idx + 1 + k].strip() == body[0] for k in range(0, 4)):
-            print(f"{pid}: ALREADY PATCHED {proto}")
             continue
         indent = "    "
         lines[locals_idx + 1:locals_idx + 1] = [indent + ins for ins in body]
@@ -155,6 +178,17 @@ def main():
         if args.apply:
             path.write_text("\n".join(lines) + "\n")
             changed.add(rel)
+
+    if args.check:
+        print(f"\nstubs present: {len(patches) - len(missing)}/{len(patches)}")
+        if errors or missing:
+            print("\nERRORS:")
+            for e in errors + missing:
+                print("  !", e)
+            return 1
+        print("CHECK OK")
+        return 0
+
     print(f"\nfiles touched: {len(changed)}")
     for f in sorted(changed):
         print("  -", f)

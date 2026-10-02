@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Full pipeline: fetch -> decode -> patch -> rebuild -> align -> verify -> bundle.
 #
-# Every step is idempotent where it is cheap to be: an existing decode is
-# reused, so re-running only re-signs and re-bundles. A different source file
-# than the one the work tree was built from is refused rather than patched
-# against stale smali.
+# An existing decode is reused rather than rebuilt from scratch, so re-running
+# costs a full apktool b but not the decode or the patch. Changing sources is
+# refused outright: the work tree carries a .source_id, and repack.sh keys its
+# split extraction to the same id, so base.apk and the splits can never end up
+# coming from different releases - a mix that verifies clean here and then
+# fails to install.
 #
 # usage: build.sh [apkmirror download url]
 #   SOURCE_URL / SRC_FILE are read from the environment as alternatives.
@@ -18,13 +20,12 @@ APKTOOL_JOBS="${APKTOOL_JOBS:-3}"
 say() { echo; echo "### $*"; }
 
 say "1/8 fetch source"
+# Always goes through fetch_source.sh: with a url it downloads, without one it
+# still asserts that SRC_FILE is the release this pipeline is pinned to.
 if [ -n "$SOURCE_URL" ]; then
   bash "$SCRIPTS/fetch_source.sh" "$SOURCE_URL"
-elif [ -f "$SRC_FILE" ]; then
-  echo "source present: $SRC_FILE"
 else
-  echo "FAIL: pass an APKMirror url, or set SRC_FILE to an existing .apkm" >&2
-  exit 1
+  bash "$SCRIPTS/fetch_source.sh"
 fi
 
 say "2/8 extract base.apk"
@@ -32,16 +33,27 @@ mkdir -p "$WORK/base_extracted"
 unzip -o -q "$SRC_FILE" base.apk -d "$WORK/base_extracted"
 
 src_id=$(wc -c < "$SRC_FILE" | tr -d ' ')
-if [ -f "$WORK/.source_id" ] && [ -d "$WORK/decoded" ]; then
+if [ -f "$WORK/.source_id" ]; then
   old=$(cat "$WORK/.source_id")
   if [ "$old" != "$src_id" ]; then
     {
       echo "FAIL: the work tree was built from a $old-byte source, this is $src_id."
-      echo "      Remove $WORK/decoded $WORK/pristine $WORK/build $WORK/out"
-      echo "      before switching to a different release."
+      echo "      Deleting decoded/ alone is not enough - the check is the recorded"
+      echo "      size, not the presence of a decode. Remove them all before moving"
+      echo "      to a different release:"
+      echo "        rm -rf $WORK/decoded $WORK/pristine $WORK/build $WORK/out $WORK/.source_id"
     } >&2
     exit 1
   fi
+else
+  for stale in "$WORK/decoded" "$WORK/pristine" "$WORK/build" "$WORK/out"; do
+    if [ -e "$stale" ]; then
+      echo "FAIL: $stale exists but there is no $WORK/.source_id to attribute it to." >&2
+      echo "      Its provenance is unknown, so it cannot be trusted with this source." >&2
+      echo "      Remove it (and anything else in $WORK) before building." >&2
+      exit 1
+    fi
+  done
 fi
 echo "$src_id" > "$WORK/.source_id"
 

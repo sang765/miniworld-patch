@@ -4,9 +4,13 @@ Reproducible build for a modified **Mini World: CREATA 1.7.15**
 (`com.playmini.miniworld`, versionCode 67343) as an installable split-APK
 bundle, trimmed to **arm64-v8a + Vietnamese**.
 
-Exactly two changes are made to the app. Everything else — resources, dex
-entry counts, native libraries, assets, version metadata — is checked to be
-identical to the source by `scripts/verify.sh` before a bundle is produced.
+Exactly two changes are made to the app. Everything else is gated by
+`scripts/verify.sh` before a bundle is produced: a pristine decode is diffed
+against the patched tree so that only the five patched smali files, the
+manifest and the `$`-renamed resources may differ; entry, native-library,
+asset and `resources.arsc` counts are compared against the original; the
+package identity is read back from the built APK; and each of the 14 patch
+stubs is confirmed by content, not merely by "this file changed".
 
 ## What the mod does
 
@@ -27,8 +31,9 @@ features:
   **original** signer; apksigner does not emit a stamp block, so leaving them
   would fail install-time verification.
 
-Ad SDKs still receive the real Google Advertising ID — that value comes from
-Play services, not from this app.
+`AdvertisingIdClient` is deliberately left alone — faking it there would break
+the ad SDKs, which read that id directly from Play services. Only the app's own
+getters are redirected.
 
 ## Layout
 
@@ -96,19 +101,27 @@ default source URL's `key=` query expires — if the run fails at *fetch
 source*, copy a fresh download link from the release page on apkmirror.com.
 
 > [!NOTE]
-> The pipeline was developed against a Termux apktool reporting `3.0.3-dirty`.
-> CI uses the official `3.0.3` release. `scripts/verify.sh` — not the
-> checksum — is what establishes the two produce the same mod.
+> The pipeline was developed against a Termux apktool reporting `3.0.3-dirty`;
+> CI uses the official `3.0.3`. The checksum pins the jar, it does not compare
+> the two builds — `scripts/verify.sh` holds each one to the same spec
+> independently.
 
 ## Source
 
-`scripts/fetch_source.sh` does not fetch the URL directly: APKMirror's
-`/download/?key=...` endpoint returns an HTML landing page, and a plain `curl`
-of it silently yields ~400KB of markup. The script parses the
-`download.php?id=...&key=...` link out of that page, follows its redirect to
-the object store, then asserts the byte count and that `info.json` inside the
-archive really is `apk_id=8053176` / `com.playmini.miniworld` — a wrong
-release would otherwise be patched against the wrong smali and fail late.
+`scripts/fetch_source.sh` does not fetch the URL directly, for two reasons.
+APKMirror's `/download/?key=...` endpoint only renders the download landing
+page when the request carries the site's cookies — without them it hands back
+the release listing page, whose download button points at the very URL you
+just requested, so there is no link to parse at all. The script therefore
+visits the listing page first with a cookie jar, then the download URL, parses
+the `download.php?id=...&key=...` link out of that page, and follows its
+redirect to the object store.
+
+The download is then checked three ways: byte count, `testzip()` over every
+member, and `info.json` against the pinned `apk_id` / package / versionCode —
+a wrong release would otherwise be patched against the wrong smali and only
+fail much later. Calling the script with no URL re-runs those same assertions
+against an already-downloaded file.
 
 ## Installing
 
@@ -125,14 +138,17 @@ with SAI or APKMirror Installer.
 - The spoofed identifiers are frozen in `spoof.env`, so anyone building from
   this repo produces the same ones. If a value is ever blacklisted it is
   blacklisted for every build.
-- Verification here is static: archive integrity, alignment, manifest, dex
-  constants, and patch scope. The app has not been run on a device, so login
-  after re-sign and the effect of the native `deviceId` report still need a
-  first runtime test.
+- Verification here is static: archive integrity, entry counts, package
+  identity, alignment, manifest flags, patch-scope diff, presence of all 14
+  stubs, the spoof constants, every split's versionCode, and the pinned signer
+  certificate. The app has not been run on a device, so login after re-sign
+  and the effect of the native `deviceId` report still need a first runtime
+  test.
 - The bundle stays around 829 MB. Roughly 90% of that is the install-time
   asset pack; dropping the arm-v7a split only saves about 45 MB because the
   native libraries compress well.
-- Rebuilding reproduces the same 2585 entries byte for byte, but not the same
-  archive: zip entry timestamps and the APK signing block change every run, so
-  the sha256 printed in the release notes is specific to that build. Verify a
-  download against the notes for the release you took it from.
+- Rebuilding reproduces the same 2585 entries byte for byte (measured by
+  diffing two builds), but not the same archive: zip entry timestamps and the
+  APK signing block change every run, so the sha256 printed in the release
+  notes is specific to that build. Verify a download against the notes for the
+  release you took it from.

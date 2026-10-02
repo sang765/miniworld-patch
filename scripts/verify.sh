@@ -18,19 +18,33 @@ trap 'rm -rf "$T"' EXIT
 
 # v1 signature entries are named after the keystore alias, uppercased. MOD.* is
 # ours once signed; anything else means the original signer is still embedded.
+# The alias is interpolated into an ERE below, so a metacharacter in it could
+# over-match and hide a foreign entry - refuse it instead of trusting it.
+if ! printf '%s' "$KS_ALIAS" | grep -Eq '^[A-Za-z0-9_]+$'; then
+  echo "FAIL: keystore alias must be [A-Za-z0-9_], got '$KS_ALIAS'"
+  exit 1
+fi
 V1_OWN=$(printf '%s' "$KS_ALIAS" | tr '[:lower:]' '[:upper:]')
 
 fail=0
 step() { echo; echo "### $*"; }
 
 step "1. archive integrity + dex/entry counts"
-unzip -tqq "$APK" && echo "zip OK"
+# Under set -e an `A && B` list does not abort when A fails, so the zip test
+# has to set the flag itself; otherwise a CRC-dead member slips past every
+# later check (they count names and read headers, none of them re-read data).
+if unzip -tqq "$APK"; then
+  echo "zip OK"
+else
+  echo "FAIL: corrupt archive"; fail=1
+fi
 n=$(unzip -l "$APK" | grep -cE 'classes[0-9]*\.dex$' || true)
 o=$(unzip -l "$ORIG" | grep -cE 'classes[0-9]*\.dex$' || true)
 echo "dex: rebuilt=$n original=$o (must match)"
 [ "$n" = "$o" ] || fail=1
-ne=$(unzip -l "$APK" | awk 'END{print $2-1}')
-oe=$(unzip -l "$ORIG" | awk 'END{print $2-1}')
+# unzip -l's last line is "<length> <count> files", so $2 is already the count
+ne=$(unzip -l "$APK" | awk 'END{print $2}')
+oe=$(unzip -l "$ORIG" | awk 'END{print $2}')
 echo "entries: rebuilt=$ne original=$oe"
 [ "$ne" -gt 2500 ] || fail=1
 
@@ -62,7 +76,31 @@ else
 fi
 
 step "4. manifest: identity + BrowserActivity exported flag"
-"$AAPT2" dump badging "$APK" | head -2 || true
+"$AAPT2" dump badging "$APK" > "$T/bad.txt" 2>/dev/null || true
+head -2 "$T/bad.txt"
+
+# Nothing else reads the built package's identity: a rebuild against the wrong
+# source, or one that mangled the manifest, would otherwise verify clean.
+python3 - "$T/bad.txt" "$WANT_PKG" "$WANT_VCODE" "$WANT_VNAME" <<'PY' || fail=1
+import re, sys
+t = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+
+def field(pattern, label):
+    m = re.search(pattern, t)
+    if not m:
+        raise SystemExit(f"badging: {label} not found")
+    return m.group(1)
+
+pkg = field(r"^package: name='([^']+)'", "package name")
+vc = field(r"\bversionCode='([^']+)'", "versionCode")
+vn = field(r"\bversionName='([^']+)'", "versionName")
+want = {"package": sys.argv[2], "versionCode": sys.argv[3], "versionName": sys.argv[4]}
+got = {"package": pkg, "versionCode": vc, "versionName": vn}
+if got != want:
+    raise SystemExit(f"identity mismatch: got {got}, want {want}")
+print(f"identity: {pkg} versionCode={vc} versionName={vn} -> OK")
+PY
+
 "$AAPT2" dump xmltree "$APK" --file AndroidManifest.xml > "$T/mf.txt" 2>/dev/null || \
   "$AAPT2" dump xmltree "$APK" AndroidManifest.xml > "$T/mf.txt" 2>/dev/null || true
 
@@ -111,7 +149,10 @@ for v in "$DTOKEN" "$GAID" "04$GAID" "$FLYER"; do
   fi
 done
 
-step "6. patch scope: pristine decode vs patched tree"
+step "6. patch scope: all 14 stubs present, pristine decode vs patched tree"
+# scopecheck only proves these five files differ from pristine; it cannot tell
+# 14 applied patches from 13, so assert each stub by content first.
+python3 "$PATCHES/patch.py" --decoded "$WORK/decoded" --spoof "$SPOOF" --check || fail=1
 if [ ! -d "$WORK/pristine" ]; then
   echo "(pristine decode not present -> running apktool d)"
   run_apktool d -f -o "$WORK/pristine" "$ORIG" > "$LOG/pristine_decode.log" 2>&1 \

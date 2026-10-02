@@ -29,6 +29,21 @@ SRC_FILE="${SRC_FILE:-$WORK/source.apkm}"
 # 8-dex smali build without an OutOfMemoryError.
 APKTOOL_MEM="${APKTOOL_MEM:--Xmx1600m}"
 
+# The one release this pipeline is pinned to. fetch_source.sh checks them
+# against info.json inside the archive, verify.sh against the built badging -
+# two independent reads, so a wrong or updated source cannot slip through as
+# "verified". Bump them together when moving to a new release.
+WANT_PKG="${WANT_PKG:-com.playmini.miniworld}"
+WANT_VCODE="${WANT_VCODE:-67343}"
+WANT_VNAME="${WANT_VNAME:-1.7.15}"
+WANT_APK_ID="${WANT_APK_ID:-8053176}"
+WANT_RELEASE_ID="${WANT_RELEASE_ID:-8053149}"
+WANT_SIZE="${WANT_SIZE:-916916904}"
+# SHA-256 of the signer certificate every split must carry. A keystore that
+# does not match it produces bundles that cannot be installed over earlier
+# builds, so verify_bundle.sh fails rather than merely counting distinct certs.
+WANT_SIGNER="${WANT_SIGNER:-2b118a633ec20c538b2e97a3c9042d89e2e1bb8fc9267f25119c2fd6178d48bd}"
+
 KS="${KS:-$WORK/modkey.jks}"
 KS_ALIAS="${KS_ALIAS:-mod}"
 KS_PASS="${KS_PASS:-modmod}"
@@ -56,14 +71,19 @@ _mw_resolve() {
 AAPT2="${AAPT2:-$(_mw_resolve aapt2 || true)}"
 APKSIGNER="${APKSIGNER:-$(_mw_resolve apksigner || true)}"
 
-if [ -z "$AAPT2" ]; then
-  echo "env.sh: aapt2 not found (not on PATH, none in $_mw_sdk/build-tools)" >&2
-  exit 1
-fi
-if [ -z "$APKSIGNER" ]; then
-  echo "env.sh: apksigner not found (not on PATH, none in $_mw_sdk/build-tools)" >&2
-  exit 1
-fi
+# A preset value may be stale: without this it would not surface until
+# verify.sh's `dump ... || true` chains produced an empty manifest.
+_mw_require() {
+  local name=$1 path=${2:-}
+  if [ -n "$path" ] && { [ -x "$path" ] || command -v "$path" >/dev/null 2>&1; }; then
+    return 0
+  fi
+  echo "env.sh: $name not usable (value='${path:-}', not on PATH," >&2
+  echo "        none executable in $_mw_sdk/build-tools)" >&2
+  return 1
+}
+_mw_require aapt2 "$AAPT2" || exit 1
+_mw_require apksigner "$APKSIGNER" || exit 1
 
 if [ -z "${APKTOOL_JAR:-}" ]; then
   if [ -f "$ROOT/tools/apktool.jar" ]; then

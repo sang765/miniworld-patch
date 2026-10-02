@@ -14,23 +14,62 @@
 #     content has to be told apart by parsing rather than by downloading and
 #     hoping.
 #
-# usage: fetch_source.sh <apkmirror download url>
+# Called with no argument it just validates an already-downloaded file, which
+# is how build.sh gets the identity assertion even when it never fetches.
+#
+# usage: fetch_source.sh [apkmirror download url]
 set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
 SRC_URL="${1:-${SOURCE_URL:-}}"
-SIZE_EXPECT="${SIZE_EXPECT:-916916904}"
+SIZE_EXPECT="${SIZE_EXPECT:-$WANT_SIZE}"
 UA="${UA:-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36}"
 ORIGIN="https://www.apkmirror.com/"
 
 # the listing page the download url belongs to: same path minus /download/
 LIST_URL="${SRC_URL%%/download/*}/"
 
+# Read only info.json - decompressing 874MB to check CRCs is worth doing once
+# after a download, not every time an existing file is reused.
+check_identity() {
+  python3 - "$SRC_FILE" "$WANT_APK_ID" "$WANT_RELEASE_ID" "$WANT_PKG" "$WANT_VCODE" <<'PY'
+import json, sys, zipfile
+
+path = sys.argv[1]
+with zipfile.ZipFile(path) as z:
+    info = json.loads(z.read("info.json"))
+
+expected = {"apk_id": sys.argv[2], "release_id": sys.argv[3],
+            "pname": sys.argv[4], "versioncode": sys.argv[5]}
+# info.json mixes int and str across fields (apk_id is an int, versioncode is
+# not), so both sides are normalised rather than assuming a type.
+wrong = {k: (info.get(k), v) for k, v in expected.items()
+         if str(info.get(k)) != str(v)}
+if wrong:
+    raise SystemExit(f"wrong release, refusing to patch: {wrong}")
+
+print(f"identity OK: {info['pname']} {info['apk_id']} v{info['versioncode']}")
+PY
+}
+
+check_integrity() {
+  python3 - "$SRC_FILE" <<'PY'
+import sys, zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as z:
+    bad = z.testzip()
+    if bad:
+        raise SystemExit(f"corrupt member: {bad}")
+print("integrity OK: every member decompresses cleanly")
+PY
+}
+
 if [ -f "$SRC_FILE" ]; then
   have=$(wc -c < "$SRC_FILE" | tr -d ' ')
   if [ "$have" = "$SIZE_EXPECT" ]; then
     echo "source already present: $SRC_FILE ($have bytes)"
+    check_identity
     exit 0
   fi
   echo "stale source ($have bytes, expected $SIZE_EXPECT) - refetching"
@@ -38,7 +77,8 @@ if [ -f "$SRC_FILE" ]; then
 fi
 
 if [ -z "$SRC_URL" ]; then
-  echo "usage: fetch_source.sh <apkmirror download url>" >&2
+  echo "FAIL: no source at $SRC_FILE and no download url given." >&2
+  echo "       usage: fetch_source.sh <apkmirror download url>" >&2
   exit 2
 fi
 
@@ -56,10 +96,24 @@ curl -fsSL --retry 3 --max-time 90 -A "$UA" -c "$JAR" -b "$JAR" \
 direct=$(grep -oE '/wp-content/themes/APKMirror/download\.php\?id=[0-9]+&key=[0-9a-f]+' \
   "$WORK/landing.html" | head -1 || true)
 if [ -z "$direct" ]; then
+  # The two usual causes need completely different fixes, so report which one
+  # it is: an expired key still returns a normal page, while a bot block from a
+  # datacenter IP hands back a challenge page.
+  title=$(grep -oiE '<title>[^<]*</title>' "$WORK/landing.html" | head -1 \
+    | sed -E 's/<\/?title>//gi' || true)
+  chal=$(grep -ciE 'cf-browser-verification|challenge-platform|just a moment|cf-chl' \
+    "$WORK/landing.html" || true)
   {
-    echo "FAIL: landing page has no download.php link (got $(wc -c < "$WORK/landing.html") bytes)."
-    echo "      Usual cause: the key= query on the URL expired - open the release page"
-    echo "      on apkmirror.com and copy a fresh download link."
+    echo "FAIL: no download.php link on the landing page"
+    echo "      bytes=$(wc -c < "$WORK/landing.html")  challenge_markers=$chal"
+    echo "      title=${title:-<none>}"
+    if [ "$chal" -gt 0 ]; then
+      echo "      -> Cloudflare challenged this request. Download the .apkm by hand"
+      echo "         and pass SRC_FILE=<path>, or re-run from a different IP."
+    else
+      echo "      -> usually an expired key= query. Open the release page on"
+      echo "         apkmirror.com and copy a fresh download link."
+    fi
   } >&2
   exit 1
 fi
@@ -67,10 +121,18 @@ echo "resolved: $direct"
 
 tmp="$SRC_FILE.part"
 rm -f "$tmp"
-curl -fL --retry 3 --retry-delay 5 --max-time 3600 \
-  -A "$UA" -e "$ORIGIN" "$ORIGIN${direct#/}" -o "$tmp"
+rc=0
+curl -fL --retry 5 --retry-all-errors --retry-delay 5 --max-time 3600 \
+  -A "$UA" -e "$ORIGIN" "$ORIGIN${direct#/}" -o "$tmp" || rc=$?
 
-have=$(wc -c < "$tmp" | tr -d ' ')
+have=$(wc -c < "$tmp" 2>/dev/null | tr -d ' ')
+if [ "$rc" -ne 0 ]; then
+  {
+    echo "FAIL: transfer aborted (curl exit $rc) after ${have:-0} bytes of $SIZE_EXPECT."
+    echo "      Re-run the build, or download the .apkm by hand and pass SRC_FILE=<path>."
+  } >&2
+  exit 1
+fi
 if [ "$have" != "$SIZE_EXPECT" ]; then
   echo "FAIL: got $have bytes, expected $SIZE_EXPECT (truncated or wrong release)" >&2
   rm -f "$tmp"
@@ -79,21 +141,5 @@ fi
 mv -f "$tmp" "$SRC_FILE"
 echo "downloaded: $SRC_FILE ($have bytes)"
 
-python3 - "$SRC_FILE" <<'PY'
-import json, sys, zipfile
-
-path = sys.argv[1]
-with zipfile.ZipFile(path) as z:
-    bad = z.testzip()
-    if bad:
-        raise SystemExit(f"corrupt member: {bad}")
-    info = json.loads(z.read("info.json"))
-
-expected = {"apk_id": 8053176, "pname": "com.playmini.miniworld",
-            "release_id": 8053149, "versioncode": 67343}
-wrong = {k: (info.get(k), v) for k, v in expected.items() if info.get(k) != v}
-if wrong:
-    raise SystemExit(f"wrong release, refusing to patch: {wrong}")
-
-print(f"identity OK: {info['pname']} {info['apk_id']} v{info['versioncode']}")
-PY
+check_integrity
+check_identity

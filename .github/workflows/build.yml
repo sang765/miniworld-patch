@@ -62,8 +62,9 @@ jobs:
 
       - name: pin apktool
         # The pipeline was developed against a Termux build reporting
-        # "3.0.3-dirty"; this is the official 3.0.3. scripts/verify.sh is what
-        # proves the two produce the same mod, not this checksum.
+        # "3.0.3-dirty"; this is the official 3.0.3. scripts/verify.sh does not
+        # compare the two builds - it holds each one to the same spec, which is
+        # the part that actually matters for the shipped artifact.
         run: |
           echo "dbf930b076c6b9be08d57c449cacefc3bdd6b71ebd59b3066fc0e1f5b14f9423  tools/apktool.jar" \
             | sha256sum -c -
@@ -120,7 +121,17 @@ jobs:
             echo '```'
           } > "$RUNNER_TEMP/notes.md"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$BUNDLE" --clobber
+            # a single failed upload would otherwise discard a ~40 minute build
+            attempt=0
+            until gh release upload "$TAG" "$BUNDLE" --clobber; do
+              attempt=$((attempt + 1))
+              if [ "$attempt" -ge 3 ]; then
+                echo "release upload failed after $attempt attempts"
+                exit 1
+              fi
+              echo "upload attempt $attempt failed, retrying"
+              sleep 15
+            done
             gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
           else
             gh release create "$TAG" "$BUNDLE" \

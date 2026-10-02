@@ -48,31 +48,31 @@ def main() -> int:
         print(f"FAIL: no <activity ...> tag owning {args.activity}")
         return 1
 
+    # apktool writes the whole <activity ...> on one line. If the attribute is
+    # not there, allow attribute continuation lines - but never walk past the
+    # end of this element: a sibling with its own android:exported would get
+    # flipped while this script reported success.
     end = start
-    while end < len(lines) and not ATTR_RE.search(lines[end]):
-        if end > start and "<activity" in lines[end]:
+    while end + 1 < len(lines) and not ATTR_RE.search(lines[end]):
+        nxt = lines[end + 1].strip()
+        if nxt.startswith("<") or ">" in lines[end]:
             break
         end += 1
-    if not ATTR_RE.search("".join(lines[start:end + 1])):
+    span = "".join(lines[start:end + 1])
+    current = ATTR_RE.search(span)
+    if current is None:
         print(f"FAIL: {args.activity} has no android:exported attribute")
         return 1
 
-    span = "".join(lines[start:end + 1])
-    current = ATTR_RE.search(span)
     want = f'android:exported="{args.value}"'
     if current.group(0) == want:
         print(f"OK: {args.activity} already {want} (lines {start + 1}-{end + 1})")
         return 0
 
-    before = span
-    after = ATTR_RE.sub(want, span, count=1)
-    lines[start:end + 1] = [after]
+    lines[start:end + 1] = [ATTR_RE.sub(want, span, count=1)]
     args.manifest.write_text("".join(lines), encoding="utf-8")
     print(f"patched {args.activity}: {current.group(0)} -> {want} "
           f"(lines {start + 1}-{end + 1})")
-    if before == after:
-        print("FAIL: manifest unchanged despite a differing attribute")
-        return 1
     return 0
 
 
