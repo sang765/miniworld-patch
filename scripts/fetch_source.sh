@@ -94,9 +94,48 @@ case "$SRC_URL" in
   *)            LIST_URL="${SRC_URL%/}/" ;;
 esac
 
+# Fetch one HTML page with a full browser header set. APKMirror sits behind
+# Cloudflare, which answers a bare curl (no Accept-Language, no sec-ch-ua) with
+# 403 on datacenter IPs even when nothing is wrong with the URL - so -f would
+# hide the one fact needed to tell a block from a bad link. The status is read
+# explicitly and a non-200 is reported with the markers found in the body.
+get_page() {
+  local url=$1 ref=$2 out=$3 code
+  code=$(curl -sS --compressed --retry 3 --retry-delay 2 --max-time 90 \
+    -A "$UA" -c "$JAR" -b "$JAR" -e "$ref" \
+    -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8' \
+    -H 'Accept-Language: en-US,en;q=0.9' \
+    -H 'sec-ch-ua: "Chromium";v="122", "Not(A:Brand";v="24"' \
+    -H 'sec-ch-ua-mobile: ?0' \
+    -H 'sec-ch-ua-platform: "Windows"' \
+    -H 'Sec-Fetch-Dest: document' -H 'Sec-Fetch-Mode: navigate' \
+    -H 'Sec-Fetch-Site: same-origin' -H 'Upgrade-Insecure-Requests: 1' \
+    -w '%{http_code}' -o "$out" "$url") || {
+      echo "FAIL: request to $url did not complete (curl exit $?)" >&2
+      return 1
+    }
+  if [ "$code" != "200" ]; then
+    local title chal
+    title=$(grep -oiE '<title>[^<]*</title>' "$out" 2>/dev/null | head -1 \
+      | sed -E 's/<\/?title>//gi' || true)
+    chal=$(grep -ciE 'cf-browser-verification|challenge-platform|just a moment|cf-chl|Access denied' \
+      "$out" 2>/dev/null || true)
+    {
+      echo "FAIL: HTTP $code from $url"
+      echo "      bytes=$(wc -c < "$out" 2>/dev/null || echo 0)  challenge_markers=$chal"
+      echo "      title=${title:-<none>}"
+      if [ "$chal" -gt 0 ]; then
+        echo "      -> Cloudflare blocked this IP (datacenter ranges usually are)."
+        echo "         Re-run from a residential IP, or download the .apkm by hand"
+        echo "         and pass SRC_FILE=<path>."
+      fi
+    } >&2
+    return 1
+  fi
+}
+
 echo "priming cookies from the release page"
-curl -fsSL --retry 3 --max-time 90 -A "$UA" -c "$JAR" -b "$JAR" \
-  -e "$ORIGIN" "$LIST_URL" -o "$WORK/landing.html"
+get_page "$LIST_URL" "$ORIGIN" "$WORK/landing.html"
 
 # The release page renders the download button once, pointing at the same
 # path with a fresh key=. There is no other candidate to choose between.
@@ -124,8 +163,7 @@ if [[ "$SRC_URL" != */download/* ]]; then
 fi
 
 echo "fetching download landing page"
-curl -fsSL --retry 3 --max-time 90 -A "$UA" -c "$JAR" -b "$JAR" \
-  -e "$LIST_URL" "$SRC_URL" -o "$WORK/landing.html"
+get_page "$SRC_URL" "$LIST_URL" "$WORK/landing.html"
 
 direct=$(grep -oE '/wp-content/themes/APKMirror/download\.php\?id=[0-9]+&key=[0-9a-f]+' \
   "$WORK/landing.html" | head -1 || true)
@@ -157,8 +195,16 @@ echo "resolved: $direct"
 tmp="$SRC_FILE.part"
 rm -f "$tmp"
 rc=0
-curl -fL --retry 5 --retry-all-errors --retry-delay 5 --max-time 3600 \
-  -A "$UA" -e "$ORIGIN" "$ORIGIN${direct#/}" -o "$tmp" || rc=$?
+# Same header set and cookie jar as the page fetches: download.php 302s to the
+# object store, and the redirect is only followed when the request looks like
+# the browser that scraped it.
+curl -fL --compressed --retry 5 --retry-all-errors --retry-delay 5 --max-time 3600 \
+  -A "$UA" -c "$JAR" -b "$JAR" -e "$ORIGIN" \
+  -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' \
+  -H 'Accept-Language: en-US,en;q=0.9' \
+  -H 'Sec-Fetch-Dest: document' -H 'Sec-Fetch-Mode: navigate' \
+  -H 'Sec-Fetch-Site: same-origin' -H 'Upgrade-Insecure-Requests: 1' \
+  "$ORIGIN${direct#/}" -o "$tmp" || rc=$?
 
 have=$(wc -c < "$tmp" 2>/dev/null | tr -d ' ')
 if [ "$rc" -ne 0 ]; then
