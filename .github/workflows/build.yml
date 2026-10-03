@@ -118,8 +118,9 @@ jobs:
           {
             echo "## Mini World: CREATA 1.7.15 - modded"
             echo
-            echo "arm64-v8a + Vietnamese only (120-640dpi). Blocks the in-game"
-            echo "browser and spoofs the client-side device identifiers."
+            echo "Every split from the source bundle (2 ABI, 24 languages,"
+            echo "7 densities). Blocks the in-game browser and spoofs the"
+            echo "client-side device identifiers."
             echo
             echo "> [!IMPORTANT]"
             echo "> Uninstall the original app before installing this. The bundle is"
@@ -146,7 +147,7 @@ jobs:
             gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
           else
             gh release create "$TAG" "$BUNDLE" \
-              --title "Mini World 1.7.15 (arm64-v8a + vi) mod" \
+              --title "Mini World 1.7.15 (full splits) mod" \
               --notes-file "$RUNNER_TEMP/notes.md"
           fi
 

@@ -2,7 +2,8 @@
 
 Reproducible build for a modified **Mini World: CREATA 1.7.15**
 (`com.playmini.miniworld`, versionCode 67343) as an installable split-APK
-bundle, trimmed to **arm64-v8a + Vietnamese**.
+bundle, with **every split the source ships**: 2 ABI, 24 languages, 7
+densities.
 
 Exactly two changes are made to the app. Everything else is gated by
 `scripts/verify.sh` before a bundle is produced: a pristine decode is diffed
@@ -152,9 +153,10 @@ with SAI or APKMirror Installer.
   certificate. The app has not been run on a device, so login after re-sign
   and the effect of the native `deviceId` report still need a first runtime
   test.
-- The bundle stays around 829 MB. Roughly 90% of that is the install-time
-  asset pack; dropping the arm-v7a split only saves about 45 MB because the
-  native libraries compress well.
+- The bundle comes out around 917 MB — the whole source is 916,916,904
+  bytes, and roughly 90% of that is the install-time asset pack. The ABI and
+  language splits together add about 130 MB uncompressed but compress well
+  inside the container.
 - Rebuilding reproduces the same 2585 entries byte for byte (measured by
   diffing two builds), but not the same archive: zip entry timestamps and the
   APK signing block change every run, so the sha256 printed in the release

@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Repack the modified base.apk plus the untouched splits into one bundle.
 #
-# Only arm64-v8a + Vietnamese are shipped. The base manifest declares
+# Every split the source bundle carries ships: 2 ABI, 24 language, 7 density,
+# the base and the install-time asset pack. The base manifest declares
 #   requiredSplitTypes="base__abi,base__density"
-# so at least one ABI split and one density split have to be present or the
-# installer rejects the bundle with INSTALL_FAILED_INVALID_APK - the density
-# splits therefore stay even though they were not asked for (2.4 MB total).
-# The asset pack is install-time delivery and carries the game data, so it also
-# has to stay.
+# so at least one ABI split and one density split are mandatory, and dropping
+# a language split would silently drop that language rather than fall back to
+# the default - there is no upside to trimming.
 #
 # Every APK is re-signed with a single new key: Android requires all splits of
 # a package to share the base's signer, so the original splits cannot be left
@@ -18,8 +17,8 @@ set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
-# base + arm64 + Vietnamese + every *dpi split + the asset pack
-MIN_APKS=11
+# base + every split (2 ABI, 24 language, 7 density) + the asset pack
+MIN_APKS=35
 
 if [ ! -f "$KS" ]; then
   {
@@ -45,7 +44,7 @@ mkdir -p "$OUT/signed"
 # INSTALL_FAILED_INVALID_APK. A marker left by an older script is empty and
 # therefore never matches, so it re-extracts.
 src_id=$(wc -c < "$SRC_FILE" | tr -d ' ')
-marker="$OUT/.extracted_min"
+marker="$OUT/.extracted"
 if [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$src_id" ]; then
   if [ -f "$marker" ]; then
     echo "splits came from a different source ($(cat "$marker") bytes, now $src_id) - re-extracting"
@@ -53,8 +52,7 @@ if [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$src_id" ]; then
   rm -rf "$OUT/apks"
   mkdir -p "$OUT/apks"
   unzip -o -q "$SRC_FILE" \
-    base.apk split_config.arm64_v8a.apk split_config.vi.apk \
-    'split_config.*dpi.apk' split_mini_asset_pack.apk \
+    base.apk 'split_config.*.apk' split_mini_asset_pack.apk \
     info.json icon.png -d "$OUT/apks"
   mv -f "$OUT/apks/info.json" "$OUT/apks/icon.png" "$OUT/" 2>/dev/null || true
   printf '%s\n' "$src_id" > "$marker"
@@ -64,20 +62,9 @@ count=$(find "$OUT/apks" -name '*.apk' | wc -l)
 echo "apks extracted: $count (expect $MIN_APKS)"
 [ "$count" -eq "$MIN_APKS" ] || { echo "unexpected split set"; exit 1; }
 
-# keep the bundle's own metadata honest about what it now contains
-python3 - "$OUT/info.json" <<'PY'
-import json, sys
-p = sys.argv[1]
-d = json.load(open(p, encoding="utf-8"))
-d["arches"] = ["arm64-v8a"]
-d["languages"] = ["vi"]
-title = "Mini World: CREATA 1.7.15 (arm64-v8a + vi) (120-640dpi)"
-d["apk_title"] = title
-d["release_title"] = title
-d["variant"] = "(arm64-v8a + vi) (120-640dpi) (Android 4.4+)"
-with open(p, "w", encoding="utf-8") as f:
-    json.dump(d, f, indent=4, ensure_ascii=False)
-PY
+# info.json is copied through untouched: it already describes this exact
+# bundle (2 ABI, 24 languages, 7 densities), and verify_bundle.sh reads it
+# back against the split names actually present rather than trusting it.
 
 cp "$BUILD/base-mod.apk" "$OUT/apks/base.apk"
 

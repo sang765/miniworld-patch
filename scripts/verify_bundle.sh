@@ -12,7 +12,8 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/env.sh"
 
 BUNDLE="${1:-$OUT/MiniWorld-mod.apkm}"
-EXPECT_APKS=11
+# base + 2 ABI + 24 language + 7 density splits + the install-time asset pack
+EXPECT_APKS=35
 
 T=$(mktemp -d "${TMPDIR:-/tmp}/mwbundle.XXXXXX")
 trap 'rm -rf "$T"' EXIT
@@ -42,15 +43,39 @@ if [ -n "$extra" ]; then
 fi
 
 step "3. info.json describes what was actually shipped"
+# The metadata is copied through from the source, so the check is not "does it
+# say the right words" but "does it match the split names in this archive" -
+# an info.json left over from a trimmed build would otherwise sail through.
 python3 - "$BUNDLE" <<'PY' || fail=1
-import json, sys, zipfile
+import json, re, sys, zipfile
+
+DENSITIES = {"ldpi", "mdpi", "hdpi", "xhdpi", "xxhdpi", "xxxhdpi", "tvdpi"}
+ARCH_NAMES = {"arm64_v8a", "armeabi_v7a"}
+
 with zipfile.ZipFile(sys.argv[1]) as z:
     d = json.loads(z.read("info.json"))
-if d.get("arches") != ["arm64-v8a"]:
-    raise SystemExit(f"arches={d.get('arches')!r} (expected ['arm64-v8a'])")
-if d.get("languages") != ["vi"]:
-    raise SystemExit(f"languages={d.get('languages')!r} (expected ['vi'])")
-print(f"arches={d['arches']} languages={d['languages']}")
+    splits = [n for n in z.namelist() if n.startswith("split_config.")]
+
+arches, langs, densities = set(), set(), set()
+for name in splits:
+    code = re.sub(r"\.apk$", "", name[len("split_config."):])
+    if code in DENSITIES:
+        densities.add(code)
+    elif code in ARCH_NAMES:
+        arches.add(code.replace("_", "-"))
+    else:
+        langs.add(code)
+
+problems = []
+if arches != set(d.get("arches", [])):
+    problems.append(f"arches={d.get('arches')!r} vs splits={sorted(arches)}")
+if langs != set(d.get("languages", [])):
+    problems.append(f"languages={d.get('languages')!r} vs splits={sorted(langs)}")
+if problems:
+    raise SystemExit("info.json disagrees with the split names:\n  "
+                     + "\n  ".join(problems))
+print(f"arches={sorted(arches)} languages={len(langs)} "
+      f"densities={sorted(densities)}")
 PY
 
 step "4. extract every apk"
@@ -60,8 +85,8 @@ unzip -o -q "$BUNDLE" '*.apk' -d "$T/x"
 step "5. every split declares the pinned package and versionCode"
 # A bundle whose base came from one source and whose splits from another passes
 # everything else in this file - member count, stamps and signer all look right
-# - and then dies at install with INSTALL_FAILED_INVALID_APK. Reading all 11
-# badging dumps is what catches it, along with a mangled manifest.
+# - and then dies at install with INSTALL_FAILED_INVALID_APK. Reading every
+# badging dump is what catches it, along with a mangled manifest.
 : > "$T/badging"
 for f in "$T"/x/*.apk; do
   b=$(basename "$f")
