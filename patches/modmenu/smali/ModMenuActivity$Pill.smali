@@ -26,19 +26,19 @@
 .method constructor <init>(Landroid/graphics/drawable/GradientDrawable;II)V
     .locals 0
 
-    .line 298
+    .line 304
     invoke-direct {p0}, Landroid/graphics/drawable/Drawable;-><init>()V
 
-    .line 299
+    .line 305
     iput-object p1, p0, Lmodmenu/ModMenuActivity$Pill;->shape:Landroid/graphics/drawable/GradientDrawable;
 
-    .line 300
+    .line 306
     iput p2, p0, Lmodmenu/ModMenuActivity$Pill;->w:I
 
-    .line 301
+    .line 307
     iput p3, p0, Lmodmenu/ModMenuActivity$Pill;->h:I
 
-    .line 302
+    .line 308
     return-void
 .end method
 
@@ -47,7 +47,7 @@
 .method public draw(Landroid/graphics/Canvas;)V
     .locals 2
 
-    .line 306
+    .line 312
     iget-object v0, p0, Lmodmenu/ModMenuActivity$Pill;->shape:Landroid/graphics/drawable/GradientDrawable;
 
     invoke-virtual {p0}, Lmodmenu/ModMenuActivity$Pill;->getBounds()Landroid/graphics/Rect;
@@ -56,19 +56,19 @@
 
     invoke-virtual {v0, v1}, Landroid/graphics/drawable/GradientDrawable;->setBounds(Landroid/graphics/Rect;)V
 
-    .line 307
+    .line 313
     iget-object v0, p0, Lmodmenu/ModMenuActivity$Pill;->shape:Landroid/graphics/drawable/GradientDrawable;
 
     invoke-virtual {v0, p1}, Landroid/graphics/drawable/GradientDrawable;->draw(Landroid/graphics/Canvas;)V
 
-    .line 308
+    .line 314
     return-void
 .end method
 
 .method public getIntrinsicHeight()I
     .locals 1
 
-    .line 332
+    .line 338
     iget v0, p0, Lmodmenu/ModMenuActivity$Pill;->h:I
 
     return v0
@@ -77,7 +77,7 @@
 .method public getIntrinsicWidth()I
     .locals 1
 
-    .line 327
+    .line 333
     iget v0, p0, Lmodmenu/ModMenuActivity$Pill;->w:I
 
     return v0
@@ -86,7 +86,7 @@
 .method public getOpacity()I
     .locals 1
 
-    .line 322
+    .line 328
     const/4 v0, -0x3
 
     return v0
@@ -95,23 +95,23 @@
 .method public setAlpha(I)V
     .locals 1
 
-    .line 312
+    .line 318
     iget-object v0, p0, Lmodmenu/ModMenuActivity$Pill;->shape:Landroid/graphics/drawable/GradientDrawable;
 
     invoke-virtual {v0, p1}, Landroid/graphics/drawable/GradientDrawable;->setAlpha(I)V
 
-    .line 313
+    .line 319
     return-void
 .end method
 
 .method public setColorFilter(Landroid/graphics/ColorFilter;)V
     .locals 1
 
-    .line 317
+    .line 323
     iget-object v0, p0, Lmodmenu/ModMenuActivity$Pill;->shape:Landroid/graphics/drawable/GradientDrawable;
 
     invoke-virtual {v0, p1}, Landroid/graphics/drawable/GradientDrawable;->setColorFilter(Landroid/graphics/ColorFilter;)V
 
-    .line 318
+    .line 324
     return-void
 .end method

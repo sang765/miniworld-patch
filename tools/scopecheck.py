@@ -3,11 +3,11 @@
 is meant to touch it.
 
 Allowed:
-  * the 7 smali files that carry the WebView/HWID/verifyPackage patches and
-    the two mod-menu startup hooks
+  * the 8 smali files that carry the WebView/HWID/verifyPackage/ad-reward
+    patches and the two mod-menu startup hooks
   * AndroidManifest.xml (BrowserActivity exported=false + menu activity)
   * smali_classes8/modmenu/ - the mod-menu classes, new files that have no
-    pristine counterpart; the four entry classes must all be there
+    pristine counterpart; the entry classes must all be there
   * res/ - only as the aapt1->aapt2 entry rename: every removed entry must have
     a renamed counterpart, and every rewritten XML must be reproducible from the
     pristine one by substituting the entry names. That proves no resource
@@ -31,18 +31,23 @@ PATCHED_SMALI = {
     "smali/org/appplay/lib/CommonNatives.smali",
     "smali/cn/mini1/google/GoogleApplication.smali",
     "smali/org/appplay/lib/AppPlayBaseActivity.smali",
+    "smali/org/appplay/lib/client/ClientMethodUniverseSubject.smali",
 }
 MANIFEST = "AndroidManifest.xml"
 
 # New files, no pristine counterpart. The inner ModMenu$1/$2 Runnables are
-# allowed by the prefix too, but the four entry classes are required: a copy
-# step that silently copied nothing must not pass.
+# allowed by the prefix too, but the entry classes are required: a copy step
+# that silently copied nothing must not pass. Hwid, Palette and AdReward are
+# referenced from patched method bodies, so a missing one would crash later.
 ADDED_SMALI = "smali_classes8/modmenu/"
 MODMENU_FILES = {
     "smali_classes8/modmenu/ModMenu.smali",
     "smali_classes8/modmenu/ModMenuActivity.smali",
     "smali_classes8/modmenu/Api26.smali",
     "smali_classes8/modmenu/Api33.smali",
+    "smali_classes8/modmenu/Hwid.smali",
+    "smali_classes8/modmenu/Palette.smali",
+    "smali_classes8/modmenu/AdReward.smali",
 }
 
 # fixdollar.py runs two logical passes: prefix an 'x' when the name started

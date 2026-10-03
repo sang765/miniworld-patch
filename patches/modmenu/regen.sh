@@ -33,8 +33,26 @@ build=$(mktemp -d "${TMPDIR:-/tmp}/mwmodmenu.XXXXXX")
 trap 'rm -rf "$build"' EXIT
 mkdir -p "$build/classes" "$build/dex"
 
+# CommonNatives lives in the game's dex, not in any jar javac can see, and
+# AdReward calls it: compile a two-signature stub into its own directory so
+# javac resolves it but the stub class never reaches d8 or the shipped smali.
+mkdir -p "$build/stubsrc/org/appplay/lib" "$build/stubcls"
+cat > "$build/stubsrc/org/appplay/lib/CommonNatives.java" <<'EOF'
+package org.appplay.lib;
+
+public final class CommonNatives {
+    private CommonNatives() {}
+
+    public static void javaCallLuaEvent(String event, Object[] args) {}
+
+    public static void onWatchAD(int code) {}
+}
+EOF
 javac -source 8 -target 8 -encoding UTF-8 -nowarn \
-  -classpath "$android_jar" -d "$build/classes" \
+  -d "$build/stubcls" "$build/stubsrc/org/appplay/lib/CommonNatives.java"
+
+javac -source 8 -target 8 -encoding UTF-8 -nowarn \
+  -classpath "$android_jar:$build/stubcls" -d "$build/classes" \
   "$here"/src/modmenu/*.java
 
 "$d8" --min-api 19 --lib "$android_jar" --output "$build/dex" \

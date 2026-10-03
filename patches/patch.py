@@ -5,9 +5,10 @@ Dry-run by default; pass --apply to write. Every target is validated:
 the method must exist exactly once, .locals must be >= registers used,
 and the head must not contain .param/.annotation blocks.
 
-The A/B stubs are gated by the mod-menu toggles (isWebBlocked/isSpoofOn) so
-each mod can be switched off at runtime; C1 stays forced because re-signing
-the APK makes the original package check fail, and D1/D2 start the menu.
+The A/B/E stubs are gated by the mod-menu toggles (isWebBlocked/isSpoofOn/
+isRewardBypass) so each mod can be switched off at runtime; C1 stays forced
+because re-signing the APK makes the original package check fail, and D1/D2
+start the menu.
 """
 import argparse
 import os
@@ -110,6 +111,16 @@ def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
         ("D2", "smali/org/appplay/lib/AppPlayBaseActivity.smali",
          "onCreate(Landroid/os/Bundle;)V", 0,
          [f"invoke-static {{p0}}, {MODMENU}->onGameStart(Landroid/app/Activity;)V"]),
+        # --- E: rewarded-ad reward without watching (toggle: rewardBypass) ---
+        # p2=platformId / p3=positionId feed the fake success event; return 1
+        # matches what ADHelper.reqSdkAD always reports to Lua.
+        ("E1", "smali/org/appplay/lib/client/ClientMethodUniverseSubject.smali",
+         "reqSdkAD(Ljava/lang/String;III)I", 1,
+         gated("isRewardBypass", [
+             "invoke-static {p2, p3}, Lmodmenu/AdReward;->fire(II)V",
+             "const/4 v0, 0x1",
+             "return v0",
+         ])),
     ]
 
 

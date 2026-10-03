@@ -27,6 +27,7 @@ public final class ModMenu {
     private static final String PREF_NAME = "mw_mod_menu";
     private static final String KEY_WEB = "webview";
     private static final String KEY_HWID = "hwid";
+    private static final String KEY_REWARD = "reward";
     private static final String KEY_GEN = "hwid_gen";
 
     private static final String TITLE = "Mini World";
@@ -38,6 +39,7 @@ public final class ModMenu {
 
     private static volatile boolean webBlocked = true;
     private static volatile boolean hwidSpoof = true;
+    private static volatile boolean rewardBypass = true;
 
     private static volatile Context appCtx;
     private static boolean loaded;
@@ -67,13 +69,17 @@ public final class ModMenu {
         });
     }
 
-    /** Toggle checks called by the WebView-block and HWID-spoof stubs. */
+    /** Toggle checks called by the WebView-block, HWID and ad-reward stubs. */
     public static boolean isWebBlocked() {
         return webBlocked;
     }
 
     public static boolean isSpoofOn() {
         return hwidSpoof;
+    }
+
+    public static boolean isRewardBypass() {
+        return rewardBypass;
     }
 
     public static void setWebBlocked(Context ctx, boolean value) {
@@ -84,6 +90,11 @@ public final class ModMenu {
     public static void setHwidSpoof(Context ctx, boolean value) {
         prefs(ctx).edit().putBoolean(KEY_HWID, value).apply();
         hwidSpoof = value;
+    }
+
+    public static void setRewardBypass(Context ctx, boolean value) {
+        prefs(ctx).edit().putBoolean(KEY_REWARD, value).apply();
+        rewardBypass = value;
     }
 
     /**
@@ -113,6 +124,7 @@ public final class ModMenu {
         SharedPreferences sp = prefs(appCtx);
         webBlocked = sp.getBoolean(KEY_WEB, true);
         hwidSpoof = sp.getBoolean(KEY_HWID, true);
+        rewardBypass = sp.getBoolean(KEY_REWARD, true);
         loaded = true;
     }
 

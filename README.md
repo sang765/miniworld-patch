@@ -7,11 +7,11 @@ densities.
 
 Three changes are made to the app. Everything else is gated by
 `scripts/verify.sh` before a bundle is produced: a pristine decode is diffed
-against the patched tree so that only the seven patched smali files, the new
+against the patched tree so that only the eight patched smali files, the new
 `smali_classes8/modmenu/` classes, the manifest and the `$`-renamed resources
 may differ; entry, native-library, asset and `resources.arsc` counts are
 compared against the original; the package identity is read back from the
-built APK; and each of the 16 patches is confirmed by content, not merely by
+built APK; and each of the 17 patches is confirmed by content, not merely by
 "this file changed".
 
 ## What the mod does
@@ -21,22 +21,27 @@ built APK; and each of the 16 patches is confirmed by content, not merely by
 | 1 | In-game browser / WebView opening is blocked | `ClientMethodCommonApi` (5 JNI/Lua entries) and `MiniUniverseHelper` (3 loadUrl convergence points), plus `android:exported="false"` on `BrowserActivity` |
 | 2 | Device identifiers the client generates itself are spoofed | `IdDevice`, `cn/mini1/utils/b`, `ClientMethodCommonApi.GetFlyerUID` |
 | 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate` |
+| 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 
 Constants live in `spoof.env`.
 
 The game posts an Android notification on startup (title "Mini World", text
 "Thông báo của mod menu, click để mở menu"); tapping it opens the menu, a
 Material You bottom sheet with one switch per mod. The switches persist in
-`SharedPreferences`, default to on — which is exactly changes 1 and 2 above —
-and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`. The
-`Đổi HWID giả mạo` button steps a stored generation counter that
-`ModMenu.spoofValue()` applies to every baked identity on its next read; each
-generation is a deterministic, format-preserving rewrite (hex stays hex,
-separators stay put), so a banned fake identity can be swapped for a fresh one
-without rebuilding — the client picks the new values up at its next start. On
-Android 13+ the post waits for the `POST_NOTIFICATIONS` runtime grant and
-retries for a few minutes; that permission is already declared by the source
-manifest.
+`SharedPreferences`, default to on — which is exactly changes 1, 2 and 4
+above — and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`
+/ `isRewardBypass()`. The third switch makes the `reqSdkAD` stub skip the ad
+SDK and fire the exact success pair (`onWatchAD(1001)` plus the
+`DeliverAdEvent` Lua event) a moment later, so the reward credits with no ad
+ever loading — which also covers devices where low RAM drops the game to its
+`EmptyAd` fallback. The `Đổi HWID giả mạo` button steps a stored generation
+counter that `ModMenu.spoofValue()` applies to every baked identity on its
+next read; each generation is a deterministic, format-preserving rewrite (hex
+stays hex, separators stay put), so a banned fake identity can be swapped for
+a fresh one without rebuilding — the client picks the new values up at its
+next start. On Android 13+ the post waits for the `POST_NOTIFICATIONS`
+runtime grant and retries for a few minutes; that permission is already
+declared by the source manifest.
 
 Two other edits are required for the mod to work at all, rather than being
 features:
@@ -56,7 +61,7 @@ getters are redirected.
 
 ```
 patches/patch.py        inserts toggle-gated stubs and the two mod-menu hooks at
-                        the head of 16 smali methods
+                        the head of 17 smali methods
 patches/modmenu/        mod-menu sources: Java under src/, regen.sh rebuilds the
                         smali under smali/ (javac -> d8 -> apktool); CI copies
                         that smali as-is, no JDK needed there

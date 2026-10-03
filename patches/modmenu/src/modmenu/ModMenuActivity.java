@@ -48,6 +48,7 @@ public class ModMenuActivity extends Activity
 
     private Switch webSwitch;
     private Switch hwidSwitch;
+    private Switch rewardSwitch;
     private Button rotateBtn;
     private LinearLayout sheet;
 
@@ -97,10 +98,13 @@ public class ModMenuActivity extends Activity
 
         webSwitch = makeSwitch(p);
         hwidSwitch = makeSwitch(p);
+        rewardSwitch = makeSwitch(p);
         sheet.addView(settingRow(p, "Chặn WebView / trình duyệt",
                 "Không mở trình duyệt hoặc trang web trong game", webSwitch));
         sheet.addView(settingRow(p, "Giả mạo HWID",
                 "Giả lập định danh thiết bị — hoặc xoay sang ID mới", hwidSwitch));
+        sheet.addView(settingRow(p, "Nhận thưởng không xem quảng cáo",
+                "Bỏ qua quảng cáo — cộng thưởng ngay khi bấm", rewardSwitch));
 
         rotateBtn = makeButton("Đổi HWID giả mạo", p.primary, p.onPrimary,
                 (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
@@ -231,6 +235,8 @@ public class ModMenuActivity extends Activity
             ModMenu.setWebBlocked(this, isChecked);
         } else if (buttonView == hwidSwitch) {
             ModMenu.setHwidSpoof(this, isChecked);
+        } else if (buttonView == rewardSwitch) {
+            ModMenu.setRewardBypass(this, isChecked);
         }
     }
 
