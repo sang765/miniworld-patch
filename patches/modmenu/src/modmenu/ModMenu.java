@@ -32,8 +32,8 @@ public final class ModMenu {
     private static final String KEY_REWARD = "reward";
     private static final String KEY_GEN = "hwid_gen";
 
-    private static final String TITLE = "Mini World";
-    private static final String TEXT = "Thông báo của mod menu, click để mở menu";
+    private static final String TITLE = I18n.t("notif.title");
+    private static final String TEXT = I18n.t("notif.text");
     private static final int NOTIF_ID = 1071;
     private static final long[] RETRY_MS = {2000, 5000, 10000, 20000, 40000, 80000, 160000};
 

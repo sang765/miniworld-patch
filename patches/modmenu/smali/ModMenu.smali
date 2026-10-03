@@ -20,9 +20,9 @@
 
 .field private static final RETRY_MS:[J
 
-.field private static final TEXT:Ljava/lang/String; = "Th\u00f4ng b\u00e1o c\u1ee7a mod menu, click \u0111\u1ec3 m\u1edf menu"
+.field private static final TEXT:Ljava/lang/String;
 
-.field private static final TITLE:Ljava/lang/String; = "Mini World"
+.field private static final TITLE:Ljava/lang/String;
 
 .field private static volatile appCtx:Landroid/content/Context;
 
@@ -44,6 +44,24 @@
 # direct methods
 .method static constructor <clinit>()V
     .locals 2
+
+    .line 35
+    const-string v0, "notif.title"
+
+    invoke-static {v0}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v0
+
+    sput-object v0, Lmodmenu/ModMenu;->TITLE:Ljava/lang/String;
+
+    .line 36
+    const-string v0, "notif.text"
+
+    invoke-static {v0}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v0
+
+    sput-object v0, Lmodmenu/ModMenu;->TEXT:Ljava/lang/String;
 
     .line 38
     const/4 v0, 0x7
@@ -195,16 +213,16 @@
 
     invoke-direct {v0, v1}, Landroid/app/Notification$Builder;-><init>(Landroid/content/Context;)V
 
-    .line 169
-    const-string v1, "Mini World"
+    sget-object v1, Lmodmenu/ModMenu;->TITLE:Ljava/lang/String;
 
+    .line 169
     invoke-virtual {v0, v1}, Landroid/app/Notification$Builder;->setContentTitle(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;
 
     move-result-object v0
 
-    .line 170
-    const-string v1, "Th\u00f4ng b\u00e1o c\u1ee7a mod menu, click \u0111\u1ec3 m\u1edf menu"
+    sget-object v1, Lmodmenu/ModMenu;->TEXT:Ljava/lang/String;
 
+    .line 170
     invoke-virtual {v0, v1}, Landroid/app/Notification$Builder;->setContentText(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;
 
     move-result-object v0
@@ -630,9 +648,9 @@
     .line 160
     sget-object v2, Lmodmenu/ModMenu;->appCtx:Landroid/content/Context;
 
-    const-string v3, "Mini World"
+    sget-object v3, Lmodmenu/ModMenu;->TITLE:Ljava/lang/String;
 
-    const-string v4, "Th\u00f4ng b\u00e1o c\u1ee7a mod menu, click \u0111\u1ec3 m\u1edf menu"
+    sget-object v4, Lmodmenu/ModMenu;->TEXT:Ljava/lang/String;
 
     invoke-static {v2, v1, v3, v4, v0}, Lmodmenu/Api26;->build(Landroid/content/Context;Landroid/app/NotificationManager;Ljava/lang/String;Ljava/lang/String;Landroid/app/PendingIntent;)Landroid/app/Notification;
 

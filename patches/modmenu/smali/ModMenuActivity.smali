@@ -207,7 +207,11 @@
     invoke-direct {v2, p0}, Landroid/widget/TextView;-><init>(Landroid/content/Context;)V
 
     .line 91
-    const-string v3, "Mod Menu"
+    const-string v3, "menu.title"
+
+    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v3
 
     invoke-virtual {v2, v3}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
@@ -307,13 +311,23 @@
     .line 107
     iget-object v2, p0, Lmodmenu/ModMenuActivity;->sheet:Landroid/widget/LinearLayout;
 
-    const-string v3, "Kh\u00f4ng m\u1edf tr\u00ecnh duy\u1ec7t ho\u1eb7c trang web trong game"
+    const-string v3, "web.label"
 
-    iget-object v7, p0, Lmodmenu/ModMenuActivity;->webSwitch:Landroid/widget/Switch;
+    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
 
-    const-string v8, "Ch\u1eb7n WebView / tr\u00ecnh duy\u1ec7t"
+    move-result-object v3
 
-    invoke-direct {p0, v0, v8, v3, v7}, Lmodmenu/ModMenuActivity;->settingRow(Lmodmenu/Palette;Ljava/lang/String;Ljava/lang/String;Landroid/widget/Switch;)Landroid/widget/LinearLayout;
+    .line 108
+    const-string v7, "web.desc"
+
+    invoke-static {v7}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v7
+
+    iget-object v8, p0, Lmodmenu/ModMenuActivity;->webSwitch:Landroid/widget/Switch;
+
+    .line 107
+    invoke-direct {p0, v0, v3, v7, v8}, Lmodmenu/ModMenuActivity;->settingRow(Lmodmenu/Palette;Ljava/lang/String;Ljava/lang/String;Landroid/widget/Switch;)Landroid/widget/LinearLayout;
 
     move-result-object v3
 
@@ -322,13 +336,23 @@
     .line 109
     iget-object v2, p0, Lmodmenu/ModMenuActivity;->sheet:Landroid/widget/LinearLayout;
 
-    const-string v3, "Gi\u1ea3 l\u1eadp \u0111\u1ecbnh danh thi\u1ebft b\u1ecb \u2014 ho\u1eb7c xoay sang ID m\u1edbi"
+    const-string v3, "hwid.label"
 
-    iget-object v7, p0, Lmodmenu/ModMenuActivity;->hwidSwitch:Landroid/widget/Switch;
+    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
 
-    const-string v8, "Gi\u1ea3 m\u1ea1o HWID"
+    move-result-object v3
 
-    invoke-direct {p0, v0, v8, v3, v7}, Lmodmenu/ModMenuActivity;->settingRow(Lmodmenu/Palette;Ljava/lang/String;Ljava/lang/String;Landroid/widget/Switch;)Landroid/widget/LinearLayout;
+    .line 110
+    const-string v7, "hwid.desc"
+
+    invoke-static {v7}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v7
+
+    iget-object v8, p0, Lmodmenu/ModMenuActivity;->hwidSwitch:Landroid/widget/Switch;
+
+    .line 109
+    invoke-direct {p0, v0, v3, v7, v8}, Lmodmenu/ModMenuActivity;->settingRow(Lmodmenu/Palette;Ljava/lang/String;Ljava/lang/String;Landroid/widget/Switch;)Landroid/widget/LinearLayout;
 
     move-result-object v3
 
@@ -337,34 +361,48 @@
     .line 111
     iget-object v2, p0, Lmodmenu/ModMenuActivity;->sheet:Landroid/widget/LinearLayout;
 
-    const-string v3, "B\u1ecf qua qu\u1ea3ng c\u00e1o \u2014 c\u1ed9ng th\u01b0\u1edfng ngay khi b\u1ea5m"
+    const-string v3, "reward.label"
 
-    iget-object v7, p0, Lmodmenu/ModMenuActivity;->rewardSwitch:Landroid/widget/Switch;
+    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
 
-    const-string v8, "Nh\u1eadn th\u01b0\u1edfng kh\u00f4ng xem qu\u1ea3ng c\u00e1o"
+    move-result-object v3
 
-    invoke-direct {p0, v0, v8, v3, v7}, Lmodmenu/ModMenuActivity;->settingRow(Lmodmenu/Palette;Ljava/lang/String;Ljava/lang/String;Landroid/widget/Switch;)Landroid/widget/LinearLayout;
+    .line 112
+    const-string v7, "reward.desc"
+
+    invoke-static {v7}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v7
+
+    iget-object v8, p0, Lmodmenu/ModMenuActivity;->rewardSwitch:Landroid/widget/Switch;
+
+    .line 111
+    invoke-direct {p0, v0, v3, v7, v8}, Lmodmenu/ModMenuActivity;->settingRow(Lmodmenu/Palette;Ljava/lang/String;Ljava/lang/String;Landroid/widget/Switch;)Landroid/widget/LinearLayout;
 
     move-result-object v3
 
     invoke-virtual {v2, v3}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;)V
 
     .line 114
-    iget v2, v0, Lmodmenu/Palette;->primary:I
+    const-string v2, "rotate"
 
-    iget v3, v0, Lmodmenu/Palette;->onPrimary:I
+    invoke-static {v2}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v2
+
+    iget v3, v0, Lmodmenu/Palette;->primary:I
 
     iget v7, v0, Lmodmenu/Palette;->onPrimary:I
 
-    and-int/2addr v7, v11
+    iget v8, v0, Lmodmenu/Palette;->onPrimary:I
 
-    const/high16 v8, 0x1f000000
+    and-int/2addr v8, v11
 
-    or-int/2addr v7, v8
+    const/high16 v9, 0x1f000000
 
-    const-string v8, "\u0110\u1ed5i HWID gi\u1ea3 m\u1ea1o"
+    or-int/2addr v8, v9
 
-    invoke-direct {p0, v8, v2, v3, v7}, Lmodmenu/ModMenuActivity;->makeButton(Ljava/lang/String;III)Landroid/widget/Button;
+    invoke-direct {p0, v2, v3, v7, v8}, Lmodmenu/ModMenuActivity;->makeButton(Ljava/lang/String;III)Landroid/widget/Button;
 
     move-result-object v2
 
@@ -399,21 +437,25 @@
     invoke-virtual {v4, v7, v2}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
 
     .line 121
-    iget v2, v0, Lmodmenu/Palette;->primary:I
+    const-string v2, "close"
+
+    invoke-static {v2}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v2
+
+    iget v4, v0, Lmodmenu/Palette;->primary:I
 
     iget v0, v0, Lmodmenu/Palette;->primary:I
 
     and-int/2addr v0, v11
 
-    const/high16 v4, 0x14000000
+    const/high16 v7, 0x14000000
 
-    or-int/2addr v0, v4
-
-    const-string v4, "\u0110\u00f3ng"
+    or-int/2addr v0, v7
 
     const/4 v7, 0x0
 
-    invoke-direct {p0, v4, v7, v2, v0}, Lmodmenu/ModMenuActivity;->makeButton(Ljava/lang/String;III)Landroid/widget/Button;
+    invoke-direct {p0, v2, v7, v4, v0}, Lmodmenu/ModMenuActivity;->makeButton(Ljava/lang/String;III)Landroid/widget/Button;
 
     move-result-object v0
 
@@ -1206,7 +1248,11 @@
     invoke-virtual {p1, v1}, Landroid/view/View;->performHapticFeedback(I)Z
 
     .line 256
-    const-string p1, "\u0110\u00e3 \u0111\u1ed5i HWID \u2014 \u00e1p d\u1ee5ng \u1edf l\u1ea7n m\u1edf game sau"
+    const-string p1, "rotate.toast"
+
+    invoke-static {p1}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object p1
 
     const/4 v0, 0x0
 

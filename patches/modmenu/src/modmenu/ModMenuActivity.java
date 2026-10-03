@@ -88,7 +88,7 @@ public class ModMenuActivity extends Activity
         sheet.addView(handle, hLp);
 
         TextView title = new TextView(this);
-        title.setText("Mod Menu");
+        title.setText(I18n.t("menu.title"));
         title.setTextSize(24);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextColor(p.onSurface);
@@ -104,21 +104,21 @@ public class ModMenuActivity extends Activity
         webSwitch.setChecked(ModMenu.isWebBlocked());
         hwidSwitch.setChecked(ModMenu.isSpoofOn());
         rewardSwitch.setChecked(ModMenu.isRewardBypass());
-        sheet.addView(settingRow(p, "Chặn WebView / trình duyệt",
-                "Không mở trình duyệt hoặc trang web trong game", webSwitch));
-        sheet.addView(settingRow(p, "Giả mạo HWID",
-                "Giả lập định danh thiết bị — hoặc xoay sang ID mới", hwidSwitch));
-        sheet.addView(settingRow(p, "Nhận thưởng không xem quảng cáo",
-                "Bỏ qua quảng cáo — cộng thưởng ngay khi bấm", rewardSwitch));
+        sheet.addView(settingRow(p, I18n.t("web.label"),
+                I18n.t("web.desc"), webSwitch));
+        sheet.addView(settingRow(p, I18n.t("hwid.label"),
+                I18n.t("hwid.desc"), hwidSwitch));
+        sheet.addView(settingRow(p, I18n.t("reward.label"),
+                I18n.t("reward.desc"), rewardSwitch));
 
-        rotateBtn = makeButton("Đổi HWID giả mạo", p.primary, p.onPrimary,
+        rotateBtn = makeButton(I18n.t("rotate"), p.primary, p.onPrimary,
                 (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
         LinearLayout.LayoutParams rLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
         rLp.topMargin = dp(20);
         sheet.addView(rotateBtn, rLp);
 
-        Button close = makeButton("Đóng", 0, p.primary,
+        Button close = makeButton(I18n.t("close"), 0, p.primary,
                 (p.primary & 0x00FFFFFF) | 0x14000000);
         LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
@@ -253,7 +253,7 @@ public class ModMenuActivity extends Activity
             v.performHapticFeedback(Build.VERSION.SDK_INT >= 23
                     ? HapticFeedbackConstants.CONTEXT_CLICK
                     : HapticFeedbackConstants.VIRTUAL_KEY);
-            Toast.makeText(this, "Đã đổi HWID — áp dụng ở lần mở game sau",
+            Toast.makeText(this, I18n.t("rotate.toast"),
                     Toast.LENGTH_SHORT).show();
         } else {
             finish(); // close button or scrim tap

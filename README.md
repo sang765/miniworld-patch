@@ -26,8 +26,8 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 
 Constants live in `spoof.env`.
 
-The game posts an Android notification on startup (title "Mini World", text
-"Thông báo của mod menu, click để mở menu"); tapping it opens the menu, a
+The game posts an Android notification on startup (title "Mini World", body
+translated through `modmenu.I18n`); tapping it opens the menu, a
 Material You bottom sheet with one switch per mod. The switches persist in
 `SharedPreferences`, default to on — which is exactly changes 1, 2 and 4
 above — and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`
@@ -35,7 +35,7 @@ above — and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`
 SDK and fire the exact success pair (`onWatchAD(1001)` plus the
 `DeliverAdEvent` Lua event) a moment later, so the reward credits with no ad
 ever loading — which also covers devices where low RAM drops the game to its
-`EmptyAd` fallback. The `Đổi HWID giả mạo` button steps a stored generation
+`EmptyAd` fallback. The HWID-rotate button steps a stored generation
 counter that `ModMenu.spoofValue()` applies to every baked identity on its
 next read; each generation is a deterministic, format-preserving rewrite (hex
 stays hex, separators stay put), so a banned fake identity can be swapped for
@@ -43,6 +43,14 @@ a fresh one without rebuilding — the client picks the new values up at its
 next start. On Android 13+ the post waits for the `POST_NOTIFICATIONS`
 runtime grant and retries for a few minutes; that permission is already
 declared by the source manifest.
+
+Menu and notification wording lives in
+`patches/modmenu/src/modmenu/I18n.java`: one map per language keyed by string
+id — English, Vietnamese, Simplified and Traditional Chinese ship by default,
+the device locale picks the table and English covers the rest. Rewording a
+string or adding a language is an edit there followed by `regen.sh`; no
+Android resources are involved, so regen on unchanged sources reproduces the
+committed smali exactly.
 
 Google sign-in keeps working on devices that ship MicroG/GmsCore instead of
 official Play Services. The game logs in through Identity One-Tap, whose
