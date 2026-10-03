@@ -28,7 +28,6 @@ final class Api26 {
                 .setContentText(text)
                 .setSmallIcon(ctx.getApplicationInfo().icon)
                 .setContentIntent(intent)
-                .setAutoCancel(true)
                 .build();
     }
 }

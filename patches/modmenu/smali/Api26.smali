@@ -75,13 +75,6 @@
     move-result-object p0
 
     .line 31
-    const/4 p1, 0x1
-
-    invoke-virtual {p0, p1}, Landroid/app/Notification$Builder;->setAutoCancel(Z)Landroid/app/Notification$Builder;
-
-    move-result-object p0
-
-    .line 32
     invoke-virtual {p0}, Landroid/app/Notification$Builder;->build()Landroid/app/Notification;
 
     move-result-object p0

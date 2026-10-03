@@ -21,7 +21,9 @@ import android.os.Looper;
  *
  * The notification is posted from a Handler task rather than directly inside
  * onCreate so it lands after resume, and on Android 13+ it is retried over a
- * few minutes in case the permission dialog is still on screen.
+ * few minutes in case the permission dialog is still on screen. It is not
+ * auto-cancelled - it stays as the menu's entry point - and the intent is
+ * single-top, so tapping it while the menu is open just returns to it.
  */
 public final class ModMenu {
     private static final String PREF_NAME = "mw_mod_menu";
@@ -149,7 +151,8 @@ public final class ModMenu {
         }
         PendingIntent pi = PendingIntent.getActivity(appCtx, 0,
                 new Intent(appCtx, ModMenuActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                | Intent.FLAG_ACTIVITY_SINGLE_TOP),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         NotificationManager nm = (NotificationManager)
                 appCtx.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -167,7 +170,6 @@ public final class ModMenu {
                 .setContentText(TEXT)
                 .setSmallIcon(appCtx.getApplicationInfo().icon)
                 .setContentIntent(pi)
-                .setAutoCancel(true)
                 .build();
     }
 
