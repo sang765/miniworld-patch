@@ -165,9 +165,12 @@ for v in "$DTOKEN" "$GAID" "04$GAID" "$FLYER"; do
 done
 # The menu ships as committed smali in classes8: class descriptors prove the
 # wiring survived, the literals prove the class bodies were compiled in.
+# Hwid/Palette cover the rotation hook and the material-you palette, the
+# button literal proves the rotate action itself was compiled in.
 for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/Api26;' 'Lmodmenu/Api33;' \
-           'mod menu, click' 'Giả mạo HWID'; do
+           'Lmodmenu/Hwid;' 'Lmodmenu/Palette;' 'spoofValue' \
+           'mod menu, click' 'Giả mạo HWID' 'Đổi HWID giả mạo'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else

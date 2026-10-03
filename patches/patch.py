@@ -40,6 +40,21 @@ def gated(flag, body):
     ] + body + [":modmenu_orig"]
 
 
+def spoof_stub(value):
+    """Return the spoofed identity, rotated to the current generation.
+
+    The baked constant is the generation-0 default; ModMenu.spoofValue
+    rewrites it deterministically whenever the menu's HWID button has been
+    used, so one build can present a fresh device identity without patching.
+    """
+    return [
+        f'const-string v0, "{value}"',
+        f"invoke-static {{v0}}, {MODMENU}->spoofValue(Ljava/lang/String;)Ljava/lang/String;",
+        "move-result-object v0",
+        "return-object v0",
+    ]
+
+
 # (id, relative file, method name+proto, registers used by inserted code, inserted lines)
 def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
     return [
@@ -71,19 +86,19 @@ def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
         # --- B: spoof HWID (toggle: hwidSpoof) ---
         ("B1", "smali/org/appplay/lib/utils/IdDevice.smali",
          "getAdvertisingId(Landroid/content/Context;)Ljava/lang/String;", 1,
-         gated("isSpoofOn", [f'const-string v0, "{DTOKEN}"', "return-object v0"])),
+         gated("isSpoofOn", spoof_stub(DTOKEN))),
         ("B2", "smali/org/appplay/lib/utils/IdDevice.smali",
          "getGoogleAdId()Ljava/lang/String;", 1,
-         gated("isSpoofOn", [f'const-string v0, "{GAID}"', "return-object v0"])),
+         gated("isSpoofOn", spoof_stub(GAID))),
         ("B3", "smali/org/appplay/lib/utils/IdDevice.smali",
          "getGoogleAdidFilter()Ljava/lang/String;", 1,
-         gated("isSpoofOn", [f'const-string v0, "{GAID}"', "return-object v0"])),
+         gated("isSpoofOn", spoof_stub(GAID))),
         ("B4", "smali/cn/mini1/utils/b.smali",
          "m()Ljava/lang/String;", 1,
-         gated("isSpoofOn", [f'const-string v0, "{UNIQUE}"', "return-object v0"])),
+         gated("isSpoofOn", spoof_stub(UNIQUE))),
         ("B5", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
          "GetFlyerUID()Ljava/lang/String;", 1,
-         gated("isSpoofOn", [f'const-string v0, "{FLYER}"', "return-object v0"])),
+         gated("isSpoofOn", spoof_stub(FLYER))),
         # --- C: keep SDK init alive after re-sign (forced, no toggle) ---
         ("C1", "smali/org/appplay/lib/CommonNatives.smali",
          "verifyPackage(Landroid/content/Context;)Z", 1,
@@ -200,6 +215,16 @@ def main():
             missing.append(f"{pid}: stub absent in {rel} :: {proto}")
             print(f"{pid}: MISSING  {proto}")
             continue
+        # An older revision of this stub may already occupy the head (same
+        # gate, previous body); strip it so --apply replaces it instead of
+        # stacking a second gate, which would duplicate :modmenu_orig.
+        if locals_idx + 1 < len(lines) and lines[locals_idx + 1].strip().startswith(
+                f"invoke-static {{}}, {MODMENU}->is"):
+            end = next((k for k in range(locals_idx + 1, min(locals_idx + 24, len(lines)))
+                        if lines[k].strip() == ":modmenu_orig"), None)
+            if end is not None:
+                print(f"{pid}: replacing a previous stub revision in {rel}")
+                del lines[locals_idx + 1:end + 1]
         clean, bad = head_is_clean(lines, locals_idx, proto)
         if not clean:
             errors.append(f"{pid}: dirty head (.param/.annotation) at line {bad} in {proto}")

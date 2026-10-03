@@ -27,6 +27,7 @@ public final class ModMenu {
     private static final String PREF_NAME = "mw_mod_menu";
     private static final String KEY_WEB = "webview";
     private static final String KEY_HWID = "hwid";
+    private static final String KEY_GEN = "hwid_gen";
 
     private static final String TITLE = "Mini World";
     private static final String TEXT = "Thông báo của mod menu, click để mở menu";
@@ -38,7 +39,7 @@ public final class ModMenu {
     private static volatile boolean webBlocked = true;
     private static volatile boolean hwidSpoof = true;
 
-    private static Context appCtx;
+    private static volatile Context appCtx;
     private static boolean loaded;
     private static boolean notifyStarted;
     private static boolean posted;
@@ -83,6 +84,25 @@ public final class ModMenu {
     public static void setHwidSpoof(Context ctx, boolean value) {
         prefs(ctx).edit().putBoolean(KEY_HWID, value).apply();
         hwidSpoof = value;
+    }
+
+    /**
+     * Called from every spoof stub with the baked generation-0 constant.
+     * Reads the stored generation on each call so a rotation from the menu
+     * applies without restarting the process.
+     */
+    public static String spoofValue(String def) {
+        Context c = appCtx;
+        if (c == null) {
+            return def;
+        }
+        return Hwid.rotate(def, prefs(c).getInt(KEY_GEN, 0));
+    }
+
+    /** Menu button: step the identity to a fresh rotation. */
+    public static void rotateHwid(Context ctx) {
+        SharedPreferences sp = prefs(ctx);
+        sp.edit().putInt(KEY_GEN, sp.getInt(KEY_GEN, 0) + 1).apply();
     }
 
     public static void loadPrefs(Context ctx) {
