@@ -56,6 +56,8 @@ public class ModMenuActivity extends Activity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // guarantee statics match the stored prefs before the switches read them
+        ModMenu.loadPrefs(this);
         try {
             buildMenu();
             slideSheetUp();
@@ -99,6 +101,9 @@ public class ModMenuActivity extends Activity
         webSwitch = makeSwitch(p);
         hwidSwitch = makeSwitch(p);
         rewardSwitch = makeSwitch(p);
+        webSwitch.setChecked(ModMenu.isWebBlocked());
+        hwidSwitch.setChecked(ModMenu.isSpoofOn());
+        rewardSwitch.setChecked(ModMenu.isRewardBypass());
         sheet.addView(settingRow(p, "Chặn WebView / trình duyệt",
                 "Không mở trình duyệt hoặc trang web trong game", webSwitch));
         sheet.addView(settingRow(p, "Giả mạo HWID",
