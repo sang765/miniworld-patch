@@ -5,13 +5,14 @@ Reproducible build for a modified **Mini World: CREATA 1.7.15**
 bundle, with **every split the source ships**: 2 ABI, 24 languages, 7
 densities.
 
-Exactly two changes are made to the app. Everything else is gated by
+Three changes are made to the app. Everything else is gated by
 `scripts/verify.sh` before a bundle is produced: a pristine decode is diffed
-against the patched tree so that only the five patched smali files, the
-manifest and the `$`-renamed resources may differ; entry, native-library,
-asset and `resources.arsc` counts are compared against the original; the
-package identity is read back from the built APK; and each of the 14 patch
-stubs is confirmed by content, not merely by "this file changed".
+against the patched tree so that only the seven patched smali files, the new
+`smali_classes8/modmenu/` classes, the manifest and the `$`-renamed resources
+may differ; entry, native-library, asset and `resources.arsc` counts are
+compared against the original; the package identity is read back from the
+built APK; and each of the 16 patches is confirmed by content, not merely by
+"this file changed".
 
 ## What the mod does
 
@@ -19,8 +20,17 @@ stubs is confirmed by content, not merely by "this file changed".
 |---|--------|-------|
 | 1 | In-game browser / WebView opening is blocked | `ClientMethodCommonApi` (5 JNI/Lua entries) and `MiniUniverseHelper` (3 loadUrl convergence points), plus `android:exported="false"` on `BrowserActivity` |
 | 2 | Device identifiers the client generates itself are spoofed | `IdDevice`, `cn/mini1/utils/b`, `ClientMethodCommonApi.GetFlyerUID` |
+| 3 | Notification-based mod menu with an on/off switch per mod | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate` |
 
 Constants live in `spoof.env`.
+
+The game posts an Android notification on startup (title "Mini World", text
+"Thông báo của mod menu, click để mở menu"); tapping it opens a screen with
+one switch per mod. The switches persist in `SharedPreferences`, default to on
+— which is exactly changes 1 and 2 above — and gate their stubs through
+`ModMenu.isWebBlocked()` / `isSpoofOn()`. On Android 13+ the post waits for
+the `POST_NOTIFICATIONS` runtime grant and retries for a few minutes; that
+permission is already declared by the source manifest.
 
 Two other edits are required for the mod to work at all, rather than being
 features:
@@ -39,8 +49,13 @@ getters are redirected.
 ## Layout
 
 ```
-patches/patch.py        inserts early-return stubs at the head of 14 smali methods
-tools/manifest.py       sets android:exported=false on BrowserActivity
+patches/patch.py        inserts toggle-gated stubs and the two mod-menu hooks at
+                        the head of 16 smali methods
+patches/modmenu/        mod-menu sources: Java under src/, regen.sh rebuilds the
+                        smali under smali/ (javac -> d8 -> apktool); CI copies
+                        that smali as-is, no JDK needed there
+tools/manifest.py       sets android:exported=false on BrowserActivity and
+                        declares modmenu.ModMenuActivity (exported=false)
 tools/fixdollar.py      aapt1 allowed '$' in resource entry names, aapt2 does not:
                         renames the 29 drawables and rewrites public.xml and every
                         referencing XML together so entry IDs stay pinned
@@ -148,11 +163,12 @@ with SAI or APKMirror Installer.
   this repo produces the same ones. If a value is ever blacklisted it is
   blacklisted for every build.
 - Verification here is static: archive integrity, entry counts, package
-  identity, alignment, manifest flags, patch-scope diff, presence of all 14
-  stubs, the spoof constants, every split's versionCode, and the pinned signer
-  certificate. The app has not been run on a device, so login after re-sign
-  and the effect of the native `deviceId` report still need a first runtime
-  test.
+  identity, alignment, manifest flags, patch-scope diff, presence of all 16
+  patches (including the mod-menu classes and its notification text in the
+  built dex), the spoof constants, every split's versionCode, and the pinned
+  signer certificate. The app has not been run on a device, so login after
+  re-sign, the effect of the native `deviceId` report and the menu
+  notification still need a first runtime test.
 - The bundle comes out around 917 MB — the whole source is 916,916,904
   bytes, and roughly 90% of that is the install-time asset pack. The ABI and
   language splits together add about 130 MB uncompressed but compress well

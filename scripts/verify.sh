@@ -75,7 +75,7 @@ else
   echo "MISALIGNED - needs aligner before signing"; fail=1
 fi
 
-step "4. manifest: identity + BrowserActivity exported flag"
+step "4. manifest: identity + activity exported flags + notification permission"
 "$AAPT2" dump badging "$APK" > "$T/bad.txt" 2>/dev/null || true
 head -2 "$T/bad.txt"
 
@@ -99,6 +99,13 @@ got = {"package": pkg, "versionCode": vc, "versionName": vn}
 if got != want:
     raise SystemExit(f"identity mismatch: got {got}, want {want}")
 print(f"identity: {pkg} versionCode={vc} versionName={vn} -> OK")
+
+# The menu requests POST_NOTIFICATIONS at runtime on Android 13+; without the
+# declaration requestPermissions is a no-op and the notification never shows.
+if not re.search(r"^uses-permission: name='android\.permission\.POST_NOTIFICATIONS'",
+                 t, re.M):
+    raise SystemExit("POST_NOTIFICATIONS permission missing from badging")
+print("POST_NOTIFICATIONS permission -> present")
 PY
 
 "$AAPT2" dump xmltree "$APK" --file AndroidManifest.xml > "$T/mf.txt" 2>/dev/null || \
@@ -108,36 +115,44 @@ python3 - "$T/mf.txt" <<'PY' || fail=1
 import re, sys
 lines = open(sys.argv[1], encoding="utf-8", errors="replace").read().splitlines()
 
-idx = next((i for i, l in enumerate(lines)
-            if "org.appplay.lib.browser.BrowserActivity" in l), None)
-if idx is None:
-    raise SystemExit("BrowserActivity not found in manifest")
+def exported_of(name):
+    idx = next((i for i, l in enumerate(lines) if name in l), None)
+    if idx is None:
+        raise SystemExit(f"{name} not found in manifest")
+    start = idx
+    while start > 0 and not re.match(r"\s*E: activity\b", lines[start]):
+        start -= 1
+    if not re.match(r"\s*E: activity\b", lines[start]):
+        raise SystemExit(f"could not locate the owning <activity> element for {name}")
+    indent = len(lines[start]) - len(lines[start].lstrip())
+    value = None
+    for l in lines[start + 1:]:
+        if re.match(r"\s*[EA]: ", l) and (len(l) - len(l.lstrip())) <= indent \
+           and re.match(r"\s*E: ", l):
+            break
+        m = re.search(r":exported\(0x01010010\)=(\S+)", l)
+        if m:
+            value = m.group(1)
+    if value is None:
+        raise SystemExit(f"{name} has no android:exported attribute")
+    return value
 
-start = idx
-while start > 0 and not re.match(r"\s*E: activity\b", lines[start]):
-    start -= 1
-if not re.match(r"\s*E: activity\b", lines[start]):
-    raise SystemExit("could not locate the owning <activity> element")
+def is_false(v):
+    return v.rstrip(')"') in ("false", "0x0", "0x00000000", "0x00000000 (type 0x12)")
 
-indent = len(lines[start]) - len(lines[start].lstrip())
-exported = None
-for l in lines[start + 1:]:
-    if re.match(r"\s*[EA]: ", l) and (len(l) - len(l.lstrip())) <= indent \
-       and re.match(r"\s*E: ", l):
-        break
-    m = re.search(r":exported\(0x01010010\)=(\S+)", l)
-    if m:
-        exported = m.group(1)
-
-if exported is None:
-    raise SystemExit("FAIL: BrowserActivity has no android:exported attribute")
-state = exported.rstrip(')"')
-ok = state in ("false", "0x0", "0x00000000", "0x00000000 (type 0x12)")
-print(f"BrowserActivity exported = {exported} -> {'BLOCKED' if ok else 'STILL EXPORTED'}")
-sys.exit(0 if ok else 1)
+failed = False
+# BrowserActivity must stay unreachable from other apps; the menu activity
+# must be too, otherwise any app could pop the mod menu at the player.
+for name, label in (("org.appplay.lib.browser.BrowserActivity", "BLOCKED"),
+                    ("modmenu.ModMenuActivity", "MENU HIDDEN")):
+    v = exported_of(name)
+    ok = is_false(v)
+    print(f"{name.split('.')[-1]} exported = {v} -> {label if ok else 'STILL EXPORTED'}")
+    failed = failed or not ok
+sys.exit(1 if failed else 0)
 PY
 
-step "5. spoof constants present in the built dex"
+step "5. spoof constants + mod-menu classes present in the built dex"
 rm -rf "$WORK/dexcheck" && mkdir -p "$WORK/dexcheck"
 unzip -o -q "$APK" 'classes*.dex' -d "$WORK/dexcheck"
 . "$SPOOF"
@@ -148,10 +163,21 @@ for v in "$DTOKEN" "$GAID" "04$GAID" "$FLYER"; do
     echo "  MISSING: $v"; fail=1
   fi
 done
+# The menu ships as committed smali in classes8: class descriptors prove the
+# wiring survived, the literals prove the class bodies were compiled in.
+for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
+           'Lmodmenu/Api26;' 'Lmodmenu/Api33;' \
+           'mod menu, click' 'Giả mạo HWID'; do
+  if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
+    echo "  present: $pat"
+  else
+    echo "  MISSING: $pat"; fail=1
+  fi
+done
 
-step "6. patch scope: all 14 stubs present, pristine decode vs patched tree"
-# scopecheck only proves these five files differ from pristine; it cannot tell
-# 14 applied patches from 13, so assert each stub by content first.
+step "6. patch scope: all stubs + startup hooks present, pristine decode vs patched tree"
+# scopecheck only proves these seven files differ from pristine; it cannot tell
+# 16 applied patches from 15, so assert each one by content first.
 python3 "$PATCHES/patch.py" --decoded "$WORK/decoded" --spoof "$SPOOF" --check || fail=1
 if [ ! -d "$WORK/pristine" ]; then
   echo "(pristine decode not present -> running apktool d)"

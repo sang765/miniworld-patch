@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Insert early-return stubs at the head of selected smali methods.
+"""Insert early-return stubs and mod-menu startup hooks at method heads.
 
 Dry-run by default; pass --apply to write. Every target is validated:
 the method must exist exactly once, .locals must be >= registers used,
 and the head must not contain .param/.annotation blocks.
+
+The A/B stubs are gated by the mod-menu toggles (isWebBlocked/isSpoofOn) so
+each mod can be switched off at runtime; C1 stays forced because re-signing
+the APK makes the original package check fail, and D1/D2 start the menu.
 """
 import argparse
 import os
@@ -19,47 +23,78 @@ WORK = Path(os.environ.get("MW_WORK", ROOT / "work"))
 DEFAULT_DECODED = WORK / "decoded"
 DEFAULT_SPOOF = Path(os.environ.get("MW_SPOOF", ROOT / "spoof.env"))
 
+MODMENU = "Lmodmenu/ModMenu;"
+
+
+def gated(flag, body):
+    """Run `body` only while the mod-menu toggle is on.
+
+    The jump target sits at the end of the inserted block, and insertion is
+    always at locals_idx+1, so a disabled mod falls straight through to the
+    original instructions.
+    """
+    return [
+        f"invoke-static {{}}, {MODMENU}->{flag}()Z",
+        "move-result v0",
+        "if-eqz v0, :modmenu_orig",
+    ] + body + [":modmenu_orig"]
+
+
 # (id, relative file, method name+proto, registers used by inserted code, inserted lines)
 def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
     return [
-        # --- A: block WebView / browser opening ---
+        # --- A: block WebView / browser opening (toggle: webBlocked) ---
         ("A1", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
-         "BrowserShowWebpage(Ljava/lang/String;I)V", 1, ["return-void"]),
+         "BrowserShowWebpage(Ljava/lang/String;I)V", 1,
+         gated("isWebBlocked", ["return-void"])),
         ("A2", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
-         "WindowBrowserOpenWebpage(Ljava/lang/String;IIII)V", 1, ["return-void"]),
+         "WindowBrowserOpenWebpage(Ljava/lang/String;IIII)V", 1,
+         gated("isWebBlocked", ["return-void"])),
         ("A3", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
-         "WindowBrowserShowWebpage()V", 1, ["return-void"]),
+         "WindowBrowserShowWebpage()V", 1,
+         gated("isWebBlocked", ["return-void"])),
         ("A4", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
          "reopenWebView(Ljava/lang/String;)Ljava/lang/String;", 1,
-         ['const-string v0, ""', "return-object v0"]),
+         gated("isWebBlocked", ['const-string v0, ""', "return-object v0"])),
         ("A8", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
-         "OpenWebView(Ljava/lang/String;ILjava/lang/String;)V", 1, ["return-void"]),
+         "OpenWebView(Ljava/lang/String;ILjava/lang/String;)V", 1,
+         gated("isWebBlocked", ["return-void"])),
         ("A5", "smali_classes8/org/appplay/lib/browser/MiniUniverseHelper.smali",
-         "loadUrl(Ljava/lang/String;)V", 1, ["return-void"]),
+         "loadUrl(Ljava/lang/String;)V", 1,
+         gated("isWebBlocked", ["return-void"])),
         ("A6", "smali_classes8/org/appplay/lib/browser/MiniUniverseHelper.smali",
-         "reopenWebView(Ljava/lang/String;)V", 1, ["return-void"]),
+         "reopenWebView(Ljava/lang/String;)V", 1,
+         gated("isWebBlocked", ["return-void"])),
         ("A7", "smali_classes8/org/appplay/lib/browser/MiniUniverseHelper.smali",
-         "handleLoadUrl(Ljava/lang/String;)V", 1, ["return-void"]),
-        # --- B: spoof HWID ---
+         "handleLoadUrl(Ljava/lang/String;)V", 1,
+         gated("isWebBlocked", ["return-void"])),
+        # --- B: spoof HWID (toggle: hwidSpoof) ---
         ("B1", "smali/org/appplay/lib/utils/IdDevice.smali",
          "getAdvertisingId(Landroid/content/Context;)Ljava/lang/String;", 1,
-         [f'const-string v0, "{DTOKEN}"', "return-object v0"]),
+         gated("isSpoofOn", [f'const-string v0, "{DTOKEN}"', "return-object v0"])),
         ("B2", "smali/org/appplay/lib/utils/IdDevice.smali",
          "getGoogleAdId()Ljava/lang/String;", 1,
-         [f'const-string v0, "{GAID}"', "return-object v0"]),
+         gated("isSpoofOn", [f'const-string v0, "{GAID}"', "return-object v0"])),
         ("B3", "smali/org/appplay/lib/utils/IdDevice.smali",
          "getGoogleAdidFilter()Ljava/lang/String;", 1,
-         [f'const-string v0, "{GAID}"', "return-object v0"]),
+         gated("isSpoofOn", [f'const-string v0, "{GAID}"', "return-object v0"])),
         ("B4", "smali/cn/mini1/utils/b.smali",
          "m()Ljava/lang/String;", 1,
-         [f'const-string v0, "{UNIQUE}"', "return-object v0"]),
+         gated("isSpoofOn", [f'const-string v0, "{UNIQUE}"', "return-object v0"])),
         ("B5", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
          "GetFlyerUID()Ljava/lang/String;", 1,
-         [f'const-string v0, "{FLYER}"', "return-object v0"]),
-        # --- C: keep SDK init alive after re-sign ---
+         gated("isSpoofOn", [f'const-string v0, "{FLYER}"', "return-object v0"])),
+        # --- C: keep SDK init alive after re-sign (forced, no toggle) ---
         ("C1", "smali/org/appplay/lib/CommonNatives.smali",
          "verifyPackage(Landroid/content/Context;)Z", 1,
          ["const/4 v0, 0x1", "return v0"]),
+        # --- D: mod-menu startup hooks (p0 only, no local registers) ---
+        ("D1", "smali/cn/mini1/google/GoogleApplication.smali",
+         "onCreate()V", 0,
+         [f"invoke-static {{p0}}, {MODMENU}->onAppCreate(Landroid/content/Context;)V"]),
+        ("D2", "smali/org/appplay/lib/AppPlayBaseActivity.smali",
+         "onCreate(Landroid/os/Bundle;)V", 0,
+         [f"invoke-static {{p0}}, {MODMENU}->onGameStart(Landroid/app/Activity;)V"]),
     ]
 
 
@@ -180,7 +215,7 @@ def main():
             changed.add(rel)
 
     if args.check:
-        print(f"\nstubs present: {len(patches) - len(missing)}/{len(patches)}")
+        print(f"\npatches present: {len(patches) - len(missing)}/{len(patches)}")
         if errors or missing:
             print("\nERRORS:")
             for e in errors + missing:

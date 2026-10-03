@@ -119,8 +119,9 @@ jobs:
             echo "## Mini World: CREATA 1.7.15 - modded"
             echo
             echo "Every split from the source bundle (2 ABI, 24 languages,"
-            echo "7 densities). Blocks the in-game browser and spoofs the"
-            echo "client-side device identifiers."
+            echo "7 densities). Blocks the in-game browser, spoofs the"
+            echo "client-side device identifiers, and adds a notification"
+            echo "mod menu with an on/off switch for each mod."
             echo
             echo "> [!IMPORTANT]"
             echo "> Uninstall the original app before installing this. The bundle is"

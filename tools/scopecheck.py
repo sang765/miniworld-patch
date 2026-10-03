@@ -3,8 +3,11 @@
 is meant to touch it.
 
 Allowed:
-  * the 5 smali files that carry the WebView/HWID/verifyPackage patches
-  * AndroidManifest.xml (BrowserActivity exported=false)
+  * the 7 smali files that carry the WebView/HWID/verifyPackage patches and
+    the two mod-menu startup hooks
+  * AndroidManifest.xml (BrowserActivity exported=false + menu activity)
+  * smali_classes8/modmenu/ - the mod-menu classes, new files that have no
+    pristine counterpart; the four entry classes must all be there
   * res/ - only as the aapt1->aapt2 entry rename: every removed entry must have
     a renamed counterpart, and every rewritten XML must be reproducible from the
     pristine one by substituting the entry names. That proves no resource
@@ -26,8 +29,21 @@ PATCHED_SMALI = {
     "smali/org/appplay/lib/utils/IdDevice.smali",
     "smali/cn/mini1/utils/b.smali",
     "smali/org/appplay/lib/CommonNatives.smali",
+    "smali/cn/mini1/google/GoogleApplication.smali",
+    "smali/org/appplay/lib/AppPlayBaseActivity.smali",
 }
 MANIFEST = "AndroidManifest.xml"
+
+# New files, no pristine counterpart. The inner ModMenu$1/$2 Runnables are
+# allowed by the prefix too, but the four entry classes are required: a copy
+# step that silently copied nothing must not pass.
+ADDED_SMALI = "smali_classes8/modmenu/"
+MODMENU_FILES = {
+    "smali_classes8/modmenu/ModMenu.smali",
+    "smali_classes8/modmenu/ModMenuActivity.smali",
+    "smali_classes8/modmenu/Api26.smali",
+    "smali_classes8/modmenu/Api33.smali",
+}
 
 # fixdollar.py runs two logical passes: prefix an 'x' when the name started
 # with '$', then replace every '$' with '_'. Folding both gives a pure function
@@ -81,11 +97,18 @@ def main() -> int:
         else:
             renames[stem] = renamed(stem)
 
+    added_modmenu = [r for r in only_new if r.startswith(ADDED_SMALI)]
     for rel in only_new:
+        if rel.startswith(ADDED_SMALI):
+            continue
         if not rel.startswith("res/"):
             problems.append(f"added outside res/: {rel}")
-    if len(only_old) != len(only_new):
-        problems.append(f"rename count mismatch: removed={len(only_old)} added={len(only_new)}")
+    if len(only_old) != len(only_new) - len(added_modmenu):
+        problems.append(f"rename count mismatch: removed={len(only_old)} "
+                        f"added={len(only_new) - len(added_modmenu)}")
+
+    for rel in sorted(MODMENU_FILES - new):
+        problems.append(f"mod-menu class missing from decode: {rel}")
 
     # longest first so a stem can never eat a longer stem containing it
     subs = sorted(renames.items(), key=lambda kv: -len(kv[0]))
@@ -103,10 +126,12 @@ def main() -> int:
             problems.append(f"res/ content changed beyond entry rename: {rel}")
 
     print(f"removed={len(only_old)}  added={len(only_new)}  content-diff={len(differ)}")
-    print(f"smali patched={sum(1 for p in differ if p in PATCHED_SMALI)}/5  "
+    print(f"smali patched={sum(1 for p in differ if p in PATCHED_SMALI)}"
+          f"/{len(PATCHED_SMALI)}  "
           f"manifest={'yes' if MANIFEST in differ else 'no'}  "
           f"res renamed={len(renames)}  "
-          f"res rewritten={sum(1 for p in differ if p.startswith('res/'))}")
+          f"res rewritten={sum(1 for p in differ if p.startswith('res/'))}  "
+          f"modmenu added={len(added_modmenu)}")
 
     for p in sorted(PATCHED_SMALI - set(differ)):
         problems.append(f"expected patch missing (file identical to pristine): {p}")

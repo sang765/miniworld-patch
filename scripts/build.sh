@@ -72,6 +72,12 @@ say "4/8 apply patches"
 python3 "$PATCHES/patch.py" --decoded "$WORK/decoded" --spoof "$SPOOF" --apply
 python3 "$TOOLS/manifest.py" --manifest "$WORK/decoded/AndroidManifest.xml"
 python3 "$TOOLS/fixdollar.py" --res "$WORK/decoded/res"
+# Mod-menu classes ship as committed smali (patches/modmenu/regen.sh rebuilds
+# them from Java) and go into classes8 - classes.dex has no free method IDs.
+# A failed copy must abort here: `cp` with no match fails under set -e.
+rm -rf "$WORK/decoded/smali_classes8/modmenu"
+mkdir -p "$WORK/decoded/smali_classes8/modmenu"
+cp "$PATCHES/modmenu/smali/"*.smali "$WORK/decoded/smali_classes8/modmenu/"
 
 say "5/8 rebuild"
 mkdir -p "$BUILD"
