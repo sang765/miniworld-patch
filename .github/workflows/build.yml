@@ -33,6 +33,17 @@ jobs:
           sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
           df -h /
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: install fetch deps
+        # resolve_source.py impersonates a Chrome TLS fingerprint with
+        # curl_cffi - plain curl gets Cloudflare's "Just a moment..."
+        # interstitial from a runner IP, and a headless browser gets
+        # "Attention required" instead (both measured, see git history).
+        run: pip install curl_cffi
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

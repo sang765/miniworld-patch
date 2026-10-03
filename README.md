@@ -77,7 +77,8 @@ The script needs `java` (21), `python3`, `unzip`, `zip`, `curl`, plus `aapt2`
 and `apksigner` either on `PATH` or under `$ANDROID_HOME/build-tools`. It does
 **not** add build-tools to `PATH`: on a Termux install those binaries are
 x86_64 ELFs that would shadow the working Termux copies, so `env.sh` resolves
-each tool individually.
+each tool individually. `curl_cffi` (pip) is optional locally and required on
+CI — see Source below.
 
 ### In CI
 
@@ -112,15 +113,17 @@ fresh one on every run — dispatching the workflow needs no input.
 
 `scripts/fetch_source.sh` takes either a release page or a
 `/download/?key=...` link (the release page is the default, pinned as
-`SOURCE_PAGE` in `env.sh`). It does not fetch either directly, for two
-reasons. APKMirror's `/download/?key=...` endpoint only renders the download
-landing page when the request carries the site's cookies — without them it
-hands back the release listing page, whose download button points at the very
-URL you just requested, so there is no link to parse at all. The script
-therefore visits the release page first with a cookie jar, scrapes the fresh
-`download/?key=` link off it if it was given a bare page, then fetches that
-page, parses the `download.php?id=...&key=...` link out of it, and follows its
-redirect to the object store.
+`SOURCE_PAGE` in `env.sh`), and hands it to `scripts/resolve_source.py`.
+That split exists because of Cloudflare: on a datacenter IP — GitHub Actions —
+a plain curl gets the "Just a moment..." interstitial and a headless browser
+gets "Attention required" instead, so the HTML requests go through
+`curl_cffi` with a Chrome TLS fingerprint (plain curl is the fallback where
+that package is not installed, e.g. a local Termux). The resolver scrapes the
+fresh `download/?key=` link off the release page when given a bare page,
+fetches that page, parses the `download.php?id=...&key=...` link out of it,
+and returns the object-storage URL it redirects to. Only that hand-off needs
+the impersonation — the 874MB payload is fetched by `curl` directly from
+object storage, where plain ranged requests work.
 
 The download is then checked three ways: byte count, `testzip()` over every
 member, and `info.json` against the pinned `apk_id` / package / versionCode —
