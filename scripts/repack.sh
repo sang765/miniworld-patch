@@ -42,11 +42,13 @@ mkdir -p "$OUT/signed"
 # could be bundled with older splits - which passes every check here (member
 # count, stamps, signer) and then refuses to install with
 # INSTALL_FAILED_INVALID_APK. A marker left by an older script is empty and
-# therefore never matches, so it re-extracts.
+# therefore never matches, so it re-extracts. A marker whose apks/ was deleted
+# out from under it is the same broken state and re-extracts too - otherwise
+# the find below fails with a bare "No such file" instead of doing the work.
 src_id=$(wc -c < "$SRC_FILE" | tr -d ' ')
 marker="$OUT/.extracted"
-if [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$src_id" ]; then
-  if [ -f "$marker" ]; then
+if [ ! -d "$OUT/apks" ] || [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$src_id" ]; then
+  if [ -f "$marker" ] && [ "$(cat "$marker")" != "$src_id" ]; then
     echo "splits came from a different source ($(cat "$marker") bytes, now $src_id) - re-extracting"
   fi
   rm -rf "$OUT/apks"
