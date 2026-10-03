@@ -38,6 +38,7 @@ mkdir -p "$build/classes" "$build/dex"
 # and GmsCompat call them: compile stubs into their own directory so javac
 # resolves them but no stub class ever reaches d8 or the shipped smali.
 mkdir -p "$build/stubsrc/org/appplay/lib" "$build/stubsrc/org/appplay/lib/sdk" \
+         "$build/stubsrc/com/minitech/player" \
          "$build/stubsrc/com/google/android/gms/auth/api/signin/internal" "$build/stubcls"
 cat > "$build/stubsrc/org/appplay/lib/CommonNatives.java" <<'EOF'
 package org.appplay.lib;
@@ -48,6 +49,31 @@ public final class CommonNatives {
     public static void javaCallLuaEvent(String event, Object[] args) {}
 
     public static void onWatchAD(int code) {}
+}
+EOF
+cat > "$build/stubsrc/org/appplay/lib/GameBaseActivity.java" <<'EOF'
+package org.appplay.lib;
+
+import com.minitech.player.AppPlayer;
+
+public class GameBaseActivity extends android.app.Activity {
+    public AppPlayer m_AppPlayer;
+}
+EOF
+cat > "$build/stubsrc/com/minitech/player/AppPlayer.java" <<'EOF'
+package com.minitech.player;
+
+import android.content.Context;
+import android.view.InputEvent;
+
+public class AppPlayer extends android.widget.FrameLayout {
+    public AppPlayer(Context context) {
+        super(context);
+    }
+
+    public boolean injectEvent(InputEvent event) {
+        return false;
+    }
 }
 EOF
 cat > "$build/stubsrc/org/appplay/lib/sdk/GoogleLoginSDK.java" <<'EOF'

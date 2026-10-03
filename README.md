@@ -23,16 +23,17 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 | 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate` |
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 | 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
+| 6 | OTG keyboard and mouse input reaches the engine like the Windows build | `modmenu.InputBridge`, a `Window.Callback` wrapper installed by the menu-start hook that injects key and pointer events into `AppPlayer.injectEvent` before any view sees them |
 
 Constants live in `spoof.env`.
 
 The game posts an Android notification on startup (title "Mini World", body
 translated through `modmenu.I18n`); tapping it opens the menu, a
 Material You bottom sheet with one switch per mod. The switches persist in
-`SharedPreferences`, default to on — which is exactly changes 1, 2 and 4
+`SharedPreferences`, default to on — which is exactly changes 1, 2, 4 and 6
 above — and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`
-/ `isRewardBypass()`. The third switch makes the `reqSdkAD` stub skip the ad
-SDK and fire the exact success pair (`onWatchAD(1001)` plus the
+/ `isRewardBypass()` / `isKbMouseOn()`. The third switch makes the
+`reqSdkAD` stub skip the ad SDK and fire the exact success pair (`onWatchAD(1001)` plus the
 `DeliverAdEvent` Lua event) a moment later, so the reward credits with no ad
 ever loading — which also covers devices where low RAM drops the game to its
 `EmptyAd` fallback. The HWID-rotate button steps a stored generation
@@ -51,6 +52,16 @@ the device locale picks the table and English covers the rest. Rewording a
 string or adding a language is an edit there followed by `regen.sh`; no
 Android resources are involved, so regen on unchanged sources reproduces the
 committed smali exactly.
+
+OTG keyboards and mice are wired to the engine by `modmenu.InputBridge`.
+DecorView routes key and generic-motion events to the window callback before
+any view, so the wrapper injects each event into `AppPlayer.injectEvent`
+exactly once regardless of which view happens to hold focus; system keys
+(Back, volume, menu) and touch keep their normal Android path, which also
+means a mouse still clicks as a touch pointer. The engine side is not
+something this patch adds — `ProcessKeyEvent`, a `KeyCharacterMap` lookup
+and the `UIEventType_KeyDown`/`IsKeyDown` machinery are already compiled
+into `liblibGameApp.so`; the wrapper only guarantees the events arrive.
 
 Google sign-in keeps working on devices that ship MicroG/GmsCore instead of
 official Play Services. The game logs in through Identity One-Tap, whose

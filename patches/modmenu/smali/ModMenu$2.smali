@@ -21,7 +21,7 @@
 .method constructor <init>()V
     .locals 0
 
-    .line 180
+    .line 193
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -32,12 +32,12 @@
 .method public run()V
     .locals 0
 
-    .line 183
+    .line 196
     invoke-static {}, Lmodmenu/ModMenu;->access$100()V
 
-    .line 184
+    .line 197
     invoke-static {}, Lmodmenu/ModMenu;->access$200()V
 
-    .line 185
+    .line 198
     return-void
 .end method

@@ -53,6 +53,7 @@ MODMENU_FILES = {
     "smali_classes8/modmenu/Palette.smali",
     "smali_classes8/modmenu/AdReward.smali",
     "smali_classes8/modmenu/GmsCompat.smali",
+    "smali_classes8/modmenu/InputBridge.smali",
 }
 
 # fixdollar.py runs two logical passes: prefix an 'x' when the name started

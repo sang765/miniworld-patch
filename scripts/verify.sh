@@ -173,7 +173,8 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'spoofValue' \
            'mod menu, click' 'Giả mạo HWID' 'Đổi HWID giả mạo' \
            'Nhận thưởng không xem quảng cáo' \
-           'legacySignIn' 'GmsCompat'; do
+           'Keyboard & mouse' \
+           'legacySignIn' 'GmsCompat' 'Lmodmenu/InputBridge;'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else
