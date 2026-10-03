@@ -7,11 +7,11 @@ densities.
 
 Three changes are made to the app. Everything else is gated by
 `scripts/verify.sh` before a bundle is produced: a pristine decode is diffed
-against the patched tree so that only the eight patched smali files, the new
+against the patched tree so that only the eleven patched smali files, the new
 `smali_classes8/modmenu/` classes, the manifest and the `$`-renamed resources
 may differ; entry, native-library, asset and `resources.arsc` counts are
 compared against the original; the package identity is read back from the
-built APK; and each of the 17 patches is confirmed by content, not merely by
+built APK; and each of the 20 patches is confirmed by content, not merely by
 "this file changed".
 
 ## What the mod does
@@ -22,6 +22,7 @@ built APK; and each of the 17 patches is confirmed by content, not merely by
 | 2 | Device identifiers the client generates itself are spoofed | `IdDevice`, `cn/mini1/utils/b`, `ClientMethodCommonApi.GetFlyerUID` |
 | 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate` |
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
+| 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
 
 Constants live in `spoof.env`.
 
@@ -43,6 +44,21 @@ next start. On Android 13+ the post waits for the `POST_NOTIFICATIONS`
 runtime grant and retries for a few minutes; that permission is already
 declared by the source manifest.
 
+Google sign-in keeps working on devices that ship MicroG/GmsCore instead of
+official Play Services. The game logs in through Identity One-Tap, whose
+`...identity.service.signin.START` service MicroG does not provide, and the
+bundled client rejects MicroG's certificate (status 9) before anything else
+is attempted. The `F` patches force
+`GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` to report success
+for every caller, then turn any One-Tap failure into a retry through the
+legacy `GoogleSignInApi` (`GmsCompat`, in classes8: the primary dex sits two
+method ids below the 64K limit, so new code for this build belongs there) with
+the same web client id, so the id token handed to the server is still a
+genuine Google-signed one. They are forced rather than switched: on official
+Play Services One-Tap succeeds and the fallback never runs. Whether MicroG
+can mint that id token for this client id is the one part that has to be
+proven on a device actually running it.
+
 Two other edits are required for the mod to work at all, rather than being
 features:
 
@@ -60,8 +76,8 @@ getters are redirected.
 ## Layout
 
 ```
-patches/patch.py        inserts toggle-gated stubs and the two mod-menu hooks at
-                        the head of 17 smali methods
+patches/patch.py        inserts toggle-gated stubs, menu hooks and fallback
+                        branches at the head of 20 smali methods
 patches/modmenu/        mod-menu sources: Java under src/, regen.sh rebuilds the
                         smali under smali/ (javac -> d8 -> apktool); CI copies
                         that smali as-is, no JDK needed there
@@ -174,7 +190,7 @@ with SAI or APKMirror Installer.
   this repo produces the same ones. If a value is ever blacklisted it is
   blacklisted for every build.
 - Verification here is static: archive integrity, entry counts, package
-  identity, alignment, manifest flags, patch-scope diff, presence of all 16
+  identity, alignment, manifest flags, patch-scope diff, presence of all 20
   patches (including the mod-menu classes and its notification text in the
   built dex), the spoof constants, every split's versionCode, and the pinned
   signer certificate. The app has not been run on a device, so login after

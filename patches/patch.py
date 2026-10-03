@@ -3,12 +3,15 @@
 
 Dry-run by default; pass --apply to write. Every target is validated:
 the method must exist exactly once, .locals must be >= registers used,
-and the head must not contain .param/.annotation blocks.
+and the head must be free of .param/.annotation blocks once the insertion
+offset is found - for methods whose prologue follows .locals, the stub is
+written after the prologue instead of splicing into it.
 
 The A/B/E stubs are gated by the mod-menu toggles (isWebBlocked/isSpoofOn/
 isRewardBypass) so each mod can be switched off at runtime; C1 stays forced
-because re-signing the APK makes the original package check fail, and D1/D2
-start the menu.
+because re-signing the APK makes the original package check fail, D1/D2
+start the menu, and F1-F3 wire the Google-login MicroG fallback, which must
+behave the same with or without the menu.
 """
 import argparse
 import os
@@ -31,8 +34,8 @@ def gated(flag, body):
     """Run `body` only while the mod-menu toggle is on.
 
     The jump target sits at the end of the inserted block, and insertion is
-    always at locals_idx+1, so a disabled mod falls straight through to the
-    original instructions.
+    always at the method's insertion offset, so a disabled mod falls straight
+    through to the original instructions.
     """
     return [
         f"invoke-static {{}}, {MODMENU}->{flag}()Z",
@@ -56,7 +59,16 @@ def spoof_stub(value):
     ]
 
 
-# (id, relative file, method name+proto, registers used by inserted code, inserted lines)
+# The game signs in through Identity One-Tap, whose service MicroG/GmsCore does
+# not provide. F2/F3 hand a failed One-Tap over to modmenu.GmsCompat, which
+# retries through the legacy GoogleSignInApi: same web client id, so the id
+# token is still the one the server expects. The work lives there instead of
+# in GoogleLoginSDK because the primary dex is a couple of method ids below
+# the 64K limit (classes8 has room, and callGame is reached by reflection).
+
+
+# (id, relative file, method name+proto, registers used by inserted code,
+#  inserted lines)
 def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
     return [
         # --- A: block WebView / browser opening (toggle: webBlocked) ---
@@ -121,6 +133,34 @@ def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
              "const/4 v0, 0x1",
              "return v0",
          ])),
+        # --- F: Google login under MicroG/GmsCore (forced, no toggle) ---
+        # F1: every availability caller funnels through this method, and it is
+        # where MicroG dies (certificate whitelist, min-version check).
+        ("F1", "smali/com/google/android/gms/common/GooglePlayServicesUtilLight.smali",
+         "isGooglePlayServicesAvailable(Landroid/content/Context;I)I", 1,
+         ["const/4 v0, 0x0", "return v0", ":modmenu_orig"]),
+        # F2: beginSignIn failing is exactly the MicroG case (no Identity
+        # service) - retry through the legacy flow instead of reporting -1.
+        ("F2", "smali_classes8/org/appplay/lib/sdk/GoogleLoginSDK$1.smali",
+         "onFailure(Ljava/lang/Exception;)V", 2,
+         ["iget-object v0, p0, "
+          "Lorg/appplay/lib/sdk/GoogleLoginSDK$1;->this$0:Lorg/appplay/lib/sdk/GoogleLoginSDK;",
+          "invoke-static {v0}, "
+          "Lorg/appplay/lib/sdk/GoogleLoginSDK;->access$200(Lorg/appplay/lib/sdk/GoogleLoginSDK;)Landroid/app/Activity;",
+          "move-result-object v1",
+          "invoke-static {v0, v1}, Lmodmenu/GmsCompat;->legacySignIn(Lorg/appplay/lib/sdk/GoogleLoginSDK;Landroid/app/Activity;)V",
+          "return-void",
+          ":modmenu_orig"]),
+        # F3: result code for GmsCompat's legacySignIn (0xf4a1b is One-Tap's)
+        # is routed before the existing filter, which would swallow it.
+        ("F3", "smali/org/appplay/lib/sdk/GoogleLoginSDK.smali",
+         "OnActivityResult(IILandroid/content/Intent;)V", 1,
+         ["const v0, 0xf4a1c",
+          "if-ne p1, v0, :modmenu_orig",
+          "invoke-static {p0, p3}, "
+          "Lmodmenu/GmsCompat;->onResult(Lorg/appplay/lib/sdk/GoogleLoginSDK;Landroid/content/Intent;)V",
+          "return-void",
+          ":modmenu_orig"]),
     ]
 
 
@@ -148,9 +188,28 @@ def locate(lines, proto):
     return start, j, int(lm.group(1))
 
 
-def head_is_clean(lines, locals_idx, proto):
+def insert_idx(lines, locals_idx):
+    """Offset the stub is written at: right after `.locals`, except when a
+    `.param`/`.annotation` prologue sits there - instructions may not be
+    spliced into the prologue, so the offset moves past it."""
+    j = locals_idx + 1
+    if j >= len(lines):
+        return j
+    if not lines[j].strip().startswith((".param", ".annotation")):
+        return j
+    while j < len(lines):
+        s = lines[j].strip()
+        if s.startswith((".param", ".annotation", ".end annotation",
+                         ".end param")) or not s:
+            j += 1
+            continue
+        break
+    return j
+
+
+def head_is_clean(lines, idx, proto):
     """Head must be free of .param/.annotation before the first real body line."""
-    for j in range(locals_idx + 1, locals_idx + 12):
+    for j in range(idx, idx + 12):
         ln = lines[j].strip()
         if ln.startswith(".end method"):
             break
@@ -163,16 +222,17 @@ def head_is_clean(lines, locals_idx, proto):
     return False, None
 
 
-def is_patched(lines, locals_idx, body):
+def is_patched(lines, at, body):
     """True when the whole stub already sits at the insertion offset.
 
-    The stub is always written at exactly locals_idx+1, so testing the full
-    contiguous body there is the only sound test. Matching just the first line
-    anywhere in a small window would read a pristine method that returns void
-    within its first few instructions as already patched and skip it - which
-    would silently drop one of the browser-block entries while still exiting 0.
+    The stub is always written at exactly the offset returned by insert_idx,
+    so testing the full contiguous body there is the only sound test.
+    Matching just the first line anywhere in a small window would read a
+    pristine method that returns void within its first few instructions as
+    already patched and skip it - which would silently drop one of the
+    browser-block entries while still exiting 0.
     """
-    got = [line.strip() for line in lines[locals_idx + 1:locals_idx + 1 + len(body)]]
+    got = [line.strip() for line in lines[at:at + len(body)]]
     return got == body
 
 
@@ -216,7 +276,8 @@ def main():
         if nlocals < need_regs:
             errors.append(f"{pid}: .locals {nlocals} < required {need_regs} for {proto}")
             continue
-        if is_patched(lines, locals_idx, body):
+        at = insert_idx(lines, locals_idx)
+        if is_patched(lines, at, body):
             if args.check:
                 print(f"{pid}: present  {proto}")
             else:
@@ -229,19 +290,21 @@ def main():
         # An older revision of this stub may already occupy the head (same
         # gate, previous body); strip it so --apply replaces it instead of
         # stacking a second gate, which would duplicate :modmenu_orig.
-        if locals_idx + 1 < len(lines) and lines[locals_idx + 1].strip().startswith(
-                f"invoke-static {{}}, {MODMENU}->is"):
-            end = next((k for k in range(locals_idx + 1, min(locals_idx + 24, len(lines)))
+        head = lines[at].strip() if at < len(lines) else ""
+        if head.startswith(f"invoke-static {{}}, {MODMENU}->is") or any(
+                lines[k].strip() == ":modmenu_orig"
+                for k in range(at, min(at + 24, len(lines)))):
+            end = next((k for k in range(at, min(at + 24, len(lines)))
                         if lines[k].strip() == ":modmenu_orig"), None)
             if end is not None:
                 print(f"{pid}: replacing a previous stub revision in {rel}")
-                del lines[locals_idx + 1:end + 1]
-        clean, bad = head_is_clean(lines, locals_idx, proto)
+                del lines[at:end + 1]
+        clean, bad = head_is_clean(lines, at, proto)
         if not clean:
             errors.append(f"{pid}: dirty head (.param/.annotation) at line {bad} in {proto}")
             continue
         indent = "    "
-        lines[locals_idx + 1:locals_idx + 1] = [indent + ins for ins in body]
+        lines[at:at] = [indent + ins for ins in body]
         print(f"{pid}: {path.name} :: {proto}")
         print(f"      .locals={nlocals} (need {need_regs}) @file-line {start+1}")
         for ins in body:

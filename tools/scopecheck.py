@@ -3,8 +3,8 @@
 is meant to touch it.
 
 Allowed:
-  * the 8 smali files that carry the WebView/HWID/verifyPackage/ad-reward
-    patches and the two mod-menu startup hooks
+  * the 11 smali files that carry the WebView/HWID/verifyPackage/ad-reward/
+    MicroG-login patches and the two mod-menu startup hooks
   * AndroidManifest.xml (BrowserActivity exported=false + menu activity)
   * smali_classes8/modmenu/ - the mod-menu classes, new files that have no
     pristine counterpart; the entry classes must all be there
@@ -32,13 +32,17 @@ PATCHED_SMALI = {
     "smali/cn/mini1/google/GoogleApplication.smali",
     "smali/org/appplay/lib/AppPlayBaseActivity.smali",
     "smali/org/appplay/lib/client/ClientMethodUniverseSubject.smali",
+    "smali/com/google/android/gms/common/GooglePlayServicesUtilLight.smali",
+    "smali/org/appplay/lib/sdk/GoogleLoginSDK.smali",
+    "smali_classes8/org/appplay/lib/sdk/GoogleLoginSDK$1.smali",
 }
 MANIFEST = "AndroidManifest.xml"
 
 # New files, no pristine counterpart. The inner ModMenu$1/$2 Runnables are
 # allowed by the prefix too, but the entry classes are required: a copy step
-# that silently copied nothing must not pass. Hwid, Palette and AdReward are
-# referenced from patched method bodies, so a missing one would crash later.
+# that silently copied nothing must not pass. Hwid, Palette, AdReward and
+# GmsCompat are referenced from patched method bodies, so a missing one would
+# crash later.
 ADDED_SMALI = "smali_classes8/modmenu/"
 MODMENU_FILES = {
     "smali_classes8/modmenu/ModMenu.smali",
@@ -48,6 +52,7 @@ MODMENU_FILES = {
     "smali_classes8/modmenu/Hwid.smali",
     "smali_classes8/modmenu/Palette.smali",
     "smali_classes8/modmenu/AdReward.smali",
+    "smali_classes8/modmenu/GmsCompat.smali",
 }
 
 # fixdollar.py runs two logical passes: prefix an 'x' when the name started

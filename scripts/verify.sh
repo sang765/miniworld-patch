@@ -172,7 +172,8 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/Hwid;' 'Lmodmenu/Palette;' 'Lmodmenu/AdReward;' \
            'spoofValue' \
            'mod menu, click' 'Giả mạo HWID' 'Đổi HWID giả mạo' \
-           'Nhận thưởng không xem quảng cáo'; do
+           'Nhận thưởng không xem quảng cáo' \
+           'legacySignIn' 'GmsCompat'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else
@@ -181,8 +182,8 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
 done
 
 step "6. patch scope: all stubs + startup hooks present, pristine decode vs patched tree"
-# scopecheck only proves these eight files differ from pristine; it cannot
-# tell 17 applied patches from 16, so assert each one by content first.
+# scopecheck only proves these eleven files differ from pristine; it cannot
+# tell 20 applied patches from 19, so assert each one by content first.
 python3 "$PATCHES/patch.py" --decoded "$WORK/decoded" --spoof "$SPOOF" --check || fail=1
 if [ ! -d "$WORK/pristine" ]; then
   echo "(pristine decode not present -> running apktool d)"
