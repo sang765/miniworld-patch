@@ -31,16 +31,10 @@ fi
 
 build=$(mktemp -d "${TMPDIR:-/tmp}/mwmodmenu.XXXXXX")
 trap 'rm -rf "$build"' EXIT
-mkdir -p "$build/classes" "$build/stubs" "$build/dex"
-
-# SwitchCompat exists only in the game's dex; the stub gives javac its
-# signature so the real class can be named without shipping the stub.
-javac -source 8 -target 8 -encoding UTF-8 -nowarn \
-  -classpath "$android_jar" -d "$build/stubs" \
-  $(find "$here/stub" -name '*.java')
+mkdir -p "$build/classes" "$build/dex"
 
 javac -source 8 -target 8 -encoding UTF-8 -nowarn \
-  -classpath "$android_jar:$build/stubs" -d "$build/classes" \
+  -classpath "$android_jar" -d "$build/classes" \
   "$here"/src/modmenu/*.java
 
 "$d8" --min-api 19 --lib "$android_jar" --output "$build/dex" \

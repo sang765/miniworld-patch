@@ -3,13 +3,13 @@ package modmenu;
 import android.app.Activity;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.Switch;
 import android.widget.TextView;
-
-import androidx.appcompat.widget.SwitchCompat;
 
 /**
  * The on/off menu opened from the startup notification.
@@ -18,17 +18,31 @@ import androidx.appcompat.widget.SwitchCompat;
  * in res/, so no layout or style resource can be added. The activity inherits
  * the application theme (AppCompat light, no action bar) and is declared
  * exported=false - only our own PendingIntent starts it.
+ *
+ * Switch is the framework widget, not androidx SwitchCompat: the source APK
+ * ships abc_switch_thumb_material.xml with drawable="@null" items, so any
+ * appcompat tint path throws Resources$NotFoundException - and this activity
+ * runs in the game's process, taking the game down with it.
  */
 public class ModMenuActivity extends Activity
         implements CompoundButton.OnCheckedChangeListener, View.OnClickListener {
 
-    private SwitchCompat webSwitch;
-    private SwitchCompat hwidSwitch;
+    private Switch webSwitch;
+    private Switch hwidSwitch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        try {
+            buildMenu();
+        } catch (RuntimeException e) {
+            Log.e("ModMenu", "menu UI failed, closing", e);
+            finish();
+        }
+    }
+
+    private void buildMenu() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         int pad = dp(24);
@@ -40,14 +54,14 @@ public class ModMenuActivity extends Activity
         title.setTypeface(Typeface.DEFAULT_BOLD);
         root.addView(title);
 
-        webSwitch = new SwitchCompat(this);
+        webSwitch = new Switch(this);
         webSwitch.setText("Chặn WebView / trình duyệt");
         webSwitch.setChecked(ModMenu.isWebBlocked());
         webSwitch.setOnCheckedChangeListener(this);
         webSwitch.setPadding(0, dp(28), 0, 0);
         root.addView(webSwitch);
 
-        hwidSwitch = new SwitchCompat(this);
+        hwidSwitch = new Switch(this);
         hwidSwitch.setText("Giả mạo HWID");
         hwidSwitch.setChecked(ModMenu.isSpoofOn());
         hwidSwitch.setOnCheckedChangeListener(this);
