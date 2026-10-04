@@ -171,7 +171,8 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/Api26;' 'Lmodmenu/Api33;' \
            'Lmodmenu/Hwid;' 'Lmodmenu/Palette;' 'Lmodmenu/AdReward;' \
            'spoofValue' \
-           'pcall(enableAllKeyBind' 'MWP3|' 'HKUI|' \
+           'GameSettingsMgr' 'MWP4|' 'MWP5' 'HKUI2|' 'MWP6|' \
+           'setOnCapturedPointerListener' \
            'legacySignIn' 'GmsCompat' 'Lmodmenu/InputBridge;'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"

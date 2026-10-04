@@ -23,7 +23,7 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 | 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate` |
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 | 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
-| 6 | OTG keyboard and mouse input reaches the engine like the Windows build | `modmenu.InputBridge`, a `Window.Callback` wrapper installed on every activity as it resumes: keys are injected into `AppPlayer.injectEvent` (after evaluating `enableAllKeyBind()` in the game's Lua VM), mouse-button touches are rewritten from `SOURCE_MOUSE` to a finger touch, and pointer motion is injected as-is |
+| 6 | OTG keyboard and mouse input reaches the engine like the Windows build | `modmenu.InputBridge`, a `Window.Callback` wrapper installed on every activity as it resumes: keys are injected into `AppPlayer.injectEvent` (after calling `GameSettingsMgr:enableAllKeyBind()` in the game's Lua VM), mouse-button touches are rewritten from `SOURCE_MOUSE` to a finger touch, and pointer motion is injected as-is |
 | 7 | Crosshair mode: the cursor disappears and moving the mouse looks around | `modmenu.InputBridge` holds pointer capture on the game surface while the switch (or F1) is on, rewrites pointer movement into a centre-screen finger drag - the engine's proven camera path - and lands mouse clicks on the crosshair |
 
 Constants live in `spoof.env`.
@@ -64,17 +64,20 @@ DecorView routes key, pointer and touch events to the window callback before
 any view, so the wrapper is a single focus-independent delivery point: it is
 installed on every activity as it resumes (`InputBridge.Lifecycle`, registered
 from `onAppCreate`), injects each hardware key into `AppPlayer.injectEvent`
-exactly once, and evaluates `enableAllKeyBind()` in the game's Lua VM right
-before a fresh key-down - pcall-wrapped inside a `or function() end` fallback
-so a missing global is a no-op and can never raise into the script host.
+exactly once, and calls the engine's keybind master switch
+(`GameSettingsMgr:enableAllKeyBind()` - the owner the Lua probe located, a
+bare global never existed) right before a fresh key-down, pcall-wrapped at
+every step so a wrong guess is a no-op and can never raise into the script
+host.
 Mouse clicks reach Android as `SOURCE_MOUSE`/`TOOL_TYPE_MOUSE` touches, which
 the engine's touch path ignores, so the wrapper rebuilds them as finger
 touches (same coordinates, `TOOL_TYPE_FINGER`, `SOURCE_TOUCHSCREEN`, no button
 state) before passing them on - a mouse click becomes exactly a finger tap.
 System keys (Back, volume, menu) and real finger touches keep their normal
 Android path. Everything logs under the `MWInput` tag (`installed on <activity>`,
-`key <code>/<action> eng=<bool>`, `mouse-touch <action> handled=<bool>`), so a
-LogFox capture shows exactly where an event stops. The engine side is not
+`key <code>/<action> eng=<bool> dev=<id> src=<flags> rep=<count>`,
+`mouse-touch <action> handled=<bool>`), so a LogFox capture shows exactly
+where an event stops and who produced it. The engine side is not
 something this patch adds - `ProcessKeyEvent`, a `KeyCharacterMap` lookup, the
 `keyBindForward`/`keyBindJump`/... bind table and the
 `UIEventType_KeyDown`/`IsKeyDown` machinery are already compiled into
@@ -87,15 +90,24 @@ around the screen centre - the same path a thumb uses to turn the camera - and
 mouse clicks are rebuilt at the crosshair instead of the locked pointer
 position. A real finger touch, a mouse click or a lost window focus ends the
 synthetic drag first, and capture is released whenever the window loses focus
-so menus can show a cursor again. The first fresh key-down after startup also
-opens the game's own hotkey settings panel once (logged as `HKUI|...`, so the
-official rebinding UI can be tried on Android) and fires a one-shot Lua probe
-(logged as `MWP3|...` through the engine's error logger - `print` never
-reaches logcat on this build) that indexes every global table and userdata by
-the engine's keybind API names, locates the defining file of the hotkey
-callback through `debug.getinfo` and dumps its source through `io.open` when
-the sandbox allows it, so the keybind backport is driven by data instead of a
-guess.
+so menus can show a cursor again. Captured movement never reaches the window
+callback (rounds 4 and 5 saw zero motion events while capture was held), so the
+surface also gets an `OnCapturedPointerListener` that feeds the same camera
+path, rebuilds mouse buttons as centre touches and forwards scroll. While the
+bridge is on, a 1.5 s poll asks the Lua VM whether a map is active through a
+two-byte state file - the VM has no value-returning channel back into Java -
+and turns the crosshair on or off across that transition; a manual F1 stays in
+effect until the map changes. The first fresh key-down after startup opens the
+game's own settings window on the hotkey page once (logged as `HKUI2|...`, so
+the official rebinding UI can be tried on Android) and fires one-shot Lua
+reports (logged as `MWP4|...`/`MWP5|...` through the engine's error logger -
+`print` never reaches logcat on this build) that dump the control-mode API,
+the `classical`/`rocker` scheme flags, the whole keybind table in both
+keycode spaces and a write test for the state-file channel, so the keybind
+backport is driven by data instead of a guess. F2 cycles the game's own
+control scheme (the `classical`/`rocker` pair the settings switch uses,
+applied through `appalyGameSetData`) and reports `getContrlMode` before and
+after as `MWP6|...`.
 
 Google sign-in keeps working on devices that ship MicroG/GmsCore instead of
 official Play Services. The game logs in through Identity One-Tap, whose

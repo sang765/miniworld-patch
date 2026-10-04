@@ -37,10 +37,10 @@ import java.util.List;
  * hardware input can be handed to the engine:
  *
  * - Keys are injected into AppPlayer.injectEvent and consumed. Right before
- *   a fresh key-down, enableAllKeyBind() is evaluated in the game's Lua VM
- *   (pcall-wrapped so a missing global is a no-op) - the Android build is
- *   assumed to start with key binds disabled, which would otherwise eat the
- *   event silently.
+ *   a fresh key-down, the engine's keybind master switch is invoked on the
+ *   settings tables that own it (GameSettingsMgr/GameSettings - located by
+ *   the round-5 Lua probe; a bare global never existed) - pcall-wrapped so
+ *   a wrong guess is a no-op and can never raise into the script host.
  * - Mouse button/drag events reach the engine as source=MOUSE/toolType=
  *   MOUSE touches; the engine's touch path only recognises finger touches,
  *   so they are rewritten to SOURCE_TOUCHSCREEN/TOOL_TYPE_FINGER before
@@ -50,78 +50,174 @@ import java.util.List;
  * - Crosshair mode (menu toggle or F1): the game surface gets pointer
  *   capture so the system cursor disappears, and mouse movement is rewritten
  *   into a center-screen finger drag - the engine's proven camera path.
- *   Mouse clicks land on the crosshair; a real finger touch or a lost focus
- *   ends the synthetic drag immediately.
+ *   Captured movement never reaches the window callback (rounds 4 and 5 saw
+ *   zero motion events while captured), it is delivered to the captured view
+ *   instead, so the surface also gets an OnCapturedPointerListener feeding
+ *   the same camera path, rebuilding button presses at the crosshair and
+ *   forwarding scroll. A real finger touch or a lost focus ends the
+ *   synthetic drag immediately. While the bridge is on, a slow poll asks the
+ *   Lua VM whether a map is active (the script reports through a two-byte
+ *   state file; io.open is the only channel back into Java) and turns the
+ *   crosshair on/off across that transition - manual F1 still wins in
+ *   between.
+ * - F2 cycles the game's own control scheme (the classical/rocker pair
+ *   ControlMoveSwitch_OnClick toggles) and reports the values it saw
+ *   through error().
  *
  * System keys (Back, volume, menu...) and real finger touches are delegated
  * untouched. Logging under the tag MWInput exists so a device-side LogFox
  * capture shows where an event stops: "installed" proves the wrapper is
- * live, "key ..." proves delivery and carries the engine's answer, "xh-in"
- * shows every event the window sees while crosshair mode is on, and the
- * one-shot "MWP3"/"HKUI" Lua reports say what the script side actually
- * exposes.
+ * live, "key ..." proves delivery and carries the engine's answer plus the
+ * originating device/source, "xh-in" shows every event the window sees
+ * while crosshair mode is on, and the one-shot "HKUI2"/"MWP4"/"MWP5" Lua
+ * reports (first fresh key-down) open the real settings window, dump the
+ * control-mode API and the whole keybind table and test the state-file
+ * channel - print() never reaches logcat on this build, error() does.
  */
 public final class InputBridge implements Window.Callback {
     private static final String TAG = "MWInput";
 
-    // Evaluates to the real enableAllKeyBind() when the global exists and to
-    // a no-op function otherwise; the outer pcall absorbs either outcome, so
-    // a wrong guess can never raise into the game's script host.
+    // The keybind master switch lives on the engine's settings tables, not in
+    // globals: round 5 proved the old bare-global form was silently a no-op.
+    // Walks the two owners the probe found (and ClientInfo as a last resort);
+    // every step is pcall-wrapped so a wrong guess stays invisible.
     private static final String KEYBIND_ON =
-            "(function() pcall(enableAllKeyBind or function() end) end)";
+            "(function() pcall(function()"
+                    + " local names={\"GameSettingsMgr\",\"GameSettings\"}"
+                    + " for i=1,#names do local t=_G[names[i]]"
+                    + " if t~=nil then"
+                    + " local ok,fn=pcall(function() return t.enableAllKeyBind end)"
+                    + " if ok and type(fn)==\"function\""
+                    + " and pcall(function() t:enableAllKeyBind() end) then return end"
+                    + " end end"
+                    + " local ok,ci=pcall(GetClientInfo)"
+                    + " if ok and ci~=nil then pcall(function() ci:enableAllKeyBind() end) end"
+                    + " end) end)";
 
-    // One-shot report on the first fresh key-down. Round 2 proved none of the
-    // keybind functions are Lua globals, and its pairs() walk hit the entry
-    // cap before reaching an owner, so this version asks directly: every
-    // global table/userdata is indexed by the API names (an __index chain
-    // answers too), then the hotkey UI callback's defining file is located
-    // through debug.getinfo and its source dumped through io.open when the
-    // sandbox allows it. Reported through error(): print never reaches
-    // logcat on this build - the engine only logs [script error].
-    private static final String PROBE =
+    // One-shot on the first fresh key-down. Round 5's HKUI called
+    // GameSetFrameHotkey_OnShow directly, which only refreshes tab content
+    // behind a frame that was never opened - hence "khong co gi thay doi".
+    // GameSet_OnClick does exactly show GameSetFrame; the tab button lands on
+    // the hotkey page, and the IsShown readback says whether anything really
+    // appeared on screen.
+    private static final String OPEN_FRAME =
             "(function()"
-                    + " local out,nh={},0"
-                    + " local names={\"setOneKeyBindCode\",\"getContrlMode\",\"getHotkeyName\",\"appalyGameSetData\",\"checkCmd\",\"enableAllKeyBind\",\"pushCommand\",\"getCurrentGameMapId\",\"getCurWorldId\"}"
-                    + " for k,v in pairs(_G) do local t=type(v)"
-                            + " if t==\"table\" or t==\"userdata\" then"
-                                    + " for i=1,#names do local nm=names[i]"
-                                            + " local ok,f=pcall(function() return v[nm] end)"
-                                            + " if ok and type(f)==\"function\" then nh=nh+1"
-                                                    + " if nh<=30 then out[#out+1]=k..\".\"..nm end end end end end"
-                    + " local s=\"MWP3|n=\"..nh..\"|\"..table.concat(out,\",\")"
-                    + " if type(debug)==\"table\" and type(debug.getinfo)==\"function\" then"
-                            + " local cs={\"GameSetFrameHotkey_OnShow\",\"RecoveryDefaultHotKey\",\"LoadHotkeyType\",\"GameSetFrameHotkey_OnHide\"}"
-                            + " for i=1,#cs do local f=rawget(_G,cs[i])"
-                                    + " if type(f)==\"function\" then"
-                                            + " local ok,inf=pcall(debug.getinfo,f,\"S\")"
-                                            + " if ok and type(inf)==\"table\" and type(inf.source)==\"string\""
-                                                    + " and inf.source:sub(1,1)==\"@\" then"
-                                                    + " local p=inf.source:sub(2)"
-                                                    + " s=s..\"|src=\"..cs[i]..\":\"..p"
-                                                    + " local fh=(type(io)==\"table\" and io.open) and io.open(p,\"r\")"
-                                                    + " if fh then local d=fh:read(2300) fh:close()"
-                                                            + " if d then s=s..\"|lua=\"..d end end"
-                                                    + " break end end end"
-                            + " else s=s..\"|debug=nil\" end"
-                    + " if type(io)~=\"table\" or not io.open then s=s..\"|io=nil\" end"
-                    + " error(s:sub(1,3000))"
+                    + " local r={}"
+                    + " local ok,e=pcall(function()"
+                    + " local fr=getglobal('GameSetFrame')"
+                    + " if fr==nil then error('noframe') end"
+                    + " fr:Show()"
+                    + " end)"
+                    + " r[#r+1]='show='..tostring(ok)..','..tostring(e)"
+                    + " local ok2,e2=pcall(function()"
+                    + " local f=rawget(_G,'GameSetFrameHotkey_OnShow')"
+                    + " if type(f)~='function' then error('missing') end"
+                    + " f()"
+                    + " end)"
+                    + " r[#r+1]='onshow='..tostring(ok2)..','..tostring(e2)"
+                    + " local ok3=pcall(function() press_btn('GameSetFrameHotkeyBtn') end)"
+                    + " r[#r+1]='tab='..tostring(ok3)"
+                    + " local vis='?'"
+                    + " pcall(function()"
+                    + " local fr=getglobal('GameSetFrame')"
+                    + " vis=tostring(fr~=nil and fr.IsShown and fr:IsShown())"
+                    + " end)"
+                    + " r[#r+1]='vis='..vis"
+                    + " error('HKUI2|'..table.concat(r,'|'):sub(1,2900),0)"
                     + " end)";
 
-    // Opens the game's own hotkey settings screen once, right before the
-    // probe: the callback ships with the UI scripts, so a successful open
-    // proves the PC keybind panel is reachable on Android, lets the tester
-    // try real rebinding, and lazy-loads the module the probe then scans.
-    private static final String OPEN_HOTKEY =
-            "(function() local f=rawget(_G,\"GameSetFrameHotkey_OnShow\")"
-                    + " if type(f)~=\"function\" then error(\"HKUI|missing\") end"
-                    + " local ok,e=pcall(f)"
-                    + " error(\"HKUI|ok=\"..tostring(ok)..\" e=\"..tostring(e))"
+    // Control-mode report: master-switch result, the classical/rocker scheme
+    // flags ControlMoveSwitch_OnClick toggles, getContrlMode, every
+    // control-ish ClientInfo entry (a setter name not found statically shows
+    // up here), and the in-game/map ids the crosshair auto-detect needs.
+    private static final String PROBE_A =
+            "(function()"
+                    + " local eb='none'"
+                    + " local names={\"GameSettingsMgr\",\"GameSettings\"}"
+                    + " for i=1,#names do local t=_G[names[i]]"
+                    + " if t~=nil then"
+                    + " local ok,fn=pcall(function() return t.enableAllKeyBind end)"
+                    + " if ok and type(fn)==\"function\" then"
+                    + " local ran,er=pcall(function() t:enableAllKeyBind() end)"
+                    + " eb=names[i]..(ran and ':ok' or ':err:'..tostring(er))"
+                    + " break end end end"
+                    + " if eb=='none' then"
+                    + " local okb,ci2=pcall(GetClientInfo)"
+                    + " if okb and ci2~=nil then"
+                    + " local ranb=pcall(function() ci2:enableAllKeyBind() end)"
+                    + " eb='ClientInfo'..(ranb and ':ok' or ':err')"
+                    + " end end"
+                    + " local cm,cl,rk,ing,mid"
+                    + " pcall(function() cm=GetClientInfo():getContrlMode() end)"
+                    + " pcall(function()"
+                    + " local c=GetIWorldConfig()"
+                    + " cl=c:getGameData('classical') rk=c:getGameData('rocker')"
+                    + " end)"
+                    + " pcall(function()"
+                    + " ing=ClientCurGame and ClientCurGame.isInGame"
+                    + " and ClientCurGame:isInGame()"
+                    + " end)"
+                    + " pcall(function() mid=GetClientInfo():getCurrentGameMapId() end)"
+                    + " local hits,seen={},{}"
+                    + " local ok,ci=pcall(GetClientInfo)"
+                    + " if ok and type(ci)=='table' then"
+                    + " local pok=pcall(function()"
+                    + " for k in pairs(ci) do"
+                    + " if type(k)=='string'"
+                    + " and (k:find('ontrl') or k:find('ontrol')"
+                    + " or k:find('witch') or k:find('KeyBind')) then"
+                    + " if not seen[k] then seen[k]=true hits[#hits+1]=k end"
+                    + " end end end)"
+                    + " if not pok then hits[#hits+1]='pairs-fail' end"
+                    + " end"
+                    + " local cand={'setContrlMode','setControlMode','setContrlType'"
+                    + ",'setMoveMode','setUIMode','disableAllKeyBind'}"
+                    + " for i=1,#cand do"
+                    + " if ci~=nil then"
+                    + " local okf,f=pcall(function() return ci[cand[i]] end)"
+                    + " if okf and type(f)=='function' and not seen[cand[i]] then"
+                    + " seen[cand[i]]=true hits[#hits+1]=cand[i]"
+                    + " end end end"
+                    + " local s='MWP4|eb='..eb..'|cm='..tostring(cm)"
+                    + " ..'|cl='..tostring(cl)..',rk='..tostring(rk)"
+                    + " ..'|in='..tostring(ing)..',mid='..tostring(mid)"
+                    + " ..'|set='..table.concat(hits,',')"
+                    + " error(s:sub(1,2900),0)"
+                    + " end)";
+
+    // F2: flip the classical/rocker pair exactly like the game's own
+    // ControlMoveSwitch_OnClick (set flags, refresh the switch widgets, apply
+    // through appalyGameSetData) and report getContrlMode before/after so the
+    // log says whether the scheme switch actually moves the control mode.
+    private static final String CTRL_TOGGLE =
+            "(function()"
+                    + " local cl,cl2,cm,cm2"
+                    + " local okc,cfg=pcall(function() return GetIWorldConfig() end)"
+                    + " if not okc or cfg==nil then error('MWP6|cfg=no',0) end"
+                    + " pcall(function() cl=cfg:getGameData('classical') end)"
+                    + " pcall(function() cm=GetClientInfo():getContrlMode() end)"
+                    + " local num=tonumber(cl)"
+                    + " local newc=(num and num>0) and 0 or 1"
+                    + " local ok1=pcall(function()"
+                    + " cfg:setGameData('classical',newc)"
+                    + " cfg:setGameData('rocker',newc==1 and 0 or 1)"
+                    + " end)"
+                    + " local ok2=pcall(SetControlMoveSwithState)"
+                    + " local ok3=pcall(function() GetClientInfo():appalyGameSetData() end)"
+                    + " pcall(function() cl2=cfg:getGameData('classical') end)"
+                    + " pcall(function() cm2=GetClientInfo():getContrlMode() end)"
+                    + " error('MWP6|cl='..tostring(cl)..'->'..tostring(cl2)"
+                    + " ..' cm='..tostring(cm)..'->'..tostring(cm2)"
+                    + " ..'|set='..tostring(ok1)..' ui='..tostring(ok2)"
+                    + " ..' ap='..tostring(ok3),0)"
                     + " end)";
 
     private static final long ENABLE_WARMUP_MS = 5000;
     private static final long ENABLE_INTERVAL_MS = 2000;
     private static final long CAPTURE_RETRY_MS = 1500;
     private static final long LOOK_IDLE_MS = 120;
+    private static final long STATE_POLL_MS = 1500;
+    private static final long CLICK_HOLD_MS = 700;
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static volatile boolean probed;
@@ -141,13 +237,53 @@ public final class InputBridge implements Window.Callback {
     private float lookX;
     private float lookY;
     private long lookDownTime;
+    private long clickDown; // downTime of the currently held centre click
     private long lastArrLog;
     private long lastDeltaLog;
     private long lastInLog;
+    private boolean polling;
+    private String statePath; // state file candidate 1 (external files dir)
+    private String statePath2; // candidate 2 (internal files dir)
+    private boolean lastInMap; // last observed crosshair auto state
+    private boolean stateErrLogged;
     private final Runnable lookEnd = new Runnable() {
         @Override
         public void run() {
             endLook(SystemClock.uptimeMillis());
+        }
+    };
+    private final Runnable clickEnd = new Runnable() {
+        @Override
+        public void run() {
+            if (mouseTouching) { // a release event was lost: never wedge the touch
+                dispatchCenter(MotionEvent.ACTION_UP, clickDown,
+                        SystemClock.uptimeMillis());
+                mouseTouching = false;
+                Log.d(TAG, "center-touch auto-up");
+            }
+        }
+    };
+    private final Runnable poll = new Runnable() {
+        @Override
+        public void run() {
+            if (!polling) {
+                return;
+            }
+            MAIN.postDelayed(this, STATE_POLL_MS);
+            if (!ModMenu.isKbMouseOn()) {
+                // the menu switch owns crosshair state: a stale capture must
+                // not survive turning the OTG bridge off
+                if (ModMenu.isCrosshairOn()) {
+                    ModMenu.setCrosshair(activity, false);
+                    syncCrosshair();
+                }
+                return;
+            }
+            if (SystemClock.uptimeMillis() - installedAt < ENABLE_WARMUP_MS
+                    || player() == null) {
+                return;
+            }
+            pollState();
         }
     };
 
@@ -163,7 +299,9 @@ public final class InputBridge implements Window.Callback {
         if (current == null || current instanceof InputBridge) {
             return;
         }
-        window.setCallback(new InputBridge(current, activity));
+        InputBridge bridge = new InputBridge(current, activity);
+        window.setCallback(bridge);
+        bridge.startPoll();
         Log.i(TAG, "installed on " + activity.getClass().getName());
     }
 
@@ -251,11 +389,12 @@ public final class InputBridge implements Window.Callback {
             Log.d(TAG, "keybind-on fired");
             if (!probed) {
                 probed = true;
-                // panel first: a successful open lazy-loads the hotkey module
-                // the probe then scans
-                CommonNatives.javaCallLuaEvent(OPEN_HOTKEY, new Object[0]);
-                CommonNatives.javaCallLuaEvent(PROBE, new Object[0]);
-                Log.d(TAG, "probe fired");
+                // panel first: it proves the real settings window is reachable
+                // and loads the UI module the reports below read state from
+                CommonNatives.javaCallLuaEvent(OPEN_FRAME, new Object[0]);
+                CommonNatives.javaCallLuaEvent(PROBE_A, new Object[0]);
+                CommonNatives.javaCallLuaEvent(probeB(), new Object[0]);
+                Log.d(TAG, "probes fired");
             }
         } catch (RuntimeException e) {
             Log.d(TAG, "keybind-on failed: " + e);
@@ -278,6 +417,20 @@ public final class InputBridge implements Window.Callback {
                 }
                 return true;
             }
+            // F2 cycles the control scheme the game's own switch uses, so the
+            // keyboard/scroll gate hypothesis can be tested from the keyboard
+            // without digging through the settings UI.
+            if (event.getKeyCode() == KeyEvent.KEYCODE_F2) {
+                if (freshDown) {
+                    try {
+                        CommonNatives.javaCallLuaEvent(CTRL_TOGGLE, new Object[0]);
+                        Log.d(TAG, "ctrl-toggle fired");
+                    } catch (RuntimeException e) {
+                        Log.d(TAG, "ctrl-toggle failed: " + e);
+                    }
+                }
+                return true;
+            }
             if (!keepAndroid(event.getKeyCode())) {
                 AppPlayer player = player();
                 if (player == null) {
@@ -291,8 +444,12 @@ public final class InputBridge implements Window.Callback {
                 // injectEvent a second time through AppPlayer.onKeyDown
                 boolean eng = player.injectEvent(event);
                 if (freshDown || event.getAction() == KeyEvent.ACTION_UP) {
+                    // dev/src/rep identify who produced the key: rounds 4 and 5
+                    // saw unexplained DPAD bursts only inside the capture window
                     Log.d(TAG, "key " + event.getKeyCode() + "/" + event.getAction()
-                            + " eng=" + eng);
+                            + " eng=" + eng + " dev=" + event.getDeviceId()
+                            + " src=" + event.getSource()
+                            + " rep=" + event.getRepeatCount());
                 }
                 return true;
             }
@@ -435,6 +592,45 @@ public final class InputBridge implements Window.Callback {
     }
 
     /**
+     * Captured pointer movement is delivered to the captured view, not to the
+     * window callback - rounds 4 and 5 logged zero motion events while
+     * capture was held, which left the crosshair camera dead. This listener
+     * is the missing half: same camera path as hover, buttons rebuilt as
+     * centre touches, scroll handed to the engine.
+     */
+    private final View.OnCapturedPointerListener captureListener =
+            new View.OnCapturedPointerListener() {
+        @Override
+        public boolean onCapturedPointer(View v, MotionEvent e) {
+            int act = e.getActionMasked();
+            logCrosshairIn("captured", act, e);
+            if (!ModMenu.isKbMouseOn() || !ModMenu.isCrosshairOn()) {
+                return false;
+            }
+            switch (act) {
+                case MotionEvent.ACTION_HOVER_MOVE:
+                case MotionEvent.ACTION_MOVE:
+                    lookBy(e);
+                    return true;
+                case MotionEvent.ACTION_BUTTON_PRESS:
+                case MotionEvent.ACTION_DOWN:
+                    centerTouch(e.getEventTime(), true);
+                    return true;
+                case MotionEvent.ACTION_BUTTON_RELEASE:
+                case MotionEvent.ACTION_UP:
+                    centerTouch(e.getEventTime(), false);
+                    return true;
+                case MotionEvent.ACTION_SCROLL: {
+                    AppPlayer p = player();
+                    return p != null && p.injectEvent(e);
+                }
+                default:
+                    return false;
+            }
+        }
+    };
+
+    /**
      * Brings pointer capture in line with the setting: requested while the
      * game surface exists, released on the way off. A denied request is
      * signalled by onPointerCaptureChanged(false), so retries are spaced out
@@ -455,6 +651,7 @@ public final class InputBridge implements Window.Callback {
                 lastCaptureReq = now;
                 captured = true;
                 primed = false;
+                surface.setOnCapturedPointerListener(captureListener);
                 surface.requestPointerCapture();
                 Log.d(TAG, "xh capture requested");
             }
@@ -469,6 +666,215 @@ public final class InputBridge implements Window.Callback {
         primed = false;
         endLook(SystemClock.uptimeMillis());
         Log.d(TAG, "xh capture released");
+    }
+
+    /**
+     * Asks the script side whether a map is active and mirrors that onto the
+     * crosshair across the transition. The VM cannot return values
+     * (javaCallLuaEvent is void), so the script writes two bytes - in-map,
+     * settings frame open - into a state file that Java reads back. The
+     * crosshair only changes on the rising/falling edge: a manual F1 while
+     * the map stays loaded is respected until the map changes.
+     */
+    private void pollState() {
+        if (statePath == null && !resolvePaths()) {
+            return;
+        }
+        try {
+            CommonNatives.javaCallLuaEvent(stateScript(), new Object[0]);
+        } catch (RuntimeException e) {
+            if (!stateErrLogged) {
+                stateErrLogged = true;
+                Log.d(TAG, "state poll failed: " + e);
+            }
+            return;
+        }
+        String s = readFile(statePath);
+        if (s == null && statePath2 != null) {
+            s = readFile(statePath2);
+        }
+        if (s == null || s.length() < 2) {
+            return;
+        }
+        boolean inMap = s.charAt(0) == '1' && s.charAt(1) != '1';
+        if (inMap == lastInMap) {
+            return;
+        }
+        lastInMap = inMap;
+        ModMenu.setCrosshair(activity, inMap);
+        syncCrosshair();
+        Log.d(TAG, "xh auto=" + inMap + " state=" + s);
+    }
+
+    private void startPoll() {
+        if (polling) {
+            return;
+        }
+        polling = true;
+        MAIN.postDelayed(poll, STATE_POLL_MS);
+    }
+
+    private boolean resolvePaths() {
+        try {
+            java.io.File ext = activity.getExternalFilesDir(null);
+            java.io.File internal = activity.getFilesDir();
+            if (internal == null) {
+                return false;
+            }
+            statePath2 = new java.io.File(internal, "mw_state.txt").getAbsolutePath();
+            statePath = ext != null
+                    ? new java.io.File(ext, "mw_state.txt").getAbsolutePath()
+                    : statePath2;
+            return true;
+        } catch (RuntimeException e) {
+            Log.d(TAG, "state paths failed: " + e);
+            return false;
+        }
+    }
+
+    /** Silent state report for the poller: no error(), nothing reaches logcat. */
+    private String stateScript() {
+        return "(function()"
+                + " local ing,shown=false,false"
+                + " pcall(function()"
+                + " ing=(ClientCurGame and ClientCurGame.isInGame"
+                + " and ClientCurGame:isInGame()) and true or false"
+                + " end)"
+                + " pcall(function()"
+                + " local fr=getglobal('GameSetFrame')"
+                + " shown=(fr and fr.IsShown and fr:IsShown()) and true or false"
+                + " end)"
+                + " local data=(ing and '1' or '0')..(shown and '1' or '0')"
+                + " local function w(p)"
+                + " local ok,fh=pcall(function() return io.open(p,'w') end)"
+                + " if ok and fh then"
+                + " pcall(function() fh:write(data) end)"
+                + " pcall(function() fh:close() end)"
+                + " end end"
+                + " w('" + luaStr(statePath) + "')"
+                + (statePath2 != null && !statePath2.equals(statePath)
+                        ? " w('" + luaStr(statePath2) + "')" : "")
+                + " end)";
+    }
+
+    /**
+     * MWP5: the keybind table. getKeyName over both keycode spaces says how
+     * the engine numbers keys (VK vs Android decides how the bridge must
+     * translate), GetGameHotkey per action says what is bound right now
+     * (d+default when unbound), and the io test says whether the state-file
+     * channel the poller needs is writable.
+     */
+    private String probeB() {
+        if (statePath == null) {
+            resolvePaths();
+        }
+        String p1 = luaStr(statePath);
+        String p2 = statePath2 != null ? luaStr(statePath2) : "";
+        return "(function()"
+                + " local parts={'MWP5'}"
+                + " local function ioTest(p)"
+                + " if p=='' then return 'nopath' end"
+                + " local okw,fh=pcall(function() return io.open(p,'w') end)"
+                + " if not okw then return 'open-fail:'..tostring(fh) end"
+                + " if fh==nil then return 'nilfh' end"
+                + " local okw2,werr=pcall(function() fh:write('mw-ok') end)"
+                + " pcall(function() fh:close() end)"
+                + " return okw2 and 'ok' or ('wr-fail:'..tostring(werr))"
+                + " end"
+                + " local kn={}"
+                + " local codes={27,111,32,65,68,83,87,37,38,39,40,16,13,"
+                + "21,22,19,20,29,47,51,62,59,66}"
+                + " for i=1,#codes do local c=codes[i]"
+                + " local ok,n=pcall(function() return DefMgr:getKeyName(c) end)"
+                + " if ok and type(n)=='string' and n~='' then kn[#kn+1]=c..'='..n end"
+                + " end"
+                + " parts[#parts+1]='kn='..table.concat(kn,',')"
+                + " local binds,n,nerr={},nil,nil"
+                + " local okd,dn=pcall(function() return DefMgr:getHotkeyNum() end)"
+                + " if okd and type(dn)=='number' then n=dn else nerr='nonum' end"
+                + " local okgi,gi=pcall(GetGameInfo)"
+                + " if n~=nil and okgi and gi~=nil then"
+                + " for i=1,n do"
+                + " local ok1,d=pcall(function() return DefMgr:getHotkeyDef(i) end)"
+                + " if ok1 and type(d)=='table' and type(d.FuncName)=='string' then"
+                + " local ok2,cur=pcall(function()"
+                + " return gi:GetGameHotkey(d.FuncName)"
+                + " end)"
+                + " if ok2 and type(cur)=='number' then"
+                + " local code=cur<0 and ('d'..tostring(d.DefaultCode)) or tostring(cur)"
+                + " binds[#binds+1]=d.FuncName..'='..code"
+                + " end end"
+                + " if #binds>60 then nerr='cap'; break end"
+                + " end"
+                + " elseif not okgi and nerr==nil then nerr='nogi' end"
+                + " parts[#parts+1]='n='..tostring(n)..(nerr and (','..nerr) or '')"
+                + " parts[#parts+1]='b='..table.concat(binds,';')"
+                + " local io1,io2='skip','skip'"
+                + " if type(io)=='table' and io.open then"
+                + " io1=ioTest('" + p1 + "');"
+                + " io2=ioTest('" + p2 + "')"
+                + " else io1='noio'; io2='noio'"
+                + " end"
+                + " parts[#parts+1]='io='..io1..','..io2"
+                + " error(table.concat(parts,'|'):sub(1,2900),0)"
+                + " end)";
+    }
+
+    private static String luaStr(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+    private static String readFile(String path) {
+        if (path == null) {
+            return null;
+        }
+        try {
+            java.io.InputStream in = new java.io.FileInputStream(path);
+            try {
+                byte[] buf = new byte[32];
+                int n = in.read(buf);
+                return n > 0 ? new String(buf, 0, n, "UTF-8") : null;
+            } finally {
+                in.close();
+            }
+        } catch (java.io.IOException e) {
+            return null;
+        }
+    }
+
+    /**
+     * A mouse button while the pointer is captured never reaches the touch
+     * path (round 5 saw zero clicks inside the capture window), so the button
+     * is rebuilt as a finger touch at the crosshair. The safety timeout
+     * closes it when the matching release event is lost.
+     */
+    private void centerTouch(long time, boolean down) {
+        if (down) {
+            if (mouseTouching) {
+                return;
+            }
+            endLook(time);
+            mouseTouching = true;
+            clickDown = time;
+            dispatchCenter(MotionEvent.ACTION_DOWN, time, time);
+            MAIN.removeCallbacks(clickEnd);
+            MAIN.postDelayed(clickEnd, CLICK_HOLD_MS);
+            Log.d(TAG, "center-touch down");
+        } else {
+            if (!mouseTouching) {
+                return;
+            }
+            MAIN.removeCallbacks(clickEnd);
+            dispatchCenter(MotionEvent.ACTION_UP, clickDown, time);
+            mouseTouching = false;
+            Log.d(TAG, "center-touch up");
+        }
+    }
+
+    private void dispatchCenter(int action, long downTime, long time) {
+        DisplayMetrics dm = activity.getResources().getDisplayMetrics();
+        dispatchFinger(action, downTime, time, dm.widthPixels / 2f,
+                dm.heightPixels / 2f);
     }
 
     /**
@@ -546,6 +952,11 @@ public final class InputBridge implements Window.Callback {
     }
 
     private void dispatchSynth(int action, float x, float y, long time) {
+        dispatchFinger(action, lookDownTime, time, x, y);
+    }
+
+    private void dispatchFinger(int action, long downTime, long time,
+                                float x, float y) {
         MotionEvent.PointerProperties p = new MotionEvent.PointerProperties();
         p.id = 0;
         p.toolType = MotionEvent.TOOL_TYPE_FINGER;
@@ -554,7 +965,7 @@ public final class InputBridge implements Window.Callback {
         c.y = y;
         c.pressure = 1f;
         c.size = 0.05f;
-        MotionEvent m = MotionEvent.obtain(lookDownTime, time, action, 1,
+        MotionEvent m = MotionEvent.obtain(downTime, time, action, 1,
                 new MotionEvent.PointerProperties[]{p},
                 new MotionEvent.PointerCoords[]{c},
                 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
@@ -650,11 +1061,14 @@ public final class InputBridge implements Window.Callback {
 
     @Override
     public void onAttachedToWindow() {
+        startPoll(); // an activity may detach and re-attach without install
         orig.onAttachedToWindow();
     }
 
     @Override
     public void onDetachedFromWindow() {
+        polling = false;
+        MAIN.removeCallbacks(poll);
         orig.onDetachedFromWindow();
     }
 
