@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mod_notif_title">Mini World</string>
+    <string name="mod_notif_text">模組選單通知——點擊開啟選單</string>
+    <string name="mod_menu_title">模組選單</string>
+    <string name="mod_web_label">封鎖 WebView / 瀏覽器</string>
+    <string name="mod_web_desc">阻止在遊戲內開啟瀏覽器或任何網頁</string>
+    <string name="mod_hwid_label">偽造 HWID</string>
+    <string name="mod_hwid_desc">模擬裝置識別碼——或輪換為新 ID</string>
+    <string name="mod_reward_label">跳過激勵廣告</string>
+    <string name="mod_reward_desc">跳過廣告——點擊即可立即獲得獎勵</string>
+    <string name="mod_kb_label">鍵盤和滑鼠（OTG）</string>
+    <string name="mod_kb_desc">像 PC 版一樣使用 USB OTG 鍵盤和滑鼠</string>
+    <string name="mod_xh_label">準星模式（指針鎖定）</string>
+    <string name="mod_xh_desc">隱藏游標，移動滑鼠轉動視角 - F1 切換</string>
+    <string name="mod_rotate">更換偽造的 HWID</string>
+    <string name="mod_close">關閉</string>
+    <string name="mod_rotate_toast">HWID 已更換——下次啟動遊戲時生效</string>
+</resources>

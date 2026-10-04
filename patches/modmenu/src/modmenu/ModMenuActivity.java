@@ -90,7 +90,7 @@ public class ModMenuActivity extends Activity
         sheet.addView(handle, hLp);
 
         TextView title = new TextView(this);
-        title.setText(I18n.t("menu.title"));
+        title.setText(I18n.t(this, "mod_menu_title"));
         title.setTextSize(24);
         title.setTypeface(Typeface.DEFAULT_BOLD);
         title.setTextColor(p.onSurface);
@@ -110,25 +110,25 @@ public class ModMenuActivity extends Activity
         rewardSwitch.setChecked(ModMenu.isRewardBypass());
         kbSwitch.setChecked(ModMenu.isKbMouseOn());
         xhSwitch.setChecked(ModMenu.isCrosshairOn());
-        sheet.addView(settingRow(p, I18n.t("web.label"),
-                I18n.t("web.desc"), webSwitch));
-        sheet.addView(settingRow(p, I18n.t("hwid.label"),
-                I18n.t("hwid.desc"), hwidSwitch));
-        sheet.addView(settingRow(p, I18n.t("reward.label"),
-                I18n.t("reward.desc"), rewardSwitch));
-        sheet.addView(settingRow(p, I18n.t("kb.label"),
-                I18n.t("kb.desc"), kbSwitch));
-        sheet.addView(settingRow(p, I18n.t("xh.label"),
-                I18n.t("xh.desc"), xhSwitch));
+        sheet.addView(settingRow(p, I18n.t(this, "mod_web_label"),
+                I18n.t(this, "mod_web_desc"), webSwitch));
+        sheet.addView(settingRow(p, I18n.t(this, "mod_hwid_label"),
+                I18n.t(this, "mod_hwid_desc"), hwidSwitch));
+        sheet.addView(settingRow(p, I18n.t(this, "mod_reward_label"),
+                I18n.t(this, "mod_reward_desc"), rewardSwitch));
+        sheet.addView(settingRow(p, I18n.t(this, "mod_kb_label"),
+                I18n.t(this, "mod_kb_desc"), kbSwitch));
+        sheet.addView(settingRow(p, I18n.t(this, "mod_xh_label"),
+                I18n.t(this, "mod_xh_desc"), xhSwitch));
 
-        rotateBtn = makeButton(I18n.t("rotate"), p.primary, p.onPrimary,
+        rotateBtn = makeButton(I18n.t(this, "mod_rotate"), p.primary, p.onPrimary,
                 (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
         LinearLayout.LayoutParams rLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
         rLp.topMargin = dp(20);
         sheet.addView(rotateBtn, rLp);
 
-        Button close = makeButton(I18n.t("close"), 0, p.primary,
+        Button close = makeButton(I18n.t(this, "mod_close"), 0, p.primary,
                 (p.primary & 0x00FFFFFF) | 0x14000000);
         LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
@@ -267,7 +267,7 @@ public class ModMenuActivity extends Activity
             v.performHapticFeedback(Build.VERSION.SDK_INT >= 23
                     ? HapticFeedbackConstants.CONTEXT_CLICK
                     : HapticFeedbackConstants.VIRTUAL_KEY);
-            Toast.makeText(this, I18n.t("rotate.toast"),
+            Toast.makeText(this, I18n.t(this, "mod_rotate_toast"),
                     Toast.LENGTH_SHORT).show();
         } else {
             finish(); // close button or scrim tap

@@ -48,12 +48,16 @@ runtime grant and retries for a few minutes; that permission is already
 declared by the source manifest.
 
 Menu and notification wording lives in
-`patches/modmenu/src/modmenu/I18n.java`: one map per language keyed by string
-id — English, Vietnamese, Simplified and Traditional Chinese ship by default,
-the device locale picks the table and English covers the rest. Rewording a
-string or adding a language is an edit there followed by `regen.sh`; no
-Android resources are involved, so regen on unchanged sources reproduces the
-committed smali exactly.
+`patches/modmenu/res/values*/modmenu_strings.xml`: one file per language —
+English, Vietnamese, Simplified Chinese and Traditional Chinese (TW/HK/MO
+variants) ship by default, Android's resource selection picks the file from
+the device locale and falls back to the English default for every other
+language. `modmenu.I18n` resolves the keys by name at runtime
+(`Resources.getIdentifier`), so no resource ids are baked into the committed
+smali. Rewording a string or adding a language is an edit in those files:
+`build.sh` copies them into the decode before the rebuild links them into
+`resources.arsc`, `scopecheck` requires every file from the patch to land
+there, and `verify.sh` asserts the strings survived the rebuild.
 
 OTG keyboards and mice are wired to the engine by `modmenu.InputBridge`.
 DecorView routes key, pointer and touch events to the window callback before

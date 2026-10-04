@@ -211,9 +211,9 @@
     invoke-direct {v2, p0}, Landroid/widget/TextView;-><init>(Landroid/content/Context;)V
 
     .line 93
-    const-string v3, "menu.title"
+    const-string v3, "mod_menu_title"
 
-    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v3}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v3
 
@@ -347,16 +347,16 @@
     .line 113
     iget-object v2, p0, Lmodmenu/ModMenuActivity;->sheet:Landroid/widget/LinearLayout;
 
-    const-string v3, "web.label"
+    const-string v3, "mod_web_label"
 
-    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v3}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v3
 
     .line 114
-    const-string v7, "web.desc"
+    const-string v7, "mod_web_desc"
 
-    invoke-static {v7}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v7}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v7
 
@@ -372,16 +372,16 @@
     .line 115
     iget-object v2, p0, Lmodmenu/ModMenuActivity;->sheet:Landroid/widget/LinearLayout;
 
-    const-string v3, "hwid.label"
+    const-string v3, "mod_hwid_label"
 
-    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v3}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v3
 
     .line 116
-    const-string v7, "hwid.desc"
+    const-string v7, "mod_hwid_desc"
 
-    invoke-static {v7}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v7}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v7
 
@@ -397,16 +397,16 @@
     .line 117
     iget-object v2, p0, Lmodmenu/ModMenuActivity;->sheet:Landroid/widget/LinearLayout;
 
-    const-string v3, "reward.label"
+    const-string v3, "mod_reward_label"
 
-    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v3}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v3
 
     .line 118
-    const-string v7, "reward.desc"
+    const-string v7, "mod_reward_desc"
 
-    invoke-static {v7}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v7}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v7
 
@@ -422,16 +422,16 @@
     .line 119
     iget-object v2, p0, Lmodmenu/ModMenuActivity;->sheet:Landroid/widget/LinearLayout;
 
-    const-string v3, "kb.label"
+    const-string v3, "mod_kb_label"
 
-    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v3}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v3
 
     .line 120
-    const-string v7, "kb.desc"
+    const-string v7, "mod_kb_desc"
 
-    invoke-static {v7}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v7}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v7
 
@@ -447,16 +447,16 @@
     .line 121
     iget-object v2, p0, Lmodmenu/ModMenuActivity;->sheet:Landroid/widget/LinearLayout;
 
-    const-string v3, "xh.label"
+    const-string v3, "mod_xh_label"
 
-    invoke-static {v3}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v3}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v3
 
     .line 122
-    const-string v7, "xh.desc"
+    const-string v7, "mod_xh_desc"
 
-    invoke-static {v7}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v7}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v7
 
@@ -470,9 +470,9 @@
     invoke-virtual {v2, v3}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;)V
 
     .line 124
-    const-string v2, "rotate"
+    const-string v2, "mod_rotate"
 
-    invoke-static {v2}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v2}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v2
 
@@ -523,9 +523,9 @@
     invoke-virtual {v4, v7, v2}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
 
     .line 131
-    const-string v2, "close"
+    const-string v2, "mod_close"
 
-    invoke-static {v2}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, v2}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v2
 
@@ -1356,9 +1356,9 @@
     invoke-virtual {p1, v1}, Landroid/view/View;->performHapticFeedback(I)Z
 
     .line 270
-    const-string p1, "rotate.toast"
+    const-string p1, "mod_rotate_toast"
 
-    invoke-static {p1}, Lmodmenu/I18n;->t(Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {p0, p1}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object p1
 

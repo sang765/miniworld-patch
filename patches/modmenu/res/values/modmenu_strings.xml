@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mod_notif_title">Mini World</string>
+    <string name="mod_notif_text">Mod menu notification - tap to open the menu</string>
+    <string name="mod_menu_title">Mod Menu</string>
+    <string name="mod_web_label">Block WebView / browser</string>
+    <string name="mod_web_desc">Prevent opening the browser or any web page in game</string>
+    <string name="mod_hwid_label">Spoof HWID</string>
+    <string name="mod_hwid_desc">Emulate the device identity - or rotate to a new ID</string>
+    <string name="mod_reward_label">Skip rewarded ads</string>
+    <string name="mod_reward_desc">Bypass ads - reward credited right after you tap</string>
+    <string name="mod_kb_label">Keyboard &amp; mouse (OTG)</string>
+    <string name="mod_kb_desc">Use a USB OTG keyboard and mouse like the PC version</string>
+    <string name="mod_xh_label">Crosshair mode (pointer lock)</string>
+    <string name="mod_xh_desc">Hide the cursor and look around by moving the mouse - F1 toggles it</string>
+    <string name="mod_rotate">Change spoofed HWID</string>
+    <string name="mod_close">Close</string>
+    <string name="mod_rotate_toast">HWID changed - applies on next game launch</string>
+</resources>

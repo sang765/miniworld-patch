@@ -12,6 +12,10 @@ Allowed:
     a renamed counterpart, and every rewritten XML must be reproducible from the
     pristine one by substituting the entry names. That proves no resource
     content was altered beyond the rename.
+  * res/values*/modmenu_strings.xml - the mod-menu's own string files, the one
+    resource this patch adds. patches/modmenu/res is the source of truth: every
+    file there must land in the decode, and nothing else may be added under
+    that name.
 
 Everything else is a scope violation.
 """
@@ -64,6 +68,15 @@ def renamed(stem: str) -> str:
     return ("x" if stem.startswith("$") else "") + stem.replace("$", "_")
 
 
+# The mod-menu's string files are the only resources this patch adds. Derived
+# from the repo rather than hardcoded so adding a language is a directory copy
+# with no tooling edit.
+def mod_strings() -> set:
+    base = ROOT / "patches" / "modmenu" / "res"
+    return {f"res/{p.relative_to(base).as_posix()}"
+            for p in base.glob("values*/modmenu_strings.xml")}
+
+
 def walk(root: Path) -> set:
     out = set()
     for p in root.rglob("*"):
@@ -109,14 +122,20 @@ def main() -> int:
             renames[stem] = renamed(stem)
 
     added_modmenu = [r for r in only_new if r.startswith(ADDED_SMALI)]
+    strings = mod_strings()
+    added_strings = [r for r in only_new if r in strings]
     for rel in only_new:
-        if rel.startswith(ADDED_SMALI):
+        if rel.startswith(ADDED_SMALI) or rel in strings:
             continue
         if not rel.startswith("res/"):
             problems.append(f"added outside res/: {rel}")
-    if len(only_old) != len(only_new) - len(added_modmenu):
+        elif Path(rel).name == "modmenu_strings.xml":
+            problems.append(f"mod-menu strings file not in the patch: {rel}")
+    for rel in sorted(strings - new):
+        problems.append(f"mod-menu strings file missing from decode: {rel}")
+    if len(only_old) != len(only_new) - len(added_modmenu) - len(added_strings):
         problems.append(f"rename count mismatch: removed={len(only_old)} "
-                        f"added={len(only_new) - len(added_modmenu)}")
+                        f"added={len(only_new) - len(added_modmenu) - len(added_strings)}")
 
     for rel in sorted(MODMENU_FILES - new):
         problems.append(f"mod-menu class missing from decode: {rel}")
@@ -142,7 +161,8 @@ def main() -> int:
           f"manifest={'yes' if MANIFEST in differ else 'no'}  "
           f"res renamed={len(renames)}  "
           f"res rewritten={sum(1 for p in differ if p.startswith('res/'))}  "
-          f"modmenu added={len(added_modmenu)}")
+          f"modmenu added={len(added_modmenu)}  "
+          f"strings added={len(added_strings)}")
 
     for p in sorted(PATCHED_SMALI - set(differ)):
         problems.append(f"expected patch missing (file identical to pristine): {p}")

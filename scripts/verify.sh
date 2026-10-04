@@ -152,7 +152,7 @@ for name, label in (("org.appplay.lib.browser.BrowserActivity", "BLOCKED"),
 sys.exit(1 if failed else 0)
 PY
 
-step "5. spoof constants + mod-menu classes present in the built dex"
+step "5. spoof constants + mod-menu classes/strings present"
 rm -rf "$WORK/dexcheck" && mkdir -p "$WORK/dexcheck"
 unzip -o -q "$APK" 'classes*.dex' -d "$WORK/dexcheck"
 . "$SPOOF"
@@ -171,11 +171,7 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/Api26;' 'Lmodmenu/Api33;' \
            'Lmodmenu/Hwid;' 'Lmodmenu/Palette;' 'Lmodmenu/AdReward;' \
            'spoofValue' \
-           'mod menu, click' 'Giả mạo HWID' 'Đổi HWID giả mạo' \
-           'Nhận thưởng không xem quảng cáo' \
-           'Keyboard & mouse' \
-           'pcall(enableAllKeyBind' \
-           'Chế độ tâm chuẩn' 'MWP2|' \
+           'pcall(enableAllKeyBind' 'MWP2|' \
            'legacySignIn' 'GmsCompat' 'Lmodmenu/InputBridge;'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
@@ -183,6 +179,34 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
     echo "  MISSING: $pat"; fail=1
   fi
 done
+
+# The menu strings are resources now, not dex literals: the build copies one
+# modmenu_strings.xml per locale and I18n resolves them by name at runtime.
+# aapt2 links UTF-8 pools; an older link would be UTF-16 - accept either.
+unzip -o -q "$APK" resources.arsc -d "$T"
+python3 - "$T/resources.arsc" <<'PY' || fail=1
+import sys
+
+data = open(sys.argv[1], "rb").read()
+needles = [
+    "mod menu, click",                      # en notification text
+    "Keyboard & mouse",                     # en OTG row
+    "Giả mạo HWID",                        # vi rows
+    "Đổi HWID giả mạo",
+    "Nhận thưởng không xem quảng cáo",
+    "Chế độ tâm chuẩn",
+    "准星模式",                              # zh crosshair row
+    "準星模式",                              # zh-Hant crosshair row
+]
+failed = False
+for s in needles:
+    if s.encode("utf-8") in data or s.encode("utf-16-le") in data:
+        print(f"  present: {s}")
+    else:
+        print(f"  MISSING: {s}")
+        failed = True
+sys.exit(1 if failed else 0)
+PY
 
 step "6. patch scope: all stubs + startup hooks present, pristine decode vs patched tree"
 # scopecheck only proves these eleven files differ from pristine; it cannot

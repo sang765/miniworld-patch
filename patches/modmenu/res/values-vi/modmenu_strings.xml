@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="mod_notif_title">Mini World</string>
+    <string name="mod_notif_text">Thông báo của mod menu, click để mở menu</string>
+    <string name="mod_menu_title">Mod Menu</string>
+    <string name="mod_web_label">Chặn WebView / trình duyệt</string>
+    <string name="mod_web_desc">Không mở trình duyệt hoặc trang web trong game</string>
+    <string name="mod_hwid_label">Giả mạo HWID</string>
+    <string name="mod_hwid_desc">Giả lập định danh thiết bị — hoặc xoay sang ID mới</string>
+    <string name="mod_reward_label">Nhận thưởng không xem quảng cáo</string>
+    <string name="mod_reward_desc">Bỏ qua quảng cáo — cộng thưởng ngay khi bấm</string>
+    <string name="mod_kb_label">Bàn phím &amp; chuột (OTG)</string>
+    <string name="mod_kb_desc">Dùng bàn phím, chuột qua USB OTG như bản PC</string>
+    <string name="mod_xh_label">Chế độ tâm chuẩn</string>
+    <string name="mod_xh_desc">Ẩn con trỏ, di chuyển chuột để xoay góc nhìn - F1 bật/tắt</string>
+    <string name="mod_rotate">Đổi HWID giả mạo</string>
+    <string name="mod_close">Đóng</string>
+    <string name="mod_rotate_toast">Đã đổi HWID — áp dụng ở lần mở game sau</string>
+</resources>

@@ -35,8 +35,6 @@ public final class ModMenu {
     private static final String KEY_KB = "kbmouse";
     private static final String KEY_XH = "crosshair";
 
-    private static final String TITLE = I18n.t("notif.title");
-    private static final String TEXT = I18n.t("notif.text");
     private static final int NOTIF_ID = 1071;
     private static final long[] RETRY_MS = {2000, 5000, 10000, 20000, 40000, 80000, 160000};
 
@@ -186,18 +184,22 @@ public final class ModMenu {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         NotificationManager nm = (NotificationManager)
                 appCtx.getSystemService(Context.NOTIFICATION_SERVICE);
+        // resolved here rather than in a static: the class can load before
+        // appCtx is set, and resource selection needs the configuration
+        String title = I18n.t(appCtx, "mod_notif_title");
+        String text = I18n.t(appCtx, "mod_notif_text");
         Notification n = Build.VERSION.SDK_INT >= 26
-                ? Api26.build(appCtx, nm, TITLE, TEXT, pi)
-                : legacyBuild(pi);
+                ? Api26.build(appCtx, nm, title, text, pi)
+                : legacyBuild(title, text, pi);
         nm.notify(NOTIF_ID, n);
         posted = true;
     }
 
     // pre-26 path; the channel-taking Builder exists only on 26+
-    private static Notification legacyBuild(PendingIntent pi) {
+    private static Notification legacyBuild(String title, String text, PendingIntent pi) {
         return new Notification.Builder(appCtx)
-                .setContentTitle(TITLE)
-                .setContentText(TEXT)
+                .setContentTitle(title)
+                .setContentText(text)
                 .setSmallIcon(appCtx.getApplicationInfo().icon)
                 .setContentIntent(pi)
                 .build();

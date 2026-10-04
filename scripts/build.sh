@@ -78,6 +78,11 @@ python3 "$TOOLS/fixdollar.py" --res "$WORK/decoded/res"
 rm -rf "$WORK/decoded/smali_classes8/modmenu"
 mkdir -p "$WORK/decoded/smali_classes8/modmenu"
 cp "$PATCHES/modmenu/smali/"*.smali "$WORK/decoded/smali_classes8/modmenu/"
+# Menu strings ship as Android resources: one modmenu_strings.xml per locale,
+# linked into resources.arsc by the rebuild. Stale copies go first so a locale
+# dropped from the patch cannot linger in a reused decode.
+find "$WORK/decoded/res" -name modmenu_strings.xml -delete
+cp -r "$PATCHES/modmenu/res/." "$WORK/decoded/res/"
 
 say "5/8 rebuild"
 mkdir -p "$BUILD"
