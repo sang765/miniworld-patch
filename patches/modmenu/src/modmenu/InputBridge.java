@@ -1,6 +1,10 @@
 package modmenu;
 
 import android.app.Activity;
+import android.app.Application;
+import android.os.Bundle;
+import android.os.SystemClock;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.InputDevice;
 import android.view.KeyboardShortcutGroup;
@@ -16,32 +20,58 @@ import android.view.accessibility.AccessibilityEvent;
 
 import com.minitech.player.AppPlayer;
 
+import org.appplay.lib.CommonNatives;
 import org.appplay.lib.GameBaseActivity;
 
 import java.util.List;
 
 /**
- * OTG keyboard/mouse bridge: wraps the game window's callback so hardware
- * key and pointer events reach the engine through AppPlayer.injectEvent
- * before any view sees them.
+ * OTG keyboard/mouse bridge.
  *
- * DecorView routes both dispatchKeyEvent and dispatchGenericMotionEvent to
- * the Window.Callback first, so this is a single focus-independent delivery
- * point - the same behavior whether or not the focused view would have
- * forwarded the event itself, and never twice. System keys (Back, volume,
- * menu...) and touch are delegated untouched: Back keeps working and a
- * mouse still acts as a touch pointer.
+ * DecorView routes key, pointer and touch events to the Window.Callback
+ * before any view, so the wrapper is a single focus-independent point where
+ * hardware input can be handed to the engine:
+ *
+ * - Keys are injected into AppPlayer.injectEvent and consumed. Right before
+ *   a fresh key-down, enableAllKeyBind() is evaluated in the game's Lua VM
+ *   (pcall-wrapped so a missing global is a no-op) - the Android build is
+ *   assumed to start with key binds disabled, which would otherwise eat the
+ *   event silently.
+ * - Mouse button/drag events reach the engine as source=MOUSE/toolType=
+ *   MOUSE touches; the engine's touch path only recognises finger touches,
+ *   so they are rewritten to SOURCE_TOUCHSCREEN/TOOL_TYPE_FINGER before
+ *   being passed on - a mouse click becomes exactly a finger tap.
+ * - Pointer-class generic motion (hover/scroll/right-click) is injected so
+ *   the engine can react like the Windows build does.
+ *
+ * System keys (Back, volume, menu...) and real finger touches are delegated
+ * untouched. Logging under the tag MWInput exists so a device-side LogFox
+ * capture shows where an event stops: "installed" proves the wrapper is
+ * live, "key ..." proves delivery and carries the engine's answer.
  */
 public final class InputBridge implements Window.Callback {
+    private static final String TAG = "MWInput";
+
+    // Evaluates to the real enableAllKeyBind() when the global exists and to
+    // a no-op function otherwise; the outer pcall absorbs either outcome, so
+    // a wrong guess can never raise into the game's script host.
+    private static final String KEYBIND_ON =
+            "(function() pcall(enableAllKeyBind or function() end) end)";
+
+    private static final long ENABLE_WARMUP_MS = 5000;
+    private static final long ENABLE_INTERVAL_MS = 2000;
+
     private final Window.Callback orig;
     private final Activity activity;
+    private final long installedAt = SystemClock.uptimeMillis();
+    private long lastEnable;
 
     private InputBridge(Window.Callback orig, Activity activity) {
         this.orig = orig;
         this.activity = activity;
     }
 
-    /** Installed from ModMenu.onGameStart; a second call is a no-op. */
+    /** Installed from ModMenu.onGameStart and by Lifecycle on every resume. */
     public static void install(Activity activity) {
         Window window = activity.getWindow();
         Window.Callback current = window.getCallback();
@@ -49,6 +79,33 @@ public final class InputBridge implements Window.Callback {
             return;
         }
         window.setCallback(new InputBridge(current, activity));
+        Log.i(TAG, "installed on " + activity.getClass().getName());
+    }
+
+    /** Registered from ModMenu.onAppCreate so no activity is left unwrapped. */
+    public static final class Lifecycle implements Application.ActivityLifecycleCallbacks {
+        @Override
+        public void onActivityResumed(Activity activity) {
+            install(activity);
+        }
+
+        @Override
+        public void onActivityCreated(Activity activity, Bundle savedInstanceState) {}
+
+        @Override
+        public void onActivityStarted(Activity activity) {}
+
+        @Override
+        public void onActivityPaused(Activity activity) {}
+
+        @Override
+        public void onActivityStopped(Activity activity) {}
+
+        @Override
+        public void onActivitySaveInstanceState(Activity activity, Bundle outState) {}
+
+        @Override
+        public void onActivityDestroyed(Activity activity) {}
     }
 
     private AppPlayer player() {
@@ -92,17 +149,47 @@ public final class InputBridge implements Window.Callback {
         }
     }
 
+    /**
+     * Re-enables gameplay key binds shortly before injecting a fresh
+     * key-down. The VM may not exist during the first seconds of boot, so
+     * the first attempts wait out a warmup; after that at most one call
+     * every ENABLE_INTERVAL_MS so held keys do not spam script evaluation.
+     */
+    private void enableKeyBinds() {
+        long now = SystemClock.uptimeMillis();
+        if (now - installedAt < ENABLE_WARMUP_MS || now - lastEnable < ENABLE_INTERVAL_MS) {
+            return;
+        }
+        lastEnable = now;
+        try {
+            CommonNatives.javaCallLuaEvent(KEYBIND_ON, new Object[0]);
+            Log.d(TAG, "keybind-on fired");
+        } catch (RuntimeException e) {
+            Log.d(TAG, "keybind-on failed: " + e);
+        }
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (ModMenu.isKbMouseOn() && !keepAndroid(event.getKeyCode())) {
             AppPlayer player = player();
-            if (player != null) {
-                // consumed even when the engine declines it: letting the event
-                // continue into the view path would hand the same key to
-                // injectEvent a second time through AppPlayer.onKeyDown
-                player.injectEvent(event);
-                return true;
+            if (player == null) {
+                return orig.dispatchKeyEvent(event);
             }
+            boolean freshDown = event.getAction() == KeyEvent.ACTION_DOWN
+                    && event.getRepeatCount() == 0;
+            if (freshDown) {
+                enableKeyBinds();
+            }
+            // consumed even when the engine declines it: letting the event
+            // continue into the view path would hand the same key to
+            // injectEvent a second time through AppPlayer.onKeyDown
+            boolean eng = player.injectEvent(event);
+            if (freshDown || event.getAction() == KeyEvent.ACTION_UP) {
+                Log.d(TAG, "key " + event.getKeyCode() + "/" + event.getAction()
+                        + " eng=" + eng);
+            }
+            return true;
         }
         return orig.dispatchKeyEvent(event);
     }
@@ -113,7 +200,11 @@ public final class InputBridge implements Window.Callback {
                 && (event.getSource() & InputDevice.SOURCE_CLASS_POINTER) != 0) {
             AppPlayer player = player();
             if (player != null) {
-                player.injectEvent(event);
+                boolean eng = player.injectEvent(event);
+                if (event.getActionMasked() != MotionEvent.ACTION_HOVER_MOVE) {
+                    Log.d(TAG, "motion act=" + event.getActionMasked()
+                            + " src=" + event.getSource() + " eng=" + eng);
+                }
                 return true;
             }
         }
@@ -121,13 +212,58 @@ public final class InputBridge implements Window.Callback {
     }
 
     @Override
-    public boolean dispatchKeyShortcutEvent(KeyEvent event) {
-        return orig.dispatchKeyShortcutEvent(event);
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (ModMenu.isKbMouseOn()
+                && (event.getSource() & InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE) {
+            MotionEvent finger = asFinger(event);
+            if (finger != null) {
+                int act = event.getActionMasked();
+                boolean handled = orig.dispatchTouchEvent(finger);
+                finger.recycle();
+                if (act == MotionEvent.ACTION_DOWN || act == MotionEvent.ACTION_UP) {
+                    Log.d(TAG, "mouse-touch " + act + " handled=" + handled);
+                }
+                return handled;
+            }
+        }
+        return orig.dispatchTouchEvent(event);
+    }
+
+    /**
+     * Rebuilds a mouse-generated touch as a finger touch: same coordinates
+     * and timing, but toolType FINGER, source TOUCHSCREEN and no button
+     * state, which is exactly what the engine's touch path accepts.
+     */
+    private static MotionEvent asFinger(MotionEvent src) {
+        try {
+            int count = src.getPointerCount();
+            MotionEvent.PointerProperties[] props =
+                    new MotionEvent.PointerProperties[count];
+            MotionEvent.PointerCoords[] coords = new MotionEvent.PointerCoords[count];
+            for (int i = 0; i < count; i++) {
+                MotionEvent.PointerProperties p = new MotionEvent.PointerProperties();
+                p.id = src.getPointerId(i);
+                p.toolType = MotionEvent.TOOL_TYPE_FINGER;
+                props[i] = p;
+                MotionEvent.PointerCoords c = new MotionEvent.PointerCoords();
+                c.x = src.getX(i);
+                c.y = src.getY(i);
+                c.pressure = src.getPressure(i) > 0f ? src.getPressure(i) : 1f;
+                c.size = src.getSize(i);
+                coords[i] = c;
+            }
+            return MotionEvent.obtain(src.getDownTime(), src.getEventTime(),
+                    src.getAction(), count, props, coords, src.getMetaState(),
+                    0, src.getXPrecision(), src.getYPrecision(), src.getDeviceId(),
+                    src.getEdgeFlags(), InputDevice.SOURCE_TOUCHSCREEN, src.getFlags());
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     @Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        return orig.dispatchTouchEvent(event);
+    public boolean dispatchKeyShortcutEvent(KeyEvent event) {
+        return orig.dispatchKeyShortcutEvent(event);
     }
 
     @Override

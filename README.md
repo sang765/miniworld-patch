@@ -23,7 +23,7 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 | 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate` |
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 | 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
-| 6 | OTG keyboard and mouse input reaches the engine like the Windows build | `modmenu.InputBridge`, a `Window.Callback` wrapper installed by the menu-start hook that injects key and pointer events into `AppPlayer.injectEvent` before any view sees them |
+| 6 | OTG keyboard and mouse input reaches the engine like the Windows build | `modmenu.InputBridge`, a `Window.Callback` wrapper installed on every activity as it resumes: keys are injected into `AppPlayer.injectEvent` (after evaluating `enableAllKeyBind()` in the game's Lua VM), mouse-button touches are rewritten from `SOURCE_MOUSE` to a finger touch, and pointer motion is injected as-is |
 
 Constants live in `spoof.env`.
 
@@ -54,14 +54,25 @@ Android resources are involved, so regen on unchanged sources reproduces the
 committed smali exactly.
 
 OTG keyboards and mice are wired to the engine by `modmenu.InputBridge`.
-DecorView routes key and generic-motion events to the window callback before
-any view, so the wrapper injects each event into `AppPlayer.injectEvent`
-exactly once regardless of which view happens to hold focus; system keys
-(Back, volume, menu) and touch keep their normal Android path, which also
-means a mouse still clicks as a touch pointer. The engine side is not
-something this patch adds — `ProcessKeyEvent`, a `KeyCharacterMap` lookup
-and the `UIEventType_KeyDown`/`IsKeyDown` machinery are already compiled
-into `liblibGameApp.so`; the wrapper only guarantees the events arrive.
+DecorView routes key, pointer and touch events to the window callback before
+any view, so the wrapper is a single focus-independent delivery point: it is
+installed on every activity as it resumes (`InputBridge.Lifecycle`, registered
+from `onAppCreate`), injects each hardware key into `AppPlayer.injectEvent`
+exactly once, and evaluates `enableAllKeyBind()` in the game's Lua VM right
+before a fresh key-down - pcall-wrapped inside a `or function() end` fallback
+so a missing global is a no-op and can never raise into the script host.
+Mouse clicks reach Android as `SOURCE_MOUSE`/`TOOL_TYPE_MOUSE` touches, which
+the engine's touch path ignores, so the wrapper rebuilds them as finger
+touches (same coordinates, `TOOL_TYPE_FINGER`, `SOURCE_TOUCHSCREEN`, no button
+state) before passing them on - a mouse click becomes exactly a finger tap.
+System keys (Back, volume, menu) and real finger touches keep their normal
+Android path. Everything logs under the `MWInput` tag (`installed on <activity>`,
+`key <code>/<action> eng=<bool>`, `mouse-touch <action> handled=<bool>`), so a
+LogFox capture shows exactly where an event stops. The engine side is not
+something this patch adds - `ProcessKeyEvent`, a `KeyCharacterMap` lookup, the
+`keyBindForward`/`keyBindJump`/... bind table and the
+`UIEventType_KeyDown`/`IsKeyDown` machinery are already compiled into
+`liblibGameApp.so`.
 
 Google sign-in keeps working on devices that ship MicroG/GmsCore instead of
 official Play Services. The game logs in through Identity One-Tap, whose

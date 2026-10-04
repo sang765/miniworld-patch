@@ -1,6 +1,7 @@
 package modmenu;
 
 import android.app.Activity;
+import android.app.Application;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -56,6 +57,10 @@ public final class ModMenu {
     /** Injected at the head of GoogleApplication.onCreate, before any stub can run. */
     public static void onAppCreate(Context ctx) {
         loadPrefs(ctx);
+        if (ctx instanceof Application) {
+            ((Application) ctx).registerActivityLifecycleCallbacks(
+                    new InputBridge.Lifecycle());
+        }
     }
 
     /** Injected at the head of AppPlayBaseActivity.onCreate. */
