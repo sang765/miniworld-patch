@@ -65,6 +65,7 @@ package com.minitech.player;
 
 import android.content.Context;
 import android.view.InputEvent;
+import android.view.SurfaceView;
 
 public class AppPlayer extends android.widget.FrameLayout {
     public AppPlayer(Context context) {
@@ -73,6 +74,10 @@ public class AppPlayer extends android.widget.FrameLayout {
 
     public boolean injectEvent(InputEvent event) {
         return false;
+    }
+
+    public SurfaceView getSurfaceView() {
+        return null;
     }
 }
 EOF

@@ -33,6 +33,7 @@ public final class ModMenu {
     private static final String KEY_REWARD = "reward";
     private static final String KEY_GEN = "hwid_gen";
     private static final String KEY_KB = "kbmouse";
+    private static final String KEY_XH = "crosshair";
 
     private static final String TITLE = I18n.t("notif.title");
     private static final String TEXT = I18n.t("notif.text");
@@ -45,6 +46,7 @@ public final class ModMenu {
     private static volatile boolean hwidSpoof = true;
     private static volatile boolean rewardBypass = true;
     private static volatile boolean kbMouse = true;
+    private static volatile boolean crosshair;
 
     private static volatile Context appCtx;
     private static boolean loaded;
@@ -116,6 +118,15 @@ public final class ModMenu {
         kbMouse = value;
     }
 
+    public static boolean isCrosshairOn() {
+        return crosshair;
+    }
+
+    public static void setCrosshair(Context ctx, boolean value) {
+        prefs(ctx).edit().putBoolean(KEY_XH, value).apply();
+        crosshair = value;
+    }
+
     /**
      * Called from every spoof stub with the baked generation-0 constant.
      * Reads the stored generation on each call so a rotation from the menu
@@ -145,6 +156,7 @@ public final class ModMenu {
         hwidSpoof = sp.getBoolean(KEY_HWID, true);
         rewardBypass = sp.getBoolean(KEY_REWARD, true);
         kbMouse = sp.getBoolean(KEY_KB, true);
+        crosshair = sp.getBoolean(KEY_XH, false);
         loaded = true;
     }
 

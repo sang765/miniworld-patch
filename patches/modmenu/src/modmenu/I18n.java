@@ -53,6 +53,8 @@ public final class I18n {
         m.put("reward.desc", "Bypass ads - reward credited right after you tap");
         m.put("kb.label", "Keyboard & mouse (OTG)");
         m.put("kb.desc", "Use a USB OTG keyboard and mouse like the PC version");
+        m.put("xh.label", "Crosshair mode (pointer lock)");
+        m.put("xh.desc", "Hide the cursor and look around by moving the mouse - F1 toggles it");
         m.put("rotate", "Change spoofed HWID");
         m.put("close", "Close");
         m.put("rotate.toast", "HWID changed - applies on next game launch");
@@ -72,6 +74,8 @@ public final class I18n {
         m.put("reward.desc", "Bỏ qua quảng cáo — cộng thưởng ngay khi bấm");
         m.put("kb.label", "Bàn phím & chuột (OTG)");
         m.put("kb.desc", "Dùng bàn phím, chuột qua USB OTG như bản PC");
+        m.put("xh.label", "Chế độ tâm chuẩn");
+        m.put("xh.desc", "Ẩn con trỏ, di chuyển chuột để xoay góc nhìn - F1 bật/tắt");
         m.put("rotate", "Đổi HWID giả mạo");
         m.put("close", "Đóng");
         m.put("rotate.toast", "Đã đổi HWID — áp dụng ở lần mở game sau");
@@ -91,6 +95,8 @@ public final class I18n {
         m.put("reward.desc", "跳过广告——点击即可立即获得奖励");
         m.put("kb.label", "键盘和鼠标（OTG）");
         m.put("kb.desc", "像 PC 版一样使用 USB OTG 键盘和鼠标");
+        m.put("xh.label", "准星模式（指针锁定）");
+        m.put("xh.desc", "隐藏光标，移动鼠标转动视角 - F1 切换");
         m.put("rotate", "更换伪造的 HWID");
         m.put("close", "关闭");
         m.put("rotate.toast", "HWID 已更换——下次启动游戏时生效");
@@ -110,6 +116,8 @@ public final class I18n {
         m.put("reward.desc", "跳過廣告——點擊即可立即獲得獎勵");
         m.put("kb.label", "鍵盤和滑鼠（OTG）");
         m.put("kb.desc", "像 PC 版一樣使用 USB OTG 鍵盤和滑鼠");
+        m.put("xh.label", "準星模式（指針鎖定）");
+        m.put("xh.desc", "隱藏游標，移動滑鼠轉動視角 - F1 切換");
         m.put("rotate", "更換偽造的 HWID");
         m.put("close", "關閉");
         m.put("rotate.toast", "HWID 已更換——下次啟動遊戲時生效");

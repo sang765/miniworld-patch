@@ -152,27 +152,41 @@
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
     .line 56
+    const-string v1, "xh.label"
+
+    const-string v2, "Crosshair mode (pointer lock)"
+
+    invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 57
+    const-string v1, "xh.desc"
+
+    const-string v2, "Hide the cursor and look around by moving the mouse - F1 toggles it"
+
+    invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 58
     const-string v1, "rotate"
 
     const-string v2, "Change spoofed HWID"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 57
+    .line 59
     const-string v1, "close"
 
     const-string v2, "Close"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 58
+    .line 60
     const-string v1, "rotate.toast"
 
     const-string v2, "HWID changed - applies on next game launch"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 59
+    .line 61
     return-object v0
 .end method
 
@@ -324,110 +338,124 @@
         }
     .end annotation
 
-    .line 63
+    .line 65
     new-instance v0, Ljava/util/HashMap;
 
     invoke-direct {v0}, Ljava/util/HashMap;-><init>()V
 
-    .line 64
+    .line 66
     const-string v1, "notif.title"
 
     const-string v2, "Mini World"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 65
+    .line 67
     const-string v1, "notif.text"
 
     const-string v2, "Th\u00f4ng b\u00e1o c\u1ee7a mod menu, click \u0111\u1ec3 m\u1edf menu"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 66
+    .line 68
     const-string v1, "menu.title"
 
     const-string v2, "Mod Menu"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 67
+    .line 69
     const-string v1, "web.label"
 
     const-string v2, "Ch\u1eb7n WebView / tr\u00ecnh duy\u1ec7t"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 68
+    .line 70
     const-string v1, "web.desc"
 
     const-string v2, "Kh\u00f4ng m\u1edf tr\u00ecnh duy\u1ec7t ho\u1eb7c trang web trong game"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 69
+    .line 71
     const-string v1, "hwid.label"
 
     const-string v2, "Gi\u1ea3 m\u1ea1o HWID"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 70
+    .line 72
     const-string v1, "hwid.desc"
 
     const-string v2, "Gi\u1ea3 l\u1eadp \u0111\u1ecbnh danh thi\u1ebft b\u1ecb \u2014 ho\u1eb7c xoay sang ID m\u1edbi"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 71
+    .line 73
     const-string v1, "reward.label"
 
     const-string v2, "Nh\u1eadn th\u01b0\u1edfng kh\u00f4ng xem qu\u1ea3ng c\u00e1o"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 72
+    .line 74
     const-string v1, "reward.desc"
 
     const-string v2, "B\u1ecf qua qu\u1ea3ng c\u00e1o \u2014 c\u1ed9ng th\u01b0\u1edfng ngay khi b\u1ea5m"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 73
+    .line 75
     const-string v1, "kb.label"
 
     const-string v2, "B\u00e0n ph\u00edm & chu\u1ed9t (OTG)"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 74
+    .line 76
     const-string v1, "kb.desc"
 
     const-string v2, "D\u00f9ng b\u00e0n ph\u00edm, chu\u1ed9t qua USB OTG nh\u01b0 b\u1ea3n PC"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 75
+    .line 77
+    const-string v1, "xh.label"
+
+    const-string v2, "Ch\u1ebf \u0111\u1ed9 t\u00e2m chu\u1ea9n"
+
+    invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 78
+    const-string v1, "xh.desc"
+
+    const-string v2, "\u1ea8n con tr\u1ecf, di chuy\u1ec3n chu\u1ed9t \u0111\u1ec3 xoay g\u00f3c nh\u00ecn - F1 b\u1eadt/t\u1eaft"
+
+    invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 79
     const-string v1, "rotate"
 
     const-string v2, "\u0110\u1ed5i HWID gi\u1ea3 m\u1ea1o"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 76
+    .line 80
     const-string v1, "close"
 
     const-string v2, "\u0110\u00f3ng"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 77
+    .line 81
     const-string v1, "rotate.toast"
 
     const-string v2, "\u0110\u00e3 \u0111\u1ed5i HWID \u2014 \u00e1p d\u1ee5ng \u1edf l\u1ea7n m\u1edf game sau"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 78
+    .line 82
     return-object v0
 .end method
 
@@ -443,110 +471,124 @@
         }
     .end annotation
 
-    .line 82
+    .line 86
     new-instance v0, Ljava/util/HashMap;
 
     invoke-direct {v0}, Ljava/util/HashMap;-><init>()V
 
-    .line 83
+    .line 87
     const-string v1, "notif.title"
 
     const-string v2, "Mini World"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 84
+    .line 88
     const-string v1, "notif.text"
 
     const-string v2, "\u6a21\u7ec4\u83dc\u5355\u901a\u77e5\u2014\u2014\u70b9\u51fb\u6253\u5f00\u83dc\u5355"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 85
+    .line 89
     const-string v1, "menu.title"
 
     const-string v2, "\u6a21\u7ec4\u83dc\u5355"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 86
+    .line 90
     const-string v1, "web.label"
 
     const-string v2, "\u5c4f\u853d WebView / \u6d4f\u89c8\u5668"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 87
+    .line 91
     const-string v1, "web.desc"
 
     const-string v2, "\u963b\u6b62\u5728\u6e38\u620f\u5185\u6253\u5f00\u6d4f\u89c8\u5668\u6216\u4efb\u4f55\u7f51\u9875"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 88
+    .line 92
     const-string v1, "hwid.label"
 
     const-string v2, "\u4f2a\u9020 HWID"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 89
+    .line 93
     const-string v1, "hwid.desc"
 
     const-string v2, "\u6a21\u62df\u8bbe\u5907\u6807\u8bc6\u2014\u2014\u6216\u8f6e\u6362\u4e3a\u65b0 ID"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 90
+    .line 94
     const-string v1, "reward.label"
 
     const-string v2, "\u8df3\u8fc7\u6fc0\u52b1\u5e7f\u544a"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 91
+    .line 95
     const-string v1, "reward.desc"
 
     const-string v2, "\u8df3\u8fc7\u5e7f\u544a\u2014\u2014\u70b9\u51fb\u5373\u53ef\u7acb\u5373\u83b7\u5f97\u5956\u52b1"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 92
+    .line 96
     const-string v1, "kb.label"
 
     const-string v2, "\u952e\u76d8\u548c\u9f20\u6807\uff08OTG\uff09"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 93
+    .line 97
     const-string v1, "kb.desc"
 
     const-string v2, "\u50cf PC \u7248\u4e00\u6837\u4f7f\u7528 USB OTG \u952e\u76d8\u548c\u9f20\u6807"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 94
+    .line 98
+    const-string v1, "xh.label"
+
+    const-string v2, "\u51c6\u661f\u6a21\u5f0f\uff08\u6307\u9488\u9501\u5b9a\uff09"
+
+    invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 99
+    const-string v1, "xh.desc"
+
+    const-string v2, "\u9690\u85cf\u5149\u6807\uff0c\u79fb\u52a8\u9f20\u6807\u8f6c\u52a8\u89c6\u89d2 - F1 \u5207\u6362"
+
+    invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 100
     const-string v1, "rotate"
 
     const-string v2, "\u66f4\u6362\u4f2a\u9020\u7684 HWID"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 95
+    .line 101
     const-string v1, "close"
 
     const-string v2, "\u5173\u95ed"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 96
+    .line 102
     const-string v1, "rotate.toast"
 
     const-string v2, "HWID \u5df2\u66f4\u6362\u2014\u2014\u4e0b\u6b21\u542f\u52a8\u6e38\u620f\u65f6\u751f\u6548"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 97
+    .line 103
     return-object v0
 .end method
 
@@ -562,109 +604,123 @@
         }
     .end annotation
 
-    .line 101
+    .line 107
     new-instance v0, Ljava/util/HashMap;
 
     invoke-direct {v0}, Ljava/util/HashMap;-><init>()V
 
-    .line 102
+    .line 108
     const-string v1, "notif.title"
 
     const-string v2, "Mini World"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 103
+    .line 109
     const-string v1, "notif.text"
 
     const-string v2, "\u6a21\u7d44\u9078\u55ae\u901a\u77e5\u2014\u2014\u9ede\u64ca\u958b\u555f\u9078\u55ae"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 104
+    .line 110
     const-string v1, "menu.title"
 
     const-string v2, "\u6a21\u7d44\u9078\u55ae"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 105
+    .line 111
     const-string v1, "web.label"
 
     const-string v2, "\u5c01\u9396 WebView / \u700f\u89bd\u5668"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 106
+    .line 112
     const-string v1, "web.desc"
 
     const-string v2, "\u963b\u6b62\u5728\u904a\u6232\u5167\u958b\u555f\u700f\u89bd\u5668\u6216\u4efb\u4f55\u7db2\u9801"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 107
+    .line 113
     const-string v1, "hwid.label"
 
     const-string v2, "\u507d\u9020 HWID"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 108
+    .line 114
     const-string v1, "hwid.desc"
 
     const-string v2, "\u6a21\u64ec\u88dd\u7f6e\u8b58\u5225\u78bc\u2014\u2014\u6216\u8f2a\u63db\u70ba\u65b0 ID"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 109
+    .line 115
     const-string v1, "reward.label"
 
     const-string v2, "\u8df3\u904e\u6fc0\u52f5\u5ee3\u544a"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 110
+    .line 116
     const-string v1, "reward.desc"
 
     const-string v2, "\u8df3\u904e\u5ee3\u544a\u2014\u2014\u9ede\u64ca\u5373\u53ef\u7acb\u5373\u7372\u5f97\u734e\u52f5"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 111
+    .line 117
     const-string v1, "kb.label"
 
     const-string v2, "\u9375\u76e4\u548c\u6ed1\u9f20\uff08OTG\uff09"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 112
+    .line 118
     const-string v1, "kb.desc"
 
     const-string v2, "\u50cf PC \u7248\u4e00\u6a23\u4f7f\u7528 USB OTG \u9375\u76e4\u548c\u6ed1\u9f20"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 113
+    .line 119
+    const-string v1, "xh.label"
+
+    const-string v2, "\u6e96\u661f\u6a21\u5f0f\uff08\u6307\u91dd\u9396\u5b9a\uff09"
+
+    invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 120
+    const-string v1, "xh.desc"
+
+    const-string v2, "\u96b1\u85cf\u6e38\u6a19\uff0c\u79fb\u52d5\u6ed1\u9f20\u8f49\u52d5\u8996\u89d2 - F1 \u5207\u63db"
+
+    invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 121
     const-string v1, "rotate"
 
     const-string v2, "\u66f4\u63db\u507d\u9020\u7684 HWID"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 114
+    .line 122
     const-string v1, "close"
 
     const-string v2, "\u95dc\u9589"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 115
+    .line 123
     const-string v1, "rotate.toast"
 
     const-string v2, "HWID \u5df2\u66f4\u63db\u2014\u2014\u4e0b\u6b21\u555f\u52d5\u904a\u6232\u6642\u751f\u6548"
 
     invoke-interface {v0, v1, v2}, Ljava/util/Map;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 116
+    .line 124
     return-object v0
 .end method

@@ -24,6 +24,7 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 | 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
 | 6 | OTG keyboard and mouse input reaches the engine like the Windows build | `modmenu.InputBridge`, a `Window.Callback` wrapper installed on every activity as it resumes: keys are injected into `AppPlayer.injectEvent` (after evaluating `enableAllKeyBind()` in the game's Lua VM), mouse-button touches are rewritten from `SOURCE_MOUSE` to a finger touch, and pointer motion is injected as-is |
+| 7 | Crosshair mode: the cursor disappears and moving the mouse looks around | `modmenu.InputBridge` holds pointer capture on the game surface while the switch (or F1) is on, rewrites pointer movement into a centre-screen finger drag - the engine's proven camera path - and lands mouse clicks on the crosshair |
 
 Constants live in `spoof.env`.
 
@@ -31,7 +32,8 @@ The game posts an Android notification on startup (title "Mini World", body
 translated through `modmenu.I18n`); tapping it opens the menu, a
 Material You bottom sheet with one switch per mod. The switches persist in
 `SharedPreferences`, default to on — which is exactly changes 1, 2, 4 and 6
-above — and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`
+above, with crosshair mode (`isCrosshairOn()`) the exception as it starts off
+— and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`
 / `isRewardBypass()` / `isKbMouseOn()`. The third switch makes the
 `reqSdkAD` stub skip the ad SDK and fire the exact success pair (`onWatchAD(1001)` plus the
 `DeliverAdEvent` Lua event) a moment later, so the reward credits with no ad
@@ -73,6 +75,20 @@ something this patch adds - `ProcessKeyEvent`, a `KeyCharacterMap` lookup, the
 `keyBindForward`/`keyBindJump`/... bind table and the
 `UIEventType_KeyDown`/`IsKeyDown` machinery are already compiled into
 `liblibGameApp.so`.
+
+Crosshair mode (fifth switch, off by default, or F1 while the OTG bridge is
+on) asks the game surface for pointer capture, so the system cursor disappears
+while movement keeps arriving; every movement is rewritten into a finger drag
+around the screen centre - the same path a thumb uses to turn the camera - and
+mouse clicks are rebuilt at the crosshair instead of the locked pointer
+position. A real finger touch, a mouse click or a lost window focus ends the
+synthetic drag first, and capture is released whenever the window loses focus
+so menus can show a cursor again. The first fresh key-down after startup also
+fires a one-shot Lua probe (logged as `MWP|...` through both `print` and the
+engine's own error logger) that reports which script globals actually exist -
+`enableAllKeyBind`, `getKeyBindKeyName`, the keybind/scene names and their
+types - so a keyboard that still does nothing comes back as data instead of a
+guess.
 
 Google sign-in keeps working on devices that ship MicroG/GmsCore instead of
 official Play Services. The game logs in through Identity One-Tap, whose
