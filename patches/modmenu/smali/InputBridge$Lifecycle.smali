@@ -21,7 +21,7 @@
 .method public constructor <init>()V
     .locals 0
 
-    .line 156
+    .line 171
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -32,51 +32,51 @@
 .method public onActivityCreated(Landroid/app/Activity;Landroid/os/Bundle;)V
     .locals 0
 
-    .line 163
+    .line 178
     return-void
 .end method
 
 .method public onActivityDestroyed(Landroid/app/Activity;)V
     .locals 0
 
-    .line 178
+    .line 193
     return-void
 .end method
 
 .method public onActivityPaused(Landroid/app/Activity;)V
     .locals 0
 
-    .line 169
+    .line 184
     return-void
 .end method
 
 .method public onActivityResumed(Landroid/app/Activity;)V
     .locals 0
 
-    .line 159
+    .line 174
     invoke-static {p1}, Lmodmenu/InputBridge;->install(Landroid/app/Activity;)V
 
-    .line 160
+    .line 175
     return-void
 .end method
 
 .method public onActivitySaveInstanceState(Landroid/app/Activity;Landroid/os/Bundle;)V
     .locals 0
 
-    .line 175
+    .line 190
     return-void
 .end method
 
 .method public onActivityStarted(Landroid/app/Activity;)V
     .locals 0
 
-    .line 166
+    .line 181
     return-void
 .end method
 
 .method public onActivityStopped(Landroid/app/Activity;)V
     .locals 0
 
-    .line 172
+    .line 187
     return-void
 .end method

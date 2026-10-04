@@ -88,11 +88,14 @@ mouse clicks are rebuilt at the crosshair instead of the locked pointer
 position. A real finger touch, a mouse click or a lost window focus ends the
 synthetic drag first, and capture is released whenever the window loses focus
 so menus can show a cursor again. The first fresh key-down after startup also
-fires a one-shot Lua probe (logged as `MWP2|...` through both `print` and the
-engine's own error logger) that walks every global table for the engine's
-keybind/control-mode API (`setOneKeyBindCode`, `getContrlMode`, the hotkey
-settings UI, whatever invoker owns them) and reports the mode getters, so the
-keybind backport is driven by data instead of a guess.
+opens the game's own hotkey settings panel once (logged as `HKUI|...`, so the
+official rebinding UI can be tried on Android) and fires a one-shot Lua probe
+(logged as `MWP3|...` through the engine's error logger - `print` never
+reaches logcat on this build) that indexes every global table and userdata by
+the engine's keybind API names, locates the defining file of the hotkey
+callback through `debug.getinfo` and dumps its source through `io.open` when
+the sandbox allows it, so the keybind backport is driven by data instead of a
+guess.
 
 Google sign-in keeps working on devices that ship MicroG/GmsCore instead of
 official Play Services. The game logs in through Identity One-Tap, whose

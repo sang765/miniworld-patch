@@ -56,8 +56,10 @@ import java.util.List;
  * System keys (Back, volume, menu...) and real finger touches are delegated
  * untouched. Logging under the tag MWInput exists so a device-side LogFox
  * capture shows where an event stops: "installed" proves the wrapper is
- * live, "key ..." proves delivery and carries the engine's answer, and the
- * one-shot "MWP" Lua probe reports what the script side actually exposes.
+ * live, "key ..." proves delivery and carries the engine's answer, "xh-in"
+ * shows every event the window sees while crosshair mode is on, and the
+ * one-shot "MWP3"/"HKUI" Lua reports say what the script side actually
+ * exposes.
  */
 public final class InputBridge implements Window.Callback {
     private static final String TAG = "MWInput";
@@ -68,40 +70,52 @@ public final class InputBridge implements Window.Callback {
     private static final String KEYBIND_ON =
             "(function() pcall(enableAllKeyBind or function() end) end)";
 
-    // One-shot report on the first fresh key-down. Round 1 proved none of
-    // the keybind functions are Lua globals, so this version walks every
-    // global table (and one level below it) for the names the engine's API
-    // surface exposes - setOneKeyBindCode, getContrlMode, the hotkey UI and
-    // whatever generic invoker owns them - queries the mode getters, and
-    // reports through the same print + error pair.
+    // One-shot report on the first fresh key-down. Round 2 proved none of the
+    // keybind functions are Lua globals, and its pairs() walk hit the entry
+    // cap before reaching an owner, so this version asks directly: every
+    // global table/userdata is indexed by the API names (an __index chain
+    // answers too), then the hotkey UI callback's defining file is located
+    // through debug.getinfo and its source dumped through io.open when the
+    // sandbox allows it. Reported through error(): print never reaches
+    // logcat on this build - the engine only logs [script error].
     private static final String PROBE =
             "(function()"
-                    + " local g=_G"
-                    + " local out,c={},0"
-                    + " local function add(s) if c<150 then c=c+1 out[#out+1]=s end end"
-                    + " local gp={\"keybind\",\"hotkey\",\"keycode\",\"keyname\",\"inputservice\",\"userinput\",\"cursorlevel\",\"enterworld\",\"pccontrol\",\"contrl\",\"ctrlmode\",\"controlmode\",\"gameset\",\"dev2game\",\"callapi\",\"gamecall\",\"callnative\",\"nativecall\"}"
-                    + " for k,v in pairs(g) do if type(k)==\"string\" then local l=k:lower()"
-                            + " for i=1,#gp do if l:find(gp[i],1,true) then add(\"G.\"..k..\":\"..type(v)) break end end end end"
-                    + " local tp={\"keybind\",\"hotkey\",\"keycode\",\"keyname\",\"setkey\",\"iskey\",\"keydown\",\"keyup\",\"shortcut\",\"mousewheel\",\"wheel\",\"contrl\",\"ctrlmode\",\"controlmode\",\"pccontrol\",\"uicontrol\",\"cursor\",\"checkcmd\",\"pushcommand\",\"execute\",\"enterworld\",\"entermap\",\"onenter\",\"scenechange\",\"getscene\",\"currentscene\",\"curworld\",\"gamestate\",\"gameset\",\"dev2game\",\"callapi\"}"
-                    + " for k,v in pairs(g) do if type(v)==\"table\" and k~=\"_G\" then"
-                            + " for kk,vv in pairs(v) do if type(kk)==\"string\" then local l=kk:lower()"
-                                    + " for i=1,#tp do if l:find(tp[i],1,true) then add(k..\".\"..kk..\":\"..type(vv)) break end end end end"
-                            + " for k2,v2 in pairs(v) do if type(v2)==\"table\" and k2~=\"_G\" then"
-                                    + " for kk,vv in pairs(v2) do if type(kk)==\"string\" then local l=kk:lower()"
-                                            + " for i=1,#tp do if l:find(tp[i],1,true) then add(k..\".\"..k2..\".\"..kk..\":\"..type(vv)) break end end end end"
-                            + " end end end"
-                    + " end"
-                    + " local r={}"
-                    + " local function call(n) local f=rawget(g,n)"
-                            + " if type(f)~=\"function\" then r[#r+1]=n..\"=?\" return end"
-                            + " local ok,v=pcall(f) r[#r+1]=n..\"=\"..(ok and tostring(v) or \"e\") end"
-                    + " call(\"getContrlMode\") call(\"getCtrlMode\") call(\"GetCurrentCursorLevel\")"
-                    + " call(\"isPCControl\") call(\"getUIControlMode\")"
-                    + " local s=\"MWP2|n=\"..c..\"|\"..table.concat(r,\";\")..\"|\"..table.concat(out,\",\")"
-                    + " local pr=type(print)==\"function\" and print or function() end"
-                    + " local i,cc=1,0"
-                    + " while i<=#s do cc=cc+1 pr(\"MWP2\"..cc..\"|\"..s:sub(i,i+2799)) i=i+2800 end"
+                    + " local out,nh={},0"
+                    + " local names={\"setOneKeyBindCode\",\"getContrlMode\",\"getHotkeyName\",\"appalyGameSetData\",\"checkCmd\",\"enableAllKeyBind\",\"pushCommand\",\"getCurrentGameMapId\",\"getCurWorldId\"}"
+                    + " for k,v in pairs(_G) do local t=type(v)"
+                            + " if t==\"table\" or t==\"userdata\" then"
+                                    + " for i=1,#names do local nm=names[i]"
+                                            + " local ok,f=pcall(function() return v[nm] end)"
+                                            + " if ok and type(f)==\"function\" then nh=nh+1"
+                                                    + " if nh<=30 then out[#out+1]=k..\".\"..nm end end end end end"
+                    + " local s=\"MWP3|n=\"..nh..\"|\"..table.concat(out,\",\")"
+                    + " if type(debug)==\"table\" and type(debug.getinfo)==\"function\" then"
+                            + " local cs={\"GameSetFrameHotkey_OnShow\",\"RecoveryDefaultHotKey\",\"LoadHotkeyType\",\"GameSetFrameHotkey_OnHide\"}"
+                            + " for i=1,#cs do local f=rawget(_G,cs[i])"
+                                    + " if type(f)==\"function\" then"
+                                            + " local ok,inf=pcall(debug.getinfo,f,\"S\")"
+                                            + " if ok and type(inf)==\"table\" and type(inf.source)==\"string\""
+                                                    + " and inf.source:sub(1,1)==\"@\" then"
+                                                    + " local p=inf.source:sub(2)"
+                                                    + " s=s..\"|src=\"..cs[i]..\":\"..p"
+                                                    + " local fh=(type(io)==\"table\" and io.open) and io.open(p,\"r\")"
+                                                    + " if fh then local d=fh:read(2300) fh:close()"
+                                                            + " if d then s=s..\"|lua=\"..d end end"
+                                                    + " break end end end"
+                            + " else s=s..\"|debug=nil\" end"
+                    + " if type(io)~=\"table\" or not io.open then s=s..\"|io=nil\" end"
                     + " error(s:sub(1,3000))"
+                    + " end)";
+
+    // Opens the game's own hotkey settings screen once, right before the
+    // probe: the callback ships with the UI scripts, so a successful open
+    // proves the PC keybind panel is reachable on Android, lets the tester
+    // try real rebinding, and lazy-loads the module the probe then scans.
+    private static final String OPEN_HOTKEY =
+            "(function() local f=rawget(_G,\"GameSetFrameHotkey_OnShow\")"
+                    + " if type(f)~=\"function\" then error(\"HKUI|missing\") end"
+                    + " local ok,e=pcall(f)"
+                    + " error(\"HKUI|ok=\"..tostring(ok)..\" e=\"..tostring(e))"
                     + " end)";
 
     private static final long ENABLE_WARMUP_MS = 5000;
@@ -129,6 +143,7 @@ public final class InputBridge implements Window.Callback {
     private long lookDownTime;
     private long lastArrLog;
     private long lastDeltaLog;
+    private long lastInLog;
     private final Runnable lookEnd = new Runnable() {
         @Override
         public void run() {
@@ -236,6 +251,9 @@ public final class InputBridge implements Window.Callback {
             Log.d(TAG, "keybind-on fired");
             if (!probed) {
                 probed = true;
+                // panel first: a successful open lazy-loads the hotkey module
+                // the probe then scans
+                CommonNatives.javaCallLuaEvent(OPEN_HOTKEY, new Object[0]);
                 CommonNatives.javaCallLuaEvent(PROBE, new Object[0]);
                 Log.d(TAG, "probe fired");
             }
@@ -282,13 +300,33 @@ public final class InputBridge implements Window.Callback {
         return orig.dispatchKeyEvent(event);
     }
 
+    /**
+     * Diagnostic tap: every event the window actually sees while crosshair
+     * mode is on, before any filter decides to drop it. Round 4 produced a
+     * single motion line in 45 s of capture, and without this it was
+     * impossible to tell "the system sent nothing" from "our guards ate it".
+     */
+    private void logCrosshairIn(String path, int act, MotionEvent e) {
+        if (!ModMenu.isCrosshairOn()) {
+            return;
+        }
+        long now = SystemClock.uptimeMillis();
+        if (now - lastInLog <= 400) {
+            return;
+        }
+        lastInLog = now;
+        Log.d(TAG, "xh-in " + path + " act=" + act + " src=" + e.getSource()
+                + " btn=" + e.getButtonState() + " x=" + e.getX() + " y=" + e.getY());
+    }
+
     @Override
     public boolean dispatchGenericMotionEvent(MotionEvent event) {
         if (ModMenu.isKbMouseOn()
                 && (event.getSource() & InputDevice.SOURCE_CLASS_POINTER) != 0) {
+            int act = event.getActionMasked();
+            logCrosshairIn("generic", act, event);
             AppPlayer player = player();
             if (player != null) {
-                int act = event.getActionMasked();
                 boolean mouse = (event.getSource() & InputDevice.SOURCE_MOUSE)
                         == InputDevice.SOURCE_MOUSE;
                 if (mouse && ModMenu.isCrosshairOn()
@@ -318,6 +356,7 @@ public final class InputBridge implements Window.Callback {
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         int act = event.getActionMasked();
+        logCrosshairIn("touch", act, event);
         boolean mouse = (event.getSource() & InputDevice.SOURCE_MOUSE)
                 == InputDevice.SOURCE_MOUSE;
         if (!mouse && act == MotionEvent.ACTION_DOWN) {
