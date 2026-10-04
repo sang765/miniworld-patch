@@ -68,45 +68,39 @@ public final class InputBridge implements Window.Callback {
     private static final String KEYBIND_ON =
             "(function() pcall(enableAllKeyBind or function() end) end)";
 
-    // One-shot report on the first fresh key-down: the type of every Lua
-    // global this feature might rely on, the current forward bind, and the
-    // names of matching globals. It is written once into the log through
-    // print (chunked under the log line limit) and raised through error so
-    // the engine's own lua_pcall handler logs it even when print is
-    // redirected - a dead end on the keyboard front becomes data instead of
-    // a guess.
+    // One-shot report on the first fresh key-down. Round 1 proved none of
+    // the keybind functions are Lua globals, so this version walks every
+    // global table (and one level below it) for the names the engine's API
+    // surface exposes - setOneKeyBindCode, getContrlMode, the hotkey UI and
+    // whatever generic invoker owns them - queries the mode getters, and
+    // reports through the same print + error pair.
     private static final String PROBE =
             "(function()"
                     + " local g=_G"
-                    + " local ty=function(n) return type(g[n]) end"
-                    + " local r={}"
-                    + " r[#r+1]=\"T:\"..ty(\"enableAllKeyBind\")..\",\"..ty(\"setOneKeyBindState\")"
-                            + "..\",\"..ty(\"getKeyBindKeyName\")..\",\"..ty(\"setAllKeyBindState\")"
-                            + "..\",\"..ty(\"loadSettings\")..\",\"..ty(\"setOneKeyBindCode\")"
-                            + "..\",\"..ty(\"getHotkeyName\")..\",\"..ty(\"UserInputService\")"
-                            + "..\",\"..ty(\"FireEvent\")..\",\"..ty(\"ListenEvent\")"
-                            + "..\",\"..ty(\"addEventListener\")"
-                    + " if ty(\"getKeyBindKeyName\")==\"function\" then"
-                            + " local ok,v=pcall(getKeyBindKeyName,\"keyBindForward\")"
-                            + " r[#r+1]=\"FWD=\"..(ok and tostring(v) or \"err\") end"
-                    + " local out,n={},0"
-                    + " for k,v in pairs(g) do"
-                            + " if type(k)==\"string\" and n<70 then"
-                                    + " local l=k:lower()"
-                                    + " if l:find(\"keybind\",1,true) or l:find(\"hotkey\",1,true)"
-                                            + " or l:find(\"cursor\",1,true) or l:find(\"mouse\",1,true)"
-                                            + " or l:find(\"shortcut\",1,true) or l:find(\"userinput\",1,true)"
-                                            + " or l:find(\"inputmode\",1,true) or l:find(\"scene\",1,true)"
-                                            + " or l:find(\"enterworld\",1,true) or l:find(\"currentmap\",1,true)"
-                                            + " or l:find(\"gamemode\",1,true) or l:find(\"fireevent\",1,true) then"
-                                            + " n=n+1 out[#out+1]=k..\":\"..type(v) end"
-                            + " end"
+                    + " local out,c={},0"
+                    + " local function add(s) if c<150 then c=c+1 out[#out+1]=s end end"
+                    + " local gp={\"keybind\",\"hotkey\",\"keycode\",\"keyname\",\"inputservice\",\"userinput\",\"cursorlevel\",\"enterworld\",\"pccontrol\",\"contrl\",\"ctrlmode\",\"controlmode\",\"gameset\",\"dev2game\",\"callapi\",\"gamecall\",\"callnative\",\"nativecall\"}"
+                    + " for k,v in pairs(g) do if type(k)==\"string\" then local l=k:lower()"
+                            + " for i=1,#gp do if l:find(gp[i],1,true) then add(\"G.\"..k..\":\"..type(v)) break end end end end"
+                    + " local tp={\"keybind\",\"hotkey\",\"keycode\",\"keyname\",\"setkey\",\"iskey\",\"keydown\",\"keyup\",\"shortcut\",\"mousewheel\",\"wheel\",\"contrl\",\"ctrlmode\",\"controlmode\",\"pccontrol\",\"uicontrol\",\"cursor\",\"checkcmd\",\"pushcommand\",\"execute\",\"enterworld\",\"entermap\",\"onenter\",\"scenechange\",\"getscene\",\"currentscene\",\"curworld\",\"gamestate\",\"gameset\",\"dev2game\",\"callapi\"}"
+                    + " for k,v in pairs(g) do if type(v)==\"table\" and k~=\"_G\" then"
+                            + " for kk,vv in pairs(v) do if type(kk)==\"string\" then local l=kk:lower()"
+                                    + " for i=1,#tp do if l:find(tp[i],1,true) then add(k..\".\"..kk..\":\"..type(vv)) break end end end end"
+                            + " for k2,v2 in pairs(v) do if type(v2)==\"table\" and k2~=\"_G\" then"
+                                    + " for kk,vv in pairs(v2) do if type(kk)==\"string\" then local l=kk:lower()"
+                                            + " for i=1,#tp do if l:find(tp[i],1,true) then add(k..\".\"..k2..\".\"..kk..\":\"..type(vv)) break end end end end"
+                            + " end end end"
                     + " end"
-                    + " r[#r+1]=\"G(\"..n..\")=\"..table.concat(out,\",\")"
-                    + " local s=\"MWP|\"..table.concat(r,\"|\")"
+                    + " local r={}"
+                    + " local function call(n) local f=rawget(g,n)"
+                            + " if type(f)~=\"function\" then r[#r+1]=n..\"=?\" return end"
+                            + " local ok,v=pcall(f) r[#r+1]=n..\"=\"..(ok and tostring(v) or \"e\") end"
+                    + " call(\"getContrlMode\") call(\"getCtrlMode\") call(\"GetCurrentCursorLevel\")"
+                    + " call(\"isPCControl\") call(\"getUIControlMode\")"
+                    + " local s=\"MWP2|n=\"..c..\"|\"..table.concat(r,\";\")..\"|\"..table.concat(out,\",\")"
                     + " local pr=type(print)==\"function\" and print or function() end"
-                    + " local i,c=1,0"
-                    + " while i<=#s do c=c+1 pr(\"MWP\"..c..\"|\"..s:sub(i,i+2799)) i=i+2800 end"
+                    + " local i,cc=1,0"
+                    + " while i<=#s do cc=cc+1 pr(\"MWP2\"..cc..\"|\"..s:sub(i,i+2799)) i=i+2800 end"
                     + " error(s:sub(1,3000))"
                     + " end)";
 
@@ -133,6 +127,8 @@ public final class InputBridge implements Window.Callback {
     private float lookX;
     private float lookY;
     private long lookDownTime;
+    private long lastArrLog;
+    private long lastDeltaLog;
     private final Runnable lookEnd = new Runnable() {
         @Override
         public void run() {
@@ -299,6 +295,12 @@ public final class InputBridge implements Window.Callback {
                         && (act == MotionEvent.ACTION_HOVER_MOVE
                             || act == MotionEvent.ACTION_MOVE)) {
                     syncCrosshair();
+                    long now = SystemClock.uptimeMillis();
+                    if (now - lastArrLog > 500) {
+                        lastArrLog = now;
+                        Log.d(TAG, "xh-m act=" + act + " x=" + event.getX()
+                                + " y=" + event.getY());
+                    }
                     lookBy(event);
                     return true;
                 }
@@ -323,6 +325,18 @@ public final class InputBridge implements Window.Callback {
         }
         if (ModMenu.isKbMouseOn() && mouse) {
             boolean center = ModMenu.isCrosshairOn();
+            if (center && act == MotionEvent.ACTION_MOVE
+                    && event.getButtonState() == 0) {
+                // a captured pointer can report its movement on the touch path
+                // instead of the generic one - same delta source for the camera
+                long now = SystemClock.uptimeMillis();
+                if (now - lastArrLog > 500) {
+                    lastArrLog = now;
+                    Log.d(TAG, "xh-t x=" + event.getX() + " y=" + event.getY());
+                }
+                lookBy(event);
+                return true;
+            }
             if (center && act == MotionEvent.ACTION_DOWN) {
                 endLook(event.getEventTime()); // click opens its own touch
             }
@@ -332,8 +346,9 @@ public final class InputBridge implements Window.Callback {
                 finger.recycle();
                 if (act == MotionEvent.ACTION_DOWN) {
                     mouseTouching = true;
-                } else if (act == MotionEvent.ACTION_UP) {
-                    mouseTouching = false;
+                } else if (act == MotionEvent.ACTION_UP
+                        || act == MotionEvent.ACTION_CANCEL) {
+                    mouseTouching = false; // a cancel must never wedge the look
                 }
                 if (act == MotionEvent.ACTION_DOWN || act == MotionEvent.ACTION_UP) {
                     Log.d(TAG, "mouse-touch " + act + " handled=" + handled);
@@ -434,14 +449,28 @@ public final class InputBridge implements Window.Callback {
             primed = true;
             lastX = x;
             lastY = y;
+            long now = SystemClock.uptimeMillis();
+            if (now - lastArrLog > 500) {
+                lastArrLog = now;
+                Log.d(TAG, "xh-prime x=" + x + " y=" + y);
+            }
             return;
         }
         float dx = x - lastX;
         float dy = y - lastY;
         lastX = x;
         lastY = y;
+        long now = SystemClock.uptimeMillis();
         if (dx == 0f && dy == 0f) {
+            if (now - lastDeltaLog > 500) {
+                lastDeltaLog = now;
+                Log.d(TAG, "xh-d0 x=" + x + " y=" + y);
+            }
             return;
+        }
+        if (now - lastDeltaLog > 500) {
+            lastDeltaLog = now;
+            Log.d(TAG, "xh-d dx=" + dx + " dy=" + dy);
         }
         long t = event.getEventTime();
         DisplayMetrics dm = activity.getResources().getDisplayMetrics();

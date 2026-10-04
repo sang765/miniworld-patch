@@ -175,7 +175,7 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Nhận thưởng không xem quảng cáo' \
            'Keyboard & mouse' \
            'pcall(enableAllKeyBind' \
-           'Chế độ tâm chuẩn' 'MWP|' \
+           'Chế độ tâm chuẩn' 'MWP2|' \
            'legacySignIn' 'GmsCompat' 'Lmodmenu/InputBridge;'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
