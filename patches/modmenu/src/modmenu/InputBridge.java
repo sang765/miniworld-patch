@@ -82,11 +82,13 @@ import java.util.List;
  * live, "key ..." proves delivery, shows the translation and carries the
  * engine's answer plus the originating device/source, "xh-in"/"xh-d" show
  * the capture window and its deltas, and the one-shot "HKUI2"/"MWP4"/
- * "MWP5"/"MWP6"/"MWP8"/"MWP9" Lua reports (first fresh key-down, first
- * movement, first wheel notch) open the real settings window, dump the
- * control-mode API, the keybind table with per-def details and the
- * player/hotbar APIs, and test the state-file channel - print() never
- * reaches logcat on this build, error() does.
+ * "MWP5"/"MWP6"/"MWP7"/"MWP8"/"MWP9"/"MWP10"/"HKCL" Lua reports (first
+ * fresh key-down, first movement, first wheel notch) open the real settings
+ * window and close it again, dump the control-mode API, the keybind table
+ * with per-def details plus the restore of unbound binds, the player/hotbar
+ * APIs with the path the wheel actually took, the right-click entry-point
+ * signatures, and test the state-file channel - print() never reaches
+ * logcat on this build, error() does.
  */
 public final class InputBridge implements Window.Callback {
     private static final String TAG = "MWInput";
@@ -138,6 +140,33 @@ public final class InputBridge implements Window.Callback {
                     + " end)"
                     + " r[#r+1]='vis='..vis"
                     + " error('HKUI2|'..table.concat(r,'|'):sub(1,2900),0)"
+                    + " end)";
+
+    // The probes above deliberately open the real settings window, and a
+    // window left open would hold the settings byte high for the rest of the
+    // session - that byte is what gates the wheel and the pointer lifetimes.
+    // Close it right after they ran: the UI module stays loaded (the reports
+    // keep their results), the byte goes back to 0.
+    private static final String CLOSE_FRAME =
+            "(function()"
+                    + " local fr=nil"
+                    + " pcall(function() fr=getglobal('GameSetFrame') end)"
+                    + " if fr==nil then error('HKCL|noframe',0) end"
+                    + " local ok1,e1=pcall(function() fr:Hide() end)"
+                    + " local vis='?'"
+                    + " pcall(function()"
+                    + " vis=tostring(fr.IsShown and fr:IsShown())"
+                    + " end)"
+                    + " local alt=''"
+                    + " if vis=='true' then"
+                    + " local ok2=pcall(function() fr:SetVisible(false) end)"
+                    + " alt=',alt='..tostring(ok2)"
+                    + " pcall(function()"
+                    + " vis=tostring(fr.IsShown and fr:IsShown())"
+                    + " end)"
+                    + " end"
+                    + " error('HKCL|hide='..tostring(ok1)..','..tostring(e1)"
+                    + " ..alt..',vis='..vis,0)"
                     + " end)";
 
     // Control-mode report: master-switch result, the classical/rocker scheme
@@ -229,6 +258,106 @@ public final class InputBridge implements Window.Callback {
                     + " ..' ap='..tostring(ok3),0)"
                     + " end)";
 
+    // Round 7 read GetGameHotkey=-1 for every action, so the engine's own
+    // matcher had nothing to match and a held key died after one setter
+    // call. The defs come back as userdata - a type(d)=='table' guard reads
+    // nothing off them - so fields are pulled through pcall and unbound
+    // actions are restored to their defaults. The setter is tried in both
+    // argument orders over two receivers; a GetGameHotkey readback decides
+    // which spelling actually stuck, nothing is reported as fixed otherwise.
+    private static final String BINDS =
+            "(function()"
+                    + " local okn,n=pcall(function() return DefMgr:getHotkeyNum() end)"
+                    + " if not okn or type(n)~='number' then error('MWP7|nonum',0) end"
+                    + " local okgi,gi=pcall(GetGameInfo)"
+                    + " if not okgi or gi==nil then error('MWP7|nogi',0) end"
+                    + " local set,ok=0,0"
+                    + " local dump={}"
+                    + " for i=1,n do"
+                    + " local okd,d=pcall(function() return DefMgr:getHotkeyDef(i) end)"
+                    + " if okd and d~=nil then"
+                    + " local okf,fn=pcall(function() return d.FuncName end)"
+                    + " local okc,code=pcall(function() return d.DefaultCode end)"
+                    + " if okf and type(fn)=='string' then"
+                    + " local cur=nil"
+                    + " pcall(function() cur=gi:GetGameHotkey(fn) end)"
+                    + " dump[#dump+1]=fn..'='..tostring(cur)"
+                    + " if (cur==nil or (type(cur)=='number' and cur<0))"
+                    + " and type(code)=='number' then"
+                    + " set=set+1"
+                    + " local order={"
+                    + " function() gi:SetGameHotkey(fn,code) end,"
+                    + " function() gi:SetGameHotkey(code,fn) end,"
+                    + " function() DefMgr:SetGameHotkey(fn,code) end,"
+                    + " function() SetGameHotkey(fn,code) end}"
+                    + " for k=1,#order do"
+                    + " pcall(order[k])"
+                    + " local after=nil"
+                    + " pcall(function() after=gi:GetGameHotkey(fn) end)"
+                    + " if type(after)=='number' and after==code then"
+                    + " ok=ok+1 break"
+                    + " end"
+                    + " end"
+                    + " end"
+                    + " end"
+                    + " end"
+                    + " end"
+                    + " error('MWP7|n='..n..' set='..set..' ok='..ok"
+                    + " ..'|b='..table.concat(dump,';'):sub(1,2700),0)"
+                    + " end)";
+
+    // One-shot signature discovery for the entry points round 8 needs. Each
+    // name is resolved over a few plausible holders and, when it really is a
+    // function, called with no arguments: a C binding answers with the
+    // expected signature in its error message, a Lua function with optional
+    // arguments answers ok. Report only - nothing is kept from the result.
+    private static final String PROBE_C =
+            "(function()"
+                    + " local names={'SendEvent','AddEvent','UIReceiveMessage'"
+                    + ",'SetRightClickDown','IsRightClickDown'"
+                    + ",'excuteWithRightClickCmd'}"
+                    + " local hs={}"
+                    + " hs[1]={'_G',_G}"
+                    + " pcall(function()"
+                    + " local g=GetGameInfo()"
+                    + " if g~=nil then hs[#hs+1]={'gi',g} end"
+                    + " end)"
+                    + " pcall(function()"
+                    + " local c=GetClientInfo()"
+                    + " if c~=nil then hs[#hs+1]={'ci',c} end"
+                    + " end)"
+                    + " pcall(function()"
+                    + " if DefMgr~=nil then hs[#hs+1]={'def',DefMgr} end"
+                    + " end)"
+                    + " pcall(function()"
+                    + " if type(miniui)=='table' then hs[#hs+1]={'ui',miniui} end"
+                    + " end)"
+                    + " pcall(function()"
+                    + " if CurMainPlayer~=nil then hs[#hs+1]={'pl',CurMainPlayer} end"
+                    + " end)"
+                    + " pcall(function()"
+                    + " if ClientCurGame~=nil then hs[#hs+1]={'game',ClientCurGame} end"
+                    + " end)"
+                    + " local parts={'MWP10'}"
+                    + " for i=1,#names do"
+                    + " local nm=names[i] local hit='absent'"
+                    + " for j=1,#hs do"
+                    + " local h=hs[j]"
+                    + " local okv,v=pcall(function() return h[2][nm] end)"
+                    + " if okv and v~=nil then"
+                    + " if type(v)=='function' then"
+                    + " local okc,e=pcall(function() return v() end)"
+                    + " hit=h[1]..':fn:'"
+                    + " ..(okc and 'ok' or tostring(e):sub(1,70))"
+                    + " else hit=h[1]..':'..type(v) end"
+                    + " break"
+                    + " end"
+                    + " end"
+                    + " parts[#parts+1]=nm..'='..hit"
+                    + " end"
+                    + " error(table.concat(parts,'|'):sub(1,2900),0)"
+                    + " end)";
+
     // Movement through the engine's own player API: the keybind matcher
     // never fires on Android (rounds 4-6: keys consumed, character stands
     // still), so the bridge maps WASD/Space/Shift itself and drives
@@ -254,10 +383,15 @@ public final class InputBridge implements Window.Callback {
                     + " end end)";
 
     // Wheel = hotbar slot, the way the PC build plays: the Android engine
-    // swallows ACTION_SCROLL without acting on it, so the bridge cycles
-    // setCurShortcut itself. Wrapping uses getShortcutStartIndex and
-    // getCurShortcutItemNum so it stays correct whatever base the slot
-    // numbers use. First notch reports the slot layout once.
+    // swallows ACTION_SCROLL without acting on it, so the bridge cycles the
+    // selection itself. Round 7's wrap derived slot 1000 from
+    // getShortcutStartIndex (a constant) plus getCurShortcutItemNum (the
+    // stack count of the current slot) and the engine took the write and did
+    // nothing. Round 8 asks the engine's own shortcut switchers first, then
+    // wraps inside getShortcutGridCount over each holder that might own it,
+    // and keeps the old arithmetic only as a last resort - every path is
+    // judged by a getCurShortcut readback, so the first notch says which one
+    // really moved the selection instead of claiming success on a pcall.
     private static final String HOTBAR =
             "(function(d,rep)"
                     + " local p=nil"
@@ -268,6 +402,58 @@ public final class InputBridge implements Window.Callback {
                     + " local ok1,s=pcall(function() return p:getCurShortcut() end)"
                     + " if not ok1 or type(s)~='number' then"
                     + " if rep==1 then error('MWP9|get=no',0) end return end"
+                    + " local path='none'"
+                    + " local nav=(d>0) and 'keyBindShortcutRight'"
+                    + " or 'keyBindShortcutLeft'"
+                    + " local nh={p,_G}"
+                    + " pcall(function()"
+                    + " local g=GetGameInfo()"
+                    + " if g~=nil then nh[#nh+1]=g end end)"
+                    + " for i=1,#nh do"
+                    + " local okf,f=pcall(function() return nh[i][nav] end)"
+                    + " if okf and type(f)=='function' then"
+                    + " pcall(function() return f(nh[i]) end)"
+                    + " local s2=nil"
+                    + " pcall(function() s2=p:getCurShortcut() end)"
+                    + " if type(s2)=='number' and s2~=s then"
+                    + " path='nav->'..s2 break"
+                    + " end"
+                    + " end"
+                    + " end"
+                    + " if path=='none' then"
+                    + " local gh={p}"
+                    + " pcall(function()"
+                    + " local c=p:getContainer()"
+                    + " if c~=nil then gh[#gh+1]=c end end)"
+                    + " pcall(function()"
+                    + " local c=GetClientInfo()"
+                    + " if c~=nil then gh[#gh+1]=c end end)"
+                    + " pcall(function()"
+                    + " local c=ClientCurGame"
+                    + " if c~=nil then gh[#gh+1]=c end end)"
+                    + " for i=1,#gh do"
+                    + " local okg,gc=pcall(function()"
+                    + " return gh[i]:getShortcutGridCount() end)"
+                    + " if okg and type(gc)=='number' and gc>0 then"
+                    + " local lo=(s>=1000) and 1000 or 0"
+                    + " local n=((s-lo+d)%gc)+lo"
+                    + " local ok4=pcall(function() p:setCurShortcut(n) end)"
+                    + " local rb=nil"
+                    + " pcall(function() rb=p:getCurShortcut() end)"
+                    + " if rb==nil or rb==s then"
+                    + " local okst,st=pcall(function()"
+                    + " return p:getShortcutStartIndex() end)"
+                    + " if okst and type(st)=='number' and st>0 then"
+                    + " pcall(function() p:setCurShortcut(st+n) end)"
+                    + " pcall(function() rb=p:getCurShortcut() end)"
+                    + " end"
+                    + " end"
+                    + " path='grid,gc='..gc..'->'..n..' set='..tostring(ok4)"
+                    + " ..' rb='..tostring(rb)"
+                    + " break"
+                    + " end"
+                    + " end"
+                    + " if path=='none' then"
                     + " local ok2,st=pcall(function() return p:getShortcutStartIndex() end)"
                     + " local ok3,cn=pcall(function() return p:getCurShortcutItemNum() end)"
                     + " st=(ok2 and type(st)=='number') and st or 1"
@@ -275,9 +461,12 @@ public final class InputBridge implements Window.Callback {
                     + " local n=s+d"
                     + " if n<st then n=st+cn-1 elseif n>=st+cn then n=st end"
                     + " local ok4,e4=pcall(function() p:setCurShortcut(n) end)"
+                    + " path='legacy,st='..st..',cn='..cn..'->'..n"
+                    + " ..' set='..tostring(ok4)..','..tostring(e4):sub(1,40)"
+                    + " end"
+                    + " end"
                     + " if rep==1 then"
-                    + " error('MWP9|s='..s..',st='..st..',cn='..cn..'->'..n"
-                    + " ..' set='..tostring(ok4)..','..tostring(e4):sub(1,50),0)"
+                    + " error('MWP9|s='..s..' path='..path,0)"
                     + " end end)";
 
     private static final long ENABLE_WARMUP_MS = 5000;
@@ -286,6 +475,11 @@ public final class InputBridge implements Window.Callback {
     private static final long LOOK_IDLE_MS = 120;
     private static final long STATE_POLL_MS = 1500;
     private static final long CLICK_HOLD_MS = 700;
+    // The engine rewrites the player's movement flags every frame, so a
+    // single setter call survives only until the next tick - round 7's
+    // "nhiích rồi dừng" was exactly that. While a movement key is held the
+    // state is pushed again every MOVE_REASSERT_MS.
+    private static final long MOVE_REASSERT_MS = 60;
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
     private static volatile boolean probed;
@@ -310,6 +504,8 @@ public final class InputBridge implements Window.Callback {
     private final int[] pIds = new int[2];
     private int pCount;
     private boolean stateInGame; // byte 1 of the script state file
+    private boolean stateShown; // byte 2: the settings frame is on screen
+    private boolean reasserting; // the movement hold loop is armed
     private boolean mvF;
     private boolean mvB;
     private boolean mvL;
@@ -329,6 +525,53 @@ public final class InputBridge implements Window.Callback {
     private String probePath2;
     private boolean lastInMap; // last observed crosshair auto state
     private boolean stateErrLogged;
+    private long lastMoveFail; // rate-limits the log of a repeating re-assert failure
+
+    /**
+     * Re-pushes the held movement state until the keys come up. The engine
+     * overwrites CurMainPlayer's flags from its own per-frame input pass, so
+     * a single write is visible for one frame - which is what round 7 felt
+     * as "nhiích 1 tý rồi dừng". Quiet on purpose: this fires sixteen times
+     * a second and only a failure worth seeing is logged.
+     */
+    private final Runnable moveHold = new Runnable() {
+        @Override
+        public void run() {
+            if (!ModMenu.isKbMouseOn() || !stateInGame
+                    || !(mvF || mvB || mvL || mvR || mvJ || mvS)) {
+                reasserting = false;
+                return;
+            }
+            fireMovement(false, true);
+            MAIN.postDelayed(this, MOVE_REASSERT_MS);
+        }
+    };
+
+    /**
+     * The one-shot diagnostics, off the first key-down: six script
+     * evaluations stacked in front of the press would show up as latency on
+     * exactly the key the player was waiting for. KEYBIND_ON stays inline -
+     * it has to run before the key is handed to the engine.
+     */
+    private final Runnable probeBatch = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                CommonNatives.javaCallLuaEvent(OPEN_FRAME, new Object[0]);
+                CommonNatives.javaCallLuaEvent(PROBE_A, new Object[0]);
+                CommonNatives.javaCallLuaEvent(probeB(), new Object[0]);
+                CommonNatives.javaCallLuaEvent(BINDS, new Object[0]);
+                CommonNatives.javaCallLuaEvent(PROBE_C, new Object[0]);
+                // last: the settings window the probes just opened has to go
+                // away again or the settings byte stays high all session
+                CommonNatives.javaCallLuaEvent(CLOSE_FRAME, new Object[0]);
+                Log.d(TAG, "probes fired");
+            } catch (RuntimeException e) {
+                Log.d(TAG, "probe batch failed: " + e);
+            }
+        }
+    };
+
     private final Runnable lookEnd = new Runnable() {
         @Override
         public void run() {
@@ -471,11 +714,10 @@ public final class InputBridge implements Window.Callback {
             if (!probed) {
                 probed = true;
                 // panel first: it proves the real settings window is reachable
-                // and loads the UI module the reports below read state from
-                CommonNatives.javaCallLuaEvent(OPEN_FRAME, new Object[0]);
-                CommonNatives.javaCallLuaEvent(PROBE_A, new Object[0]);
-                CommonNatives.javaCallLuaEvent(probeB(), new Object[0]);
-                Log.d(TAG, "probes fired");
+                // and loads the UI module the reports below read state from.
+                // Posted rather than run here - six evaluations in front of
+                // the first key press is latency on the key itself.
+                MAIN.post(probeBatch);
             }
         } catch (RuntimeException e) {
             Log.d(TAG, "keybind-on failed: " + e);
@@ -527,6 +769,16 @@ public final class InputBridge implements Window.Callback {
      * boolean-flavoured and an integer-flavoured binding behave the same.
      */
     private void fireMovement(boolean report) {
+        fireMovement(report, false);
+    }
+
+    /**
+     * @param quiet skips the per-call line - the re-assert loop runs every
+     *              MOVE_REASSERT_MS and would bury the log otherwise. A
+     *              failure is still logged, at most once a second, so a
+     *              broken push is visible without becoming a firehose.
+     */
+    private void fireMovement(boolean report, boolean quiet) {
         Object fwd = mvF ? Integer.valueOf(1) : (mvB ? Integer.valueOf(-1) : Boolean.FALSE);
         Object str = mvR ? Integer.valueOf(1) : (mvL ? Integer.valueOf(-1) : Boolean.FALSE);
         Object jump = mvJ ? Boolean.TRUE : Boolean.FALSE;
@@ -534,11 +786,26 @@ public final class InputBridge implements Window.Callback {
         try {
             CommonNatives.javaCallLuaEvent(MOVEMENT,
                     new Object[]{fwd, str, jump, sneak, report ? 1 : 0});
-            Log.d(TAG, "move f=" + mvF + " b=" + mvB + " l=" + mvL
-                    + " r=" + mvR + " j=" + mvJ + " s=" + mvS);
+            if (!quiet) {
+                Log.d(TAG, "move f=" + mvF + " b=" + mvB + " l=" + mvL
+                        + " r=" + mvR + " j=" + mvJ + " s=" + mvS);
+            }
         } catch (RuntimeException e) {
-            Log.d(TAG, "move failed: " + e);
+            long now = SystemClock.uptimeMillis();
+            if (!quiet || now - lastMoveFail > 1000) {
+                lastMoveFail = now;
+                Log.d(TAG, "move failed: " + e);
+            }
         }
+    }
+
+    /** Arms the 60ms re-push while at least one movement key is down. */
+    private void armMoveReassert() {
+        if (reasserting || !ModMenu.isKbMouseOn() || !stateInGame) {
+            return;
+        }
+        reasserting = true;
+        MAIN.postDelayed(moveHold, MOVE_REASSERT_MS);
     }
 
     private void clearMovement() {
@@ -548,7 +815,9 @@ public final class InputBridge implements Window.Callback {
 
     /** One wheel notch = one hotbar slot, PC style. */
     private void handleWheel(MotionEvent event) {
-        if (!stateInGame) {
+        // with the settings frame up the wheel belongs to the UI, not to the
+        // hotbar - the engine gets the raw scroll either way
+        if (!stateInGame || stateShown) {
             return;
         }
         float v = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
@@ -691,6 +960,9 @@ public final class InputBridge implements Window.Callback {
                 if (moved) {
                     fireMovement(!moveReported);
                     moveReported = true;
+                    if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                        armMoveReassert();
+                    }
                 }
                 if (edge) {
                     // dev/src/rep identify who produced the key; "->ascii"
@@ -868,11 +1140,33 @@ public final class InputBridge implements Window.Callback {
                 case MotionEvent.ACTION_MOVE:
                     lookByRel(e); // captured coords are relative deltas
                     return true;
-                case MotionEvent.ACTION_BUTTON_PRESS:
+                case MotionEvent.ACTION_BUTTON_PRESS: {
+                    // the right button has to keep its identity: the engine
+                    // reads getButtonState to tell use-item from mining, and
+                    // folding it into a centre touch threw that away. The
+                    // press/release pair goes in raw so both halves arrive.
+                    if (e.getActionButton() == MotionEvent.BUTTON_SECONDARY) {
+                        AppPlayer p = player();
+                        boolean eng = p != null && p.injectEvent(e);
+                        Log.d(TAG, "xh btn2 down eng=" + eng);
+                        return true;
+                    }
+                    centerTouch(e.getEventTime(), true);
+                    return true;
+                }
+                case MotionEvent.ACTION_BUTTON_RELEASE: {
+                    if (e.getActionButton() == MotionEvent.BUTTON_SECONDARY) {
+                        AppPlayer p = player();
+                        boolean eng = p != null && p.injectEvent(e);
+                        Log.d(TAG, "xh btn2 up eng=" + eng);
+                        return true;
+                    }
+                    centerTouch(e.getEventTime(), false);
+                    return true;
+                }
                 case MotionEvent.ACTION_DOWN:
                     centerTouch(e.getEventTime(), true);
                     return true;
-                case MotionEvent.ACTION_BUTTON_RELEASE:
                 case MotionEvent.ACTION_UP:
                     centerTouch(e.getEventTime(), false);
                     return true;
@@ -914,6 +1208,12 @@ public final class InputBridge implements Window.Callback {
             }
         } else if (captured) {
             releaseCapture(surface);
+        } else {
+            // never captured (denied request, or an older device): the
+            // synthetic pointers still have to be lifted, releaseCapture
+            // would not run and the look finger would stay planted forever
+            endLook(now);
+            releaseClick(now);
         }
     }
 
@@ -957,10 +1257,22 @@ public final class InputBridge implements Window.Callback {
         }
         boolean inMap = s.charAt(0) == '1' && s.charAt(1) != '1';
         boolean inGame = s.charAt(0) == '1';
+        boolean shown = s.charAt(1) == '1';
         if (inGame != stateInGame) {
             stateInGame = inGame;
             if (!inGame) {
                 clearMovement(); // a map exit must not leave the player walking
+            }
+        }
+        if (shown != stateShown) {
+            stateShown = shown;
+            if (shown) {
+                // an open panel owns the pointers: a synthetic finger left
+                // planted under it reads as a stray tap the moment it closes
+                long now = SystemClock.uptimeMillis();
+                endLook(now);
+                releaseClick(now);
+                Log.d(TAG, "settings frame open: pointers closed");
             }
         }
         if (inMap == lastInMap) {
@@ -1197,7 +1509,9 @@ public final class InputBridge implements Window.Callback {
         mouseTouching = false;
         if (looking) { // the look pointer may have outlived the click
             MAIN.removeCallbacks(lookEnd);
-            MAIN.postDelayed(lookEnd, LOOK_IDLE_MS);
+            if (!(stateInGame && !stateShown)) {
+                MAIN.postDelayed(lookEnd, LOOK_IDLE_MS);
+            }
         }
         Log.d(TAG, "center-touch up");
     }
@@ -1270,6 +1584,7 @@ public final class InputBridge implements Window.Callback {
             lookY = dm.heightPixels / 2f;
             looking = true;
             ptrDown(LOOK_ID, t);
+            Log.d(TAG, "look down");
         }
         lookX += dx;
         lookY += dy;
@@ -1283,7 +1598,17 @@ public final class InputBridge implements Window.Callback {
         ptrMove(t);
         if (!mouseTouching) {
             MAIN.removeCallbacks(lookEnd);
-            MAIN.postDelayed(lookEnd, LOOK_IDLE_MS);
+            // Inside a map with no panel up the pointer stays planted. The
+            // 120ms idle close was lifting it whenever the mouse paused, and
+            // the next move re-opened it at the centre - each cycle a fresh
+            // tap the engine read as an interaction at screen centre, which
+            // is round 7's "nhấp" burst on click/drag start. Closing on a
+            // real finger, focus loss, capture loss, the panel opening or
+            // the crosshair going off still covers every case where the
+            // pointer really has to go.
+            if (!(stateInGame && !stateShown)) {
+                MAIN.postDelayed(lookEnd, LOOK_IDLE_MS);
+            }
         }
     }
 
@@ -1295,6 +1620,7 @@ public final class InputBridge implements Window.Callback {
         }
         ptrUp(LOOK_ID, t);
         looking = false;
+        Log.d(TAG, "look up");
     }
 
     // ---- the synthetic pointer pair -------------------------------------
@@ -1372,6 +1698,12 @@ public final class InputBridge implements Window.Callback {
             pIds[i] = pIds[i + 1];
         }
         pCount--;
+        if (pCount == 0) {
+            // a finished gesture must not lend its downTime to the next one:
+            // an aged downTime next to a fresh eventTime reads as a tap the
+            // engine has been holding for minutes
+            gestureDown = 0;
+        }
     }
 
     private void ptrMove(long time) {
@@ -1475,7 +1807,9 @@ public final class InputBridge implements Window.Callback {
     @Override
     public void onDetachedFromWindow() {
         polling = false;
+        reasserting = false;
         MAIN.removeCallbacks(poll);
+        MAIN.removeCallbacks(moveHold);
         orig.onDetachedFromWindow();
     }
 

@@ -172,8 +172,10 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/Hwid;' 'Lmodmenu/Palette;' 'Lmodmenu/AdReward;' \
            'spoofValue' \
            'GameSettingsMgr' 'MWP4|' 'MWP5' 'HKUI2|' 'MWP6|' \
-           'MWP8|' 'MWP9|' \
+           'MWP7|' 'MWP8|' 'MWP9|' 'MWP10' 'HKCL|' \
            'setMoveForward' 'setCurShortcut' 'AXIS_VSCROLL' \
+           'getShortcutGridCount' 'keyBindShortcutLeft' \
+           'stateShown' 'look down' 'settings frame open' 'xh btn2' \
            'setOnCapturedPointerListener' \
            'legacySignIn' 'GmsCompat' 'Lmodmenu/InputBridge;'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
