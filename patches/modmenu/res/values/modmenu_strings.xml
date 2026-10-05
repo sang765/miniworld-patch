@@ -16,4 +16,14 @@
     <string name="mod_rotate">Change spoofed HWID</string>
     <string name="mod_close">Close</string>
     <string name="mod_rotate_toast">HWID changed - applies on next game launch</string>
+    <string name="mod_crash_title">Game crashed</string>
+    <string name="mod_crash_hint">This report was captured before the process was killed</string>
+    <string name="mod_crash_copy">Copy</string>
+    <string name="mod_crash_save">Save</string>
+    <string name="mod_crash_share">Share</string>
+    <string name="mod_crash_copied">Report copied to the clipboard</string>
+    <string name="mod_crash_saved">Report saved to</string>
+    <string name="mod_crash_failed">Action failed</string>
+    <string name="mod_crash_notif_title">Game crashed</string>
+    <string name="mod_crash_notif_text">Tap to open the crash report</string>
 </resources>

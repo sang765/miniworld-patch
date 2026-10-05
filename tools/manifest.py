@@ -5,10 +5,12 @@ apktool emits the whole <activity ...> element as one line, but tolerate a
 multi-line element: anchor on the activity's android:name, walk back to the
 <activity that owns it, then walk forward to the end of that tag.
 
-Two patches run in one pass: the BrowserActivity exported flag, and the
+Three patches run in one pass: the BrowserActivity exported flag, the
 mod-menu activity (exported=false - only our PendingIntent starts it, while
 POST_NOTIFICATIONS it needs at runtime is already declared by the source
-manifest).
+manifest), and the crash screen (exported=false plus excludeFromRecents: it
+is started by the crash handler's PendingIntent and by nothing else - an
+exported crash screen would let any app on the device pop it).
 
 Fails loudly instead of silently doing nothing - a manifest patch that does
 not apply would ship an APK whose BrowserActivity stays reachable from other
@@ -31,6 +33,15 @@ MENU_NAME = "modmenu.ModMenuActivity"
 MENU_ELEMENT = ('<activity android:exported="false" '
                 'android:name="modmenu.ModMenuActivity" '
                 'android:screenOrientation="sensorLandscape"/>')
+CRASH_NAME = "modmenu.CrashActivity"
+CRASH_ELEMENT = ('<activity android:exported="false" '
+                 'android:name="modmenu.CrashActivity" '
+                 'android:excludeFromRecents="true"/>')
+# (class name, element to insert when it is missing, what to report)
+DECLARED = (
+    (MENU_NAME, MENU_ELEMENT, "exported=false, sensorLandscape"),
+    (CRASH_NAME, CRASH_ELEMENT, "exported=false, excludeFromRecents"),
+)
 
 
 def main() -> int:
@@ -83,17 +94,20 @@ def main() -> int:
         print(f"patched {args.activity}: {current.group(0)} -> {want} "
               f"(lines {start + 1}-{end + 1})")
 
-    if any(MENU_NAME in l for l in lines):
-        print(f"OK: {MENU_NAME} already declared")
-    else:
+    # Re-read the insertion point every time: inserting shifts the indices,
+    # and a stale </application> would land an element inside the previous one.
+    for name, element, note in DECLARED:
+        if any(name in l for l in lines):
+            print(f"OK: {name} already declared")
+            continue
         close = next((i for i, l in enumerate(lines) if l.strip() == "</application>"),
                      None)
         if close is None:
             print(f"FAIL: </application> not found in {args.manifest}")
             return 1
         indent = lines[close][: len(lines[close]) - len(lines[close].lstrip())]
-        lines.insert(close, indent + MENU_ELEMENT + "\n")
-        print(f"added {MENU_NAME} (exported=false, sensorLandscape)")
+        lines.insert(close, indent + element + "\n")
+        print(f"added {name} ({note})")
 
     out = "".join(lines)
     if out != text:

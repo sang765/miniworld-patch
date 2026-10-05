@@ -16,4 +16,14 @@
     <string name="mod_rotate">更换伪造的 HWID</string>
     <string name="mod_close">关闭</string>
     <string name="mod_rotate_toast">HWID 已更换——下次启动游戏时生效</string>
+    <string name="mod_crash_title">游戏已崩溃</string>
+    <string name="mod_crash_hint">此报告在进程被终止前已采集</string>
+    <string name="mod_crash_copy">复制</string>
+    <string name="mod_crash_save">保存</string>
+    <string name="mod_crash_share">分享</string>
+    <string name="mod_crash_copied">报告已复制到剪贴板</string>
+    <string name="mod_crash_saved">报告已保存至</string>
+    <string name="mod_crash_failed">操作失败</string>
+    <string name="mod_crash_notif_title">游戏已崩溃</string>
+    <string name="mod_crash_notif_text">点按查看崩溃报告</string>
 </resources>

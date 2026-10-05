@@ -142,9 +142,14 @@ def is_false(v):
 
 failed = False
 # BrowserActivity must stay unreachable from other apps; the menu activity
-# must be too, otherwise any app could pop the mod menu at the player.
+# must be too, otherwise any app could pop the mod menu at the player. The
+# crash screen is the same case - it is started by the handler's own
+# PendingIntent, so exported would only add a way for other apps to pop it.
+# exported_of raises when the name is absent, which is the failure we want:
+# a manifest patch that did not apply must not verify clean.
 for name, label in (("org.appplay.lib.browser.BrowserActivity", "BLOCKED"),
-                    ("modmenu.ModMenuActivity", "MENU HIDDEN")):
+                    ("modmenu.ModMenuActivity", "MENU HIDDEN"),
+                    ("modmenu.CrashActivity", "CRASH HIDDEN")):
     v = exported_of(name)
     ok = is_false(v)
     print(f"{name.split('.')[-1]} exported = {v} -> {label if ok else 'STILL EXPORTED'}")
@@ -170,6 +175,9 @@ done
 for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/Api26;' 'Lmodmenu/Api33;' \
            'Lmodmenu/Hwid;' 'Lmodmenu/Palette;' 'Lmodmenu/AdReward;' \
+           'Lmodmenu/CrashHandler;' 'Lmodmenu/CrashReport;' \
+           'Lmodmenu/CrashActivity;' 'uncaughtException' 'mwcrash' \
+           'mod_crash_title' 'mod_crash_notif_title' \
            'spoofValue' \
            'GameSettingsMgr' 'MWP4|' 'MWP5' 'HKUI2|' 'MWP6|' \
            'MWP7|' 'MWP8|' 'MWP9|' 'MWP10' 'HKCL|' \
@@ -202,6 +210,10 @@ needles = [
     "Chế độ tâm chuẩn",
     "准星模式",                              # zh crosshair row
     "準星模式",                              # zh-Hant crosshair row
+    "Game crashed",                         # en crash title + notification
+    "Game đã crash",                       # vi crash title
+    "游戏已崩溃",                            # zh crash title
+    "遊戲已崩潰",                            # zh-Hant crash title
 ]
 failed = False
 for s in needles:

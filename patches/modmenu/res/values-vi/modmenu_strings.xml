@@ -16,4 +16,14 @@
     <string name="mod_rotate">Đổi HWID giả mạo</string>
     <string name="mod_close">Đóng</string>
     <string name="mod_rotate_toast">Đã đổi HWID — áp dụng ở lần mở game sau</string>
+    <string name="mod_crash_title">Game đã crash</string>
+    <string name="mod_crash_hint">Báo cáo này được ghi lại trước khi tiến trình bị tắt</string>
+    <string name="mod_crash_copy">Sao chép</string>
+    <string name="mod_crash_save">Lưu</string>
+    <string name="mod_crash_share">Chia sẻ</string>
+    <string name="mod_crash_copied">Đã sao chép báo cáo vào clipboard</string>
+    <string name="mod_crash_saved">Đã lưu báo cáo vào</string>
+    <string name="mod_crash_failed">Thao tác thất bại</string>
+    <string name="mod_crash_notif_title">Game đã crash</string>
+    <string name="mod_crash_notif_text">Chạm để mở báo cáo crash</string>
 </resources>

@@ -57,6 +57,9 @@ public final class ModMenu {
     /** Injected at the head of GoogleApplication.onCreate, before any stub can run. */
     public static void onAppCreate(Context ctx) {
         loadPrefs(ctx);
+        // before anything else can throw: the crash screen is only useful
+        // while the handler is still the one watching the threads
+        CrashHandler.install(ctx);
         if (ctx instanceof Application) {
             ((Application) ctx).registerActivityLifecycleCallbacks(
                     new InputBridge.Lifecycle());

@@ -58,6 +58,12 @@ MODMENU_FILES = {
     "smali_classes8/modmenu/AdReward.smali",
     "smali_classes8/modmenu/GmsCompat.smali",
     "smali_classes8/modmenu/InputBridge.smali",
+    # The crash handler runs inside GoogleApplication.onCreate and names the
+    # report and activity classes: a missing one is a NoClassDefFoundError on
+    # the game's first frame, so presence has to be proven, not assumed.
+    "smali_classes8/modmenu/CrashHandler.smali",
+    "smali_classes8/modmenu/CrashReport.smali",
+    "smali_classes8/modmenu/CrashActivity.smali",
 }
 
 # fixdollar.py runs two logical passes: prefix an 'x' when the name started
