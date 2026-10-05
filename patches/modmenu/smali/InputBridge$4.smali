@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 602
+    .line 858
     iput-object p1, p0, Lmodmenu/InputBridge$4;->this$0:Lmodmenu/InputBridge;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,19 +46,19 @@
 .method public onCapturedPointer(Landroid/view/View;Landroid/view/MotionEvent;)Z
     .locals 4
 
-    .line 605
+    .line 861
     invoke-virtual {p2}, Landroid/view/MotionEvent;->getActionMasked()I
 
     move-result p1
 
-    .line 606
+    .line 862
     iget-object v0, p0, Lmodmenu/InputBridge$4;->this$0:Lmodmenu/InputBridge;
 
     const-string v1, "captured"
 
-    invoke-static {v0, v1, p1, p2}, Lmodmenu/InputBridge;->access$1100(Lmodmenu/InputBridge;Ljava/lang/String;ILandroid/view/MotionEvent;)V
+    invoke-static {v0, v1, p1, p2}, Lmodmenu/InputBridge;->access$1600(Lmodmenu/InputBridge;Ljava/lang/String;ILandroid/view/MotionEvent;)V
 
-    .line 607
+    .line 863
     invoke-static {}, Lmodmenu/ModMenu;->isKbMouseOn()Z
 
     move-result v0
@@ -75,25 +75,30 @@
 
     goto :goto_0
 
-    .line 610
+    .line 866
     :cond_0
     const/4 v0, 0x1
 
     packed-switch p1, :pswitch_data_0
 
-    .line 628
+    .line 885
     :pswitch_0
     return v1
 
-    .line 624
+    .line 880
     :pswitch_1
     iget-object p1, p0, Lmodmenu/InputBridge$4;->this$0:Lmodmenu/InputBridge;
 
-    invoke-static {p1}, Lmodmenu/InputBridge;->access$900(Lmodmenu/InputBridge;)Lcom/minitech/player/AppPlayer;
+    invoke-static {p1, p2}, Lmodmenu/InputBridge;->access$1900(Lmodmenu/InputBridge;Landroid/view/MotionEvent;)V
+
+    .line 881
+    iget-object p1, p0, Lmodmenu/InputBridge$4;->this$0:Lmodmenu/InputBridge;
+
+    invoke-static {p1}, Lmodmenu/InputBridge;->access$1400(Lmodmenu/InputBridge;)Lcom/minitech/player/AppPlayer;
 
     move-result-object p1
 
-    .line 625
+    .line 882
     if-eqz p1, :cond_1
 
     invoke-virtual {p1, p2}, Lcom/minitech/player/AppPlayer;->injectEvent(Landroid/view/InputEvent;)Z
@@ -107,16 +112,16 @@
     :cond_1
     return v1
 
-    .line 613
+    .line 869
     :pswitch_2
     iget-object p1, p0, Lmodmenu/InputBridge$4;->this$0:Lmodmenu/InputBridge;
 
-    invoke-static {p1, p2}, Lmodmenu/InputBridge;->access$1200(Lmodmenu/InputBridge;Landroid/view/MotionEvent;)V
+    invoke-static {p1, p2}, Lmodmenu/InputBridge;->access$1700(Lmodmenu/InputBridge;Landroid/view/MotionEvent;)V
 
-    .line 614
+    .line 870
     return v0
 
-    .line 621
+    .line 877
     :pswitch_3
     iget-object p1, p0, Lmodmenu/InputBridge$4;->this$0:Lmodmenu/InputBridge;
 
@@ -124,12 +129,12 @@
 
     move-result-wide v2
 
-    invoke-static {p1, v2, v3, v1}, Lmodmenu/InputBridge;->access$1300(Lmodmenu/InputBridge;JZ)V
+    invoke-static {p1, v2, v3, v1}, Lmodmenu/InputBridge;->access$1800(Lmodmenu/InputBridge;JZ)V
 
-    .line 622
+    .line 878
     return v0
 
-    .line 617
+    .line 873
     :pswitch_4
     iget-object p1, p0, Lmodmenu/InputBridge$4;->this$0:Lmodmenu/InputBridge;
 
@@ -137,17 +142,15 @@
 
     move-result-wide v1
 
-    invoke-static {p1, v1, v2, v0}, Lmodmenu/InputBridge;->access$1300(Lmodmenu/InputBridge;JZ)V
+    invoke-static {p1, v1, v2, v0}, Lmodmenu/InputBridge;->access$1800(Lmodmenu/InputBridge;JZ)V
 
-    .line 618
+    .line 874
     return v0
 
-    .line 608
+    .line 864
     :cond_2
     :goto_0
     return v1
-
-    nop
 
     :pswitch_data_0
     .packed-switch 0x0

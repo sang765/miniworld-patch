@@ -36,43 +36,57 @@ import java.util.List;
  * before any view, so the wrapper is a single focus-independent point where
  * hardware input can be handed to the engine:
  *
- * - Keys are injected into AppPlayer.injectEvent and consumed. Right before
- *   a fresh key-down, the engine's keybind master switch is invoked on the
- *   settings tables that own it (GameSettingsMgr/GameSettings - located by
- *   the round-5 Lua probe; a bare global never existed) - pcall-wrapped so
- *   a wrong guess is a no-op and can never raise into the script host.
+ * - Keys are translated from Android keycodes to the ASCII space the
+ *   engine numbers its binds in (getKeyName(51)='3' proved the bind table
+ *   is PC/ASCII while nativeInjectEvent forwards Android codes untouched)
+ *   and injected into AppPlayer.injectEvent. Right before a fresh key-down,
+ *   the engine's keybind master switch is invoked on the settings tables
+ *   that own it (GameSettingsMgr/GameSettings - located by the round-5 Lua
+ *   probe; a bare global never existed) - pcall-wrapped so a wrong guess is
+ *   a no-op and can never raise into the script host.
+ * - W/A/S/D, Space and Shift are additionally mirrored into the player API
+ *   the game scripts use (CurMainPlayer:setMoveForward and friends): the
+ *   native keybind matcher still never fires on Android, so movement is
+ *   driven directly - one script call per key edge, not per repeat.
  * - Mouse button/drag events reach the engine as source=MOUSE/toolType=
  *   MOUSE touches; the engine's touch path only recognises finger touches,
  *   so they are rewritten to SOURCE_TOUCHSCREEN/TOOL_TYPE_FINGER before
  *   being passed on - a mouse click becomes exactly a finger tap.
  * - Pointer-class generic motion (hover/scroll/right-click) is injected so
- *   the engine can react like the Windows build does.
+ *   the engine can react like the Windows build does. The engine swallows
+ *   ACTION_SCROLL without acting on it, so each wheel notch also cycles
+ *   the hotbar through setCurShortcut, the way the PC build plays.
  * - Crosshair mode (menu toggle or F1): the game surface gets pointer
- *   capture so the system cursor disappears, and mouse movement is rewritten
- *   into a center-screen finger drag - the engine's proven camera path.
- *   Captured movement never reaches the window callback (rounds 4 and 5 saw
- *   zero motion events while captured), it is delivered to the captured view
- *   instead, so the surface also gets an OnCapturedPointerListener feeding
- *   the same camera path, rebuilding button presses at the crosshair and
- *   forwarding scroll. A real finger touch or a lost focus ends the
- *   synthetic drag immediately. While the bridge is on, a slow poll asks the
- *   Lua VM whether a map is active (the script reports through a two-byte
- *   state file; io.open is the only channel back into Java) and turns the
- *   crosshair on/off across that transition - manual F1 still wins in
- *   between.
+ *   capture so the system cursor disappears. Captured movement never
+ *   reaches the window callback (rounds 4 and 5 saw zero motion events
+ *   while captured), it is delivered to the captured view instead, so the
+ *   surface also gets an OnCapturedPointerListener feeding the camera path
+ *   with one correction: captured coordinates are relative deltas per the
+ *   Android docs, not absolute positions, and the hover/touch paths stay
+ *   absolute. The camera runs as pointer 0 dragging around the centre; a
+ *   mouse button is pointer 1 held on the block under the crosshair, so
+ *   holding the button and moving keeps mining while the view turns. A
+ *   real finger touch or a lost focus lifts both pointers immediately.
+ *   While the bridge is on, a slow poll asks the Lua VM whether a map is
+ *   active (the script reports through a two-byte state file; io.open is
+ *   the only channel back into Java) and turns the crosshair on/off across
+ *   that transition - manual F1 still wins in between - and a map exit
+ *   clears the movement state so the player never walks on.
  * - F2 cycles the game's own control scheme (the classical/rocker pair
- *   ControlMoveSwitch_OnClick toggles) and reports the values it saw
- *   through error().
+ *   ControlMoveSwitch_OnClick toggles, both keys every time) and reports
+ *   the values it saw through error().
  *
  * System keys (Back, volume, menu...) and real finger touches are delegated
  * untouched. Logging under the tag MWInput exists so a device-side LogFox
  * capture shows where an event stops: "installed" proves the wrapper is
- * live, "key ..." proves delivery and carries the engine's answer plus the
- * originating device/source, "xh-in" shows every event the window sees
- * while crosshair mode is on, and the one-shot "HKUI2"/"MWP4"/"MWP5" Lua
- * reports (first fresh key-down) open the real settings window, dump the
- * control-mode API and the whole keybind table and test the state-file
- * channel - print() never reaches logcat on this build, error() does.
+ * live, "key ..." proves delivery, shows the translation and carries the
+ * engine's answer plus the originating device/source, "xh-in"/"xh-d" show
+ * the capture window and its deltas, and the one-shot "HKUI2"/"MWP4"/
+ * "MWP5"/"MWP6"/"MWP8"/"MWP9" Lua reports (first fresh key-down, first
+ * movement, first wheel notch) open the real settings window, dump the
+ * control-mode API, the keybind table with per-def details and the
+ * player/hotbar APIs, and test the state-file channel - print() never
+ * reaches logcat on this build, error() does.
  */
 public final class InputBridge implements Window.Callback {
     private static final String TAG = "MWInput";
@@ -191,10 +205,11 @@ public final class InputBridge implements Window.Callback {
     // log says whether the scheme switch actually moves the control mode.
     private static final String CTRL_TOGGLE =
             "(function()"
-                    + " local cl,cl2,cm,cm2"
+                    + " local cl,cl2,rk,rk2,cm,cm2"
                     + " local okc,cfg=pcall(function() return GetIWorldConfig() end)"
                     + " if not okc or cfg==nil then error('MWP6|cfg=no',0) end"
                     + " pcall(function() cl=cfg:getGameData('classical') end)"
+                    + " pcall(function() rk=cfg:getGameData('rocker') end)"
                     + " pcall(function() cm=GetClientInfo():getContrlMode() end)"
                     + " local num=tonumber(cl)"
                     + " local newc=(num and num>0) and 0 or 1"
@@ -205,12 +220,65 @@ public final class InputBridge implements Window.Callback {
                     + " local ok2=pcall(SetControlMoveSwithState)"
                     + " local ok3=pcall(function() GetClientInfo():appalyGameSetData() end)"
                     + " pcall(function() cl2=cfg:getGameData('classical') end)"
+                    + " pcall(function() rk2=cfg:getGameData('rocker') end)"
                     + " pcall(function() cm2=GetClientInfo():getContrlMode() end)"
                     + " error('MWP6|cl='..tostring(cl)..'->'..tostring(cl2)"
+                    + " ..' rk='..tostring(rk)..'->'..tostring(rk2)"
                     + " ..' cm='..tostring(cm)..'->'..tostring(cm2)"
                     + " ..'|set='..tostring(ok1)..' ui='..tostring(ok2)"
                     + " ..' ap='..tostring(ok3),0)"
                     + " end)";
+
+    // Movement through the engine's own player API: the keybind matcher
+    // never fires on Android (rounds 4-6: keys consumed, character stands
+    // still), so the bridge maps WASD/Space/Shift itself and drives
+    // CurMainPlayer - the same global the game scripts call setSneaking on.
+    // fwd/str are 1/-1/false: false reads as Lua false for the boolean
+    // setters and as 0 for the integer ones, 1/-1 as either. Reported once
+    // through error() so the first press proves which setters exist.
+    private static final String MOVEMENT =
+            "(function(fw,st,jp,sk,rep)"
+                    + " local p=nil"
+                    + " pcall(function() p=CurMainPlayer end)"
+                    + " if p==nil then pcall(function() p=ClientCurGame:getMainPlayer() end) end"
+                    + " if p==nil then"
+                    + " if rep==1 then error('MWP8|pl=no',0) end return end"
+                    + " local ok1,e1=pcall(function() p:setMoveForward(fw) end)"
+                    + " local ok2=pcall(function() p:setMoveStrafing(st) end)"
+                    + " local ok3=pcall(function() p:setJumping(jp) end)"
+                    + " local ok4=pcall(function() p:setSneaking(sk) end)"
+                    + " if rep==1 then"
+                    + " error('MWP8|mf='..tostring(ok1)..','..tostring(e1):sub(1,60)"
+                    + " ..' ms='..tostring(ok2)..' mj='..tostring(ok3)"
+                    + " ..' mk='..tostring(ok4),0)"
+                    + " end end)";
+
+    // Wheel = hotbar slot, the way the PC build plays: the Android engine
+    // swallows ACTION_SCROLL without acting on it, so the bridge cycles
+    // setCurShortcut itself. Wrapping uses getShortcutStartIndex and
+    // getCurShortcutItemNum so it stays correct whatever base the slot
+    // numbers use. First notch reports the slot layout once.
+    private static final String HOTBAR =
+            "(function(d,rep)"
+                    + " local p=nil"
+                    + " pcall(function() p=CurMainPlayer end)"
+                    + " if p==nil then pcall(function() p=ClientCurGame:getMainPlayer() end) end"
+                    + " if p==nil then"
+                    + " if rep==1 then error('MWP9|pl=no',0) end return end"
+                    + " local ok1,s=pcall(function() return p:getCurShortcut() end)"
+                    + " if not ok1 or type(s)~='number' then"
+                    + " if rep==1 then error('MWP9|get=no',0) end return end"
+                    + " local ok2,st=pcall(function() return p:getShortcutStartIndex() end)"
+                    + " local ok3,cn=pcall(function() return p:getCurShortcutItemNum() end)"
+                    + " st=(ok2 and type(st)=='number') and st or 1"
+                    + " cn=(ok3 and type(cn)=='number' and cn>0) and cn or 9"
+                    + " local n=s+d"
+                    + " if n<st then n=st+cn-1 elseif n>=st+cn then n=st end"
+                    + " local ok4,e4=pcall(function() p:setCurShortcut(n) end)"
+                    + " if rep==1 then"
+                    + " error('MWP9|s='..s..',st='..st..',cn='..cn..'->'..n"
+                    + " ..' set='..tostring(ok4)..','..tostring(e4):sub(1,50),0)"
+                    + " end end)";
 
     private static final long ENABLE_WARMUP_MS = 5000;
     private static final long ENABLE_INTERVAL_MS = 2000;
@@ -232,18 +300,33 @@ public final class InputBridge implements Window.Callback {
     private boolean primed; // the current crosshair drag has a movement baseline
     private float lastX;
     private float lastY;
-    private boolean looking; // a synthetic finger drag session is open
-    private boolean mouseTouching; // a mouse click is held as a touch
+    private boolean looking; // the synthetic look pointer (id 0) is down
+    private boolean mouseTouching; // the synthetic click pointer (id 1) is down
     private float lookX;
     private float lookY;
-    private long lookDownTime;
-    private long clickDown; // downTime of the currently held centre click
+    private float clickX;
+    private float clickY;
+    private long gestureDown; // downTime of the currently open pointer gesture
+    private final int[] pIds = new int[2];
+    private int pCount;
+    private boolean stateInGame; // byte 1 of the script state file
+    private boolean mvF;
+    private boolean mvB;
+    private boolean mvL;
+    private boolean mvR;
+    private boolean mvJ;
+    private boolean mvS;
+    private float wheelAcc;
+    private boolean moveReported;
+    private boolean hotbarReported;
     private long lastArrLog;
     private long lastDeltaLog;
     private long lastInLog;
     private boolean polling;
     private String statePath; // state file candidate 1 (external files dir)
     private String statePath2; // candidate 2 (internal files dir)
+    private String probePath; // io channel test file (kept off the state file)
+    private String probePath2;
     private boolean lastInMap; // last observed crosshair auto state
     private boolean stateErrLogged;
     private final Runnable lookEnd = new Runnable() {
@@ -255,12 +338,7 @@ public final class InputBridge implements Window.Callback {
     private final Runnable clickEnd = new Runnable() {
         @Override
         public void run() {
-            if (mouseTouching) { // a release event was lost: never wedge the touch
-                dispatchCenter(MotionEvent.ACTION_UP, clickDown,
-                        SystemClock.uptimeMillis());
-                mouseTouching = false;
-                Log.d(TAG, "center-touch auto-up");
-            }
+            releaseClick(SystemClock.uptimeMillis()); // a lost release must never wedge
         }
     };
     private final Runnable poll = new Runnable() {
@@ -276,6 +354,9 @@ public final class InputBridge implements Window.Callback {
                 if (ModMenu.isCrosshairOn()) {
                     ModMenu.setCrosshair(activity, false);
                     syncCrosshair();
+                }
+                if (mvF || mvB || mvL || mvR || mvJ || mvS) {
+                    clearMovement();
                 }
                 return;
             }
@@ -401,6 +482,164 @@ public final class InputBridge implements Window.Callback {
         }
     }
 
+    /**
+     * The engine's keybind matcher never fires on Android (rounds 4-6 saw
+     * every key consumed with the character standing still), so the six
+     * movement keys are mirrored into the player API the game scripts use.
+     * Returns true when the key belongs to the movement set and the stored
+     * state actually changed, which is the only moment worth a script call.
+     */
+    private boolean movementKey(int code, boolean down) {
+        switch (code) {
+            case KeyEvent.KEYCODE_W:
+                if (mvF == down) return false;
+                mvF = down;
+                return true;
+            case KeyEvent.KEYCODE_S:
+                if (mvB == down) return false;
+                mvB = down;
+                return true;
+            case KeyEvent.KEYCODE_A:
+                if (mvL == down) return false;
+                mvL = down;
+                return true;
+            case KeyEvent.KEYCODE_D:
+                if (mvR == down) return false;
+                mvR = down;
+                return true;
+            case KeyEvent.KEYCODE_SPACE:
+                if (mvJ == down) return false;
+                mvJ = down;
+                return true;
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT:
+                if (mvS == down) return false;
+                mvS = down;
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Pushes the movement state into CurMainPlayer. Numbers land as Lua
+     * numbers, false as Lua false - both spellings the setters accept, so a
+     * boolean-flavoured and an integer-flavoured binding behave the same.
+     */
+    private void fireMovement(boolean report) {
+        Object fwd = mvF ? Integer.valueOf(1) : (mvB ? Integer.valueOf(-1) : Boolean.FALSE);
+        Object str = mvR ? Integer.valueOf(1) : (mvL ? Integer.valueOf(-1) : Boolean.FALSE);
+        Object jump = mvJ ? Boolean.TRUE : Boolean.FALSE;
+        Object sneak = mvS ? Boolean.TRUE : Boolean.FALSE;
+        try {
+            CommonNatives.javaCallLuaEvent(MOVEMENT,
+                    new Object[]{fwd, str, jump, sneak, report ? 1 : 0});
+            Log.d(TAG, "move f=" + mvF + " b=" + mvB + " l=" + mvL
+                    + " r=" + mvR + " j=" + mvJ + " s=" + mvS);
+        } catch (RuntimeException e) {
+            Log.d(TAG, "move failed: " + e);
+        }
+    }
+
+    private void clearMovement() {
+        mvF = mvB = mvL = mvR = mvJ = mvS = false;
+        fireMovement(false);
+    }
+
+    /** One wheel notch = one hotbar slot, PC style. */
+    private void handleWheel(MotionEvent event) {
+        if (!stateInGame) {
+            return;
+        }
+        float v = event.getAxisValue(MotionEvent.AXIS_VSCROLL);
+        if (v == 0f) {
+            return;
+        }
+        wheelAcc += v;
+        while (wheelAcc >= 1f) {
+            wheelAcc -= 1f;
+            fireHotbar(1);
+        }
+        while (wheelAcc <= -1f) {
+            wheelAcc += 1f;
+            fireHotbar(-1);
+        }
+    }
+
+    private void fireHotbar(int delta) {
+        boolean report = !hotbarReported;
+        try {
+            CommonNatives.javaCallLuaEvent(HOTBAR,
+                    new Object[]{Integer.valueOf(delta), report ? 1 : 0});
+            hotbarReported = true;
+            Log.d(TAG, "wheel " + delta);
+        } catch (RuntimeException e) {
+            Log.d(TAG, "wheel failed: " + e);
+        }
+    }
+
+    /**
+     * Android keycode to the PC code space the engine numbers its binds in.
+     * getKeyName(51)='3' and getKeyName(87)='W' proved the bind table is
+     * plain ASCII, while nativeInjectEvent forwards Android codes untouched
+     * - so without this map a W press is read as '3' and nothing matches.
+     * Unmapped keys fall through with their original code.
+     */
+    private static int toAscii(int k) {
+        if (k >= KeyEvent.KEYCODE_A && k <= KeyEvent.KEYCODE_Z) {
+            return 65 + (k - KeyEvent.KEYCODE_A);
+        }
+        if (k >= KeyEvent.KEYCODE_0 && k <= KeyEvent.KEYCODE_9) {
+            return 48 + (k - KeyEvent.KEYCODE_0);
+        }
+        if (k >= KeyEvent.KEYCODE_F1 && k <= KeyEvent.KEYCODE_F12) {
+            return 112 + (k - KeyEvent.KEYCODE_F1);
+        }
+        switch (k) {
+            case KeyEvent.KEYCODE_SPACE: return 32;
+            case KeyEvent.KEYCODE_ENTER: return 13;
+            case KeyEvent.KEYCODE_TAB: return 9;
+            case KeyEvent.KEYCODE_DEL: return 8;
+            case KeyEvent.KEYCODE_FORWARD_DEL: return 46;
+            case KeyEvent.KEYCODE_ESCAPE: return 27;
+            case KeyEvent.KEYCODE_DPAD_UP: return 38;
+            case KeyEvent.KEYCODE_DPAD_DOWN: return 40;
+            case KeyEvent.KEYCODE_DPAD_LEFT: return 37;
+            case KeyEvent.KEYCODE_DPAD_RIGHT: return 39;
+            case KeyEvent.KEYCODE_SHIFT_LEFT:
+            case KeyEvent.KEYCODE_SHIFT_RIGHT: return 16;
+            case KeyEvent.KEYCODE_CTRL_LEFT:
+            case KeyEvent.KEYCODE_CTRL_RIGHT: return 17;
+            case KeyEvent.KEYCODE_ALT_LEFT:
+            case KeyEvent.KEYCODE_ALT_RIGHT: return 18;
+            case KeyEvent.KEYCODE_CAPS_LOCK: return 20;
+            case KeyEvent.KEYCODE_MOVE_HOME: return 36;
+            case KeyEvent.KEYCODE_MOVE_END: return 35;
+            case KeyEvent.KEYCODE_PAGE_UP: return 33;
+            case KeyEvent.KEYCODE_PAGE_DOWN: return 34;
+            case KeyEvent.KEYCODE_INSERT: return 45;
+            case KeyEvent.KEYCODE_COMMA: return 44;
+            case KeyEvent.KEYCODE_PERIOD: return 46;
+            case KeyEvent.KEYCODE_SLASH: return 47;
+            case KeyEvent.KEYCODE_SEMICOLON: return 59;
+            case KeyEvent.KEYCODE_APOSTROPHE: return 39;
+            case KeyEvent.KEYCODE_MINUS: return 45;
+            case KeyEvent.KEYCODE_EQUALS: return 61;
+            case KeyEvent.KEYCODE_LEFT_BRACKET: return 91;
+            case KeyEvent.KEYCODE_RIGHT_BRACKET: return 93;
+            case KeyEvent.KEYCODE_BACKSLASH: return 92;
+            case KeyEvent.KEYCODE_GRAVE: return 96;
+            default:
+                return -1;
+        }
+    }
+
+    private static KeyEvent translate(KeyEvent event, int ascii) {
+        return new KeyEvent(event.getDownTime(), event.getEventTime(),
+                event.getAction(), ascii, event.getRepeatCount(),
+                event.getMetaState(), event.getDeviceId(), event.getScanCode());
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
         if (ModMenu.isKbMouseOn()) {
@@ -439,14 +678,26 @@ public final class InputBridge implements Window.Callback {
                 if (freshDown) {
                     enableKeyBinds();
                 }
+                boolean edge = freshDown || event.getAction() == KeyEvent.ACTION_UP;
+                boolean moved = edge && stateInGame
+                        && movementKey(event.getKeyCode(),
+                                event.getAction() == KeyEvent.ACTION_DOWN);
+                int ascii = toAscii(event.getKeyCode());
+                KeyEvent send = ascii >= 0 ? translate(event, ascii) : event;
                 // consumed even when the engine declines it: letting the event
                 // continue into the view path would hand the same key to
                 // injectEvent a second time through AppPlayer.onKeyDown
-                boolean eng = player.injectEvent(event);
-                if (freshDown || event.getAction() == KeyEvent.ACTION_UP) {
-                    // dev/src/rep identify who produced the key: rounds 4 and 5
-                    // saw unexplained DPAD bursts only inside the capture window
-                    Log.d(TAG, "key " + event.getKeyCode() + "/" + event.getAction()
+                boolean eng = player.injectEvent(send);
+                if (moved) {
+                    fireMovement(!moveReported);
+                    moveReported = true;
+                }
+                if (edge) {
+                    // dev/src/rep identify who produced the key; "->ascii"
+                    // shows the translation the bind matcher needs
+                    Log.d(TAG, "key " + event.getKeyCode()
+                            + (ascii >= 0 ? "->" + ascii : "")
+                            + "/" + event.getAction()
                             + " eng=" + eng + " dev=" + event.getDeviceId()
                             + " src=" + event.getSource()
                             + " rep=" + event.getRepeatCount());
@@ -500,6 +751,9 @@ public final class InputBridge implements Window.Callback {
                     return true;
                 }
                 boolean eng = player.injectEvent(event);
+                if (act == MotionEvent.ACTION_SCROLL) {
+                    handleWheel(event);
+                }
                 if (act != MotionEvent.ACTION_HOVER_MOVE) {
                     Log.d(TAG, "motion act=" + act
                             + " src=" + event.getSource() + " eng=" + eng);
@@ -521,31 +775,33 @@ public final class InputBridge implements Window.Callback {
         }
         if (ModMenu.isKbMouseOn() && mouse) {
             boolean center = ModMenu.isCrosshairOn();
-            if (center && act == MotionEvent.ACTION_MOVE
-                    && event.getButtonState() == 0) {
-                // a captured pointer can report its movement on the touch path
-                // instead of the generic one - same delta source for the camera
-                long now = SystemClock.uptimeMillis();
-                if (now - lastArrLog > 500) {
-                    lastArrLog = now;
-                    Log.d(TAG, "xh-t x=" + event.getX() + " y=" + event.getY());
+            if (center) {
+                // under the crosshair the whole mouse runs through the
+                // pointer pair: moves steer the camera (button held or not),
+                // buttons mine at the centre
+                if (act == MotionEvent.ACTION_MOVE) {
+                    long now = SystemClock.uptimeMillis();
+                    if (now - lastArrLog > 500) {
+                        lastArrLog = now;
+                        Log.d(TAG, "xh-t x=" + event.getX() + " y=" + event.getY());
+                    }
+                    lookBy(event);
+                    return true;
                 }
-                lookBy(event);
-                return true;
-            }
-            if (center && act == MotionEvent.ACTION_DOWN) {
-                endLook(event.getEventTime()); // click opens its own touch
+                if (act == MotionEvent.ACTION_DOWN) {
+                    centerTouch(event.getEventTime(), true);
+                    return true;
+                }
+                if (act == MotionEvent.ACTION_UP
+                        || act == MotionEvent.ACTION_CANCEL) {
+                    centerTouch(event.getEventTime(), false);
+                    return true;
+                }
             }
             MotionEvent finger = asFinger(event, center);
             if (finger != null) {
                 boolean handled = orig.dispatchTouchEvent(finger);
                 finger.recycle();
-                if (act == MotionEvent.ACTION_DOWN) {
-                    mouseTouching = true;
-                } else if (act == MotionEvent.ACTION_UP
-                        || act == MotionEvent.ACTION_CANCEL) {
-                    mouseTouching = false; // a cancel must never wedge the look
-                }
                 if (act == MotionEvent.ACTION_DOWN || act == MotionEvent.ACTION_UP) {
                     Log.d(TAG, "mouse-touch " + act + " handled=" + handled);
                 }
@@ -595,8 +851,8 @@ public final class InputBridge implements Window.Callback {
      * Captured pointer movement is delivered to the captured view, not to the
      * window callback - rounds 4 and 5 logged zero motion events while
      * capture was held, which left the crosshair camera dead. This listener
-     * is the missing half: same camera path as hover, buttons rebuilt as
-     * centre touches, scroll handed to the engine.
+     * is the missing half: camera deltas (relative, unlike the hover path),
+     * buttons rebuilt as centre touches, wheel handed to the hotbar handler.
      */
     private final View.OnCapturedPointerListener captureListener =
             new View.OnCapturedPointerListener() {
@@ -610,7 +866,7 @@ public final class InputBridge implements Window.Callback {
             switch (act) {
                 case MotionEvent.ACTION_HOVER_MOVE:
                 case MotionEvent.ACTION_MOVE:
-                    lookBy(e);
+                    lookByRel(e); // captured coords are relative deltas
                     return true;
                 case MotionEvent.ACTION_BUTTON_PRESS:
                 case MotionEvent.ACTION_DOWN:
@@ -621,6 +877,7 @@ public final class InputBridge implements Window.Callback {
                     centerTouch(e.getEventTime(), false);
                     return true;
                 case MotionEvent.ACTION_SCROLL: {
+                    handleWheel(e);
                     AppPlayer p = player();
                     return p != null && p.injectEvent(e);
                 }
@@ -664,7 +921,9 @@ public final class InputBridge implements Window.Callback {
         surface.releasePointerCapture();
         captured = false;
         primed = false;
-        endLook(SystemClock.uptimeMillis());
+        long now = SystemClock.uptimeMillis();
+        endLook(now);
+        releaseClick(now);
         Log.d(TAG, "xh capture released");
     }
 
@@ -697,6 +956,13 @@ public final class InputBridge implements Window.Callback {
             return;
         }
         boolean inMap = s.charAt(0) == '1' && s.charAt(1) != '1';
+        boolean inGame = s.charAt(0) == '1';
+        if (inGame != stateInGame) {
+            stateInGame = inGame;
+            if (!inGame) {
+                clearMovement(); // a map exit must not leave the player walking
+            }
+        }
         if (inMap == lastInMap) {
             return;
         }
@@ -725,6 +991,12 @@ public final class InputBridge implements Window.Callback {
             statePath = ext != null
                     ? new java.io.File(ext, "mw_state.txt").getAbsolutePath()
                     : statePath2;
+            // the io channel test must not clobber the state file: round 6's
+            // probe wrote "mw-ok" there and the poller read a phantom map exit
+            probePath2 = new java.io.File(internal, "mw_probe.txt").getAbsolutePath();
+            probePath = ext != null
+                    ? new java.io.File(ext, "mw_probe.txt").getAbsolutePath()
+                    : probePath2;
             return true;
         } catch (RuntimeException e) {
             Log.d(TAG, "state paths failed: " + e);
@@ -758,18 +1030,22 @@ public final class InputBridge implements Window.Callback {
     }
 
     /**
-     * MWP5: the keybind table. getKeyName over both keycode spaces says how
-     * the engine numbers keys (VK vs Android decides how the bridge must
-     * translate), GetGameHotkey per action says what is bound right now
-     * (d+default when unbound), and the io test says whether the state-file
-     * channel the poller needs is writable.
+     * MWP5: the keybind table and the round-7 discoveries. getKeyName over
+     * both keycode spaces says how the engine numbers keys (VK vs Android
+     * decides how the bridge must translate), GetGameHotkey per action says
+     * what is bound right now (d+default when unbound), d3 shows the raw
+     * result of the first three defs so an empty b= can finally be told
+     * apart from a broken reader, mgr dumps the engine's GameSettingsMgr,
+     * pl/sc report the player object the movement and hotbar scripts need,
+     * and the io test says whether the state-file channel is writable - it
+     * writes into mw_probe.txt, never into the state file itself.
      */
     private String probeB() {
         if (statePath == null) {
             resolvePaths();
         }
-        String p1 = luaStr(statePath);
-        String p2 = statePath2 != null ? luaStr(statePath2) : "";
+        String p1 = luaStr(probePath);
+        String p2 = probePath2 != null ? luaStr(probePath2) : "";
         return "(function()"
                 + " local parts={'MWP5'}"
                 + " local function ioTest(p)"
@@ -809,6 +1085,51 @@ public final class InputBridge implements Window.Callback {
                 + " elseif not okgi and nerr==nil then nerr='nogi' end"
                 + " parts[#parts+1]='n='..tostring(n)..(nerr and (','..nerr) or '')"
                 + " parts[#parts+1]='b='..table.concat(binds,';')"
+                + " local d3={}"
+                + " for i=1,3 do"
+                + " local ok1,d=pcall(function() return DefMgr:getHotkeyDef(i) end)"
+                + " if not ok1 then d3[#d3+1]=i..':F'"
+                + " else"
+                + " local fn=type(d)=='table' and tostring(d.FuncName) or type(d)"
+                + " local ok2,cur=pcall(function()"
+                + " return gi:GetGameHotkey(d.FuncName) end)"
+                + " local tail=ok2 and (type(cur)..':'..tostring(cur):sub(1,8)) or 'F'"
+                + " d3[#d3+1]=i..':'..fn..':'..tail"
+                + " end end"
+                + " parts[#parts+1]='d3='..table.concat(d3,',')"
+                + " local mks={}"
+                + " pcall(function()"
+                + " local t=_G['GameSettingsMgr']"
+                + " if type(t)=='table' then"
+                + " for k in pairs(t) do"
+                + " if #mks<40 then mks[#mks+1]=tostring(k) end"
+                + " end end end)"
+                + " parts[#parts+1]='mgr='..(#mks>0 and table.concat(mks,',') or 'none')"
+                + " local pl='nil'"
+                + " pcall(function()"
+                + " local c=CurMainPlayer"
+                + " if c~=nil then"
+                + " local okmf=type(c.setMoveForward)=='function'"
+                + " local oksc=type(c.setCurShortcut)=='function'"
+                + " pl=type(c)..(okmf and '/mf' or '/nomf')"
+                + " ..(oksc and '/sc' or '/nosc')"
+                + " end end)"
+                + " if pl=='nil' then pcall(function()"
+                + " local c=ClientCurGame:getMainPlayer()"
+                + " if c~=nil then pl='ccg:'..type(c) end end) end"
+                + " parts[#parts+1]='pl='..pl"
+                + " local sc='-'"
+                + " pcall(function()"
+                + " local c=CurMainPlayer"
+                + " if c~=nil then"
+                + " local ok1,s=pcall(function() return c:getCurShortcut() end)"
+                + " local ok2,st=pcall(function() return c:getShortcutStartIndex() end)"
+                + " local ok3,cn=pcall(function() return c:getCurShortcutItemNum() end)"
+                + " sc=(ok1 and tostring(s) or '?')..','.."
+                + "(ok2 and tostring(st) or '?')..','.."
+                + "(ok3 and tostring(cn) or '?')"
+                + " end end)"
+                + " parts[#parts+1]='sc='..sc"
                 + " local io1,io2='skip','skip'"
                 + " if type(io)=='table' and io.open then"
                 + " io1=ioTest('" + p1 + "');"
@@ -843,51 +1164,55 @@ public final class InputBridge implements Window.Callback {
     }
 
     /**
-     * A mouse button while the pointer is captured never reaches the touch
-     * path (round 5 saw zero clicks inside the capture window), so the button
-     * is rebuilt as a finger touch at the crosshair. The safety timeout
-     * closes it when the matching release event is lost.
+     * A mouse button becomes the second pointer of a pair held at the
+     * crosshair: pointer 0 steers the camera, pointer 1 stays planted on
+     * the block - so holding the button and moving keeps mining while the
+     * view turns, the way the PC build plays. The safety timeout closes
+     * pointer 1 when the matching release event is lost.
      */
     private void centerTouch(long time, boolean down) {
         if (down) {
             if (mouseTouching) {
                 return;
             }
-            endLook(time);
+            DisplayMetrics dm = activity.getResources().getDisplayMetrics();
+            clickX = dm.widthPixels / 2f;
+            clickY = dm.heightPixels / 2f;
             mouseTouching = true;
-            clickDown = time;
-            dispatchCenter(MotionEvent.ACTION_DOWN, time, time);
-            MAIN.removeCallbacks(clickEnd);
+            ptrDown(CLICK_ID, time);
+            MAIN.removeCallbacks(lookEnd);
             MAIN.postDelayed(clickEnd, CLICK_HOLD_MS);
             Log.d(TAG, "center-touch down");
         } else {
-            if (!mouseTouching) {
-                return;
-            }
-            MAIN.removeCallbacks(clickEnd);
-            dispatchCenter(MotionEvent.ACTION_UP, clickDown, time);
-            mouseTouching = false;
-            Log.d(TAG, "center-touch up");
+            releaseClick(time);
         }
     }
 
-    private void dispatchCenter(int action, long downTime, long time) {
-        DisplayMetrics dm = activity.getResources().getDisplayMetrics();
-        dispatchFinger(action, downTime, time, dm.widthPixels / 2f,
-                dm.heightPixels / 2f);
+    private void releaseClick(long time) {
+        if (!mouseTouching) {
+            return;
+        }
+        MAIN.removeCallbacks(clickEnd);
+        ptrUp(CLICK_ID, time);
+        mouseTouching = false;
+        if (looking) { // the look pointer may have outlived the click
+            MAIN.removeCallbacks(lookEnd);
+            MAIN.postDelayed(lookEnd, LOOK_IDLE_MS);
+        }
+        Log.d(TAG, "center-touch up");
     }
 
     /**
-     * Turns a mouse movement into the engine's camera path: a finger drag
-     * around the screen centre. Deltas come from the tracked pointer
-     * position, so capture or hover both work; when the virtual finger hits
-     * an edge it is lifted and re-opened at the centre, which reads as a
-     * fresh swipe with the same delta the next move carries.
+     * Turns mouse movement into the engine's camera path: pointer 0 drags
+     * around the screen centre while pointer 1 (if held) stays planted on
+     * the block. Hover coordinates are absolute; captured coordinates are
+     * relative deltas - Android's OnCapturedPointerListener docs: "pointer
+     * coordinates that specify relative movements such as X or Y deltas" -
+     * which is why the two entry points treat the baseline differently.
+     * At a screen edge the look pointer lifts and re-opens at the centre,
+     * which reads as a fresh swipe carrying the same delta.
      */
     private void lookBy(MotionEvent event) {
-        if (mouseTouching) {
-            return; // a held mouse button already drags as a touch
-        }
         float x = event.getX();
         float y = event.getY();
         if (!primed) {
@@ -905,11 +1230,33 @@ public final class InputBridge implements Window.Callback {
         float dy = y - lastY;
         lastX = x;
         lastY = y;
+        lookMove(dx, dy, event.getEventTime());
+    }
+
+    /** Captured movement: x/y already are this sample's delta. */
+    private void lookByRel(MotionEvent event) {
+        if (!primed) {
+            primed = true;
+            return;
+        }
+        float dx = 0f;
+        float dy = 0f;
+        int hist = event.getHistorySize();
+        for (int i = 0; i < hist; i++) {
+            dx += event.getHistoricalX(0, i);
+            dy += event.getHistoricalY(0, i);
+        }
+        dx += event.getX();
+        dy += event.getY();
+        lookMove(dx, dy, event.getEventTime());
+    }
+
+    private void lookMove(float dx, float dy, long t) {
         long now = SystemClock.uptimeMillis();
         if (dx == 0f && dy == 0f) {
             if (now - lastDeltaLog > 500) {
                 lastDeltaLog = now;
-                Log.d(TAG, "xh-d0 x=" + x + " y=" + y);
+                Log.d(TAG, "xh-d0 dx=" + dx + " dy=" + dy);
             }
             return;
         }
@@ -917,60 +1264,118 @@ public final class InputBridge implements Window.Callback {
             lastDeltaLog = now;
             Log.d(TAG, "xh-d dx=" + dx + " dy=" + dy);
         }
-        long t = event.getEventTime();
         DisplayMetrics dm = activity.getResources().getDisplayMetrics();
         if (!looking) {
             lookX = dm.widthPixels / 2f;
             lookY = dm.heightPixels / 2f;
-            lookDownTime = t;
-            dispatchSynth(MotionEvent.ACTION_DOWN, lookX, lookY, t);
             looking = true;
+            ptrDown(LOOK_ID, t);
         }
         lookX += dx;
         lookY += dy;
         if (lookX < 2f || lookX > dm.widthPixels - 3f
                 || lookY < 2f || lookY > dm.heightPixels - 3f) {
-            dispatchSynth(MotionEvent.ACTION_UP, lookX, lookY, t);
+            ptrUp(LOOK_ID, t);
             lookX = dm.widthPixels / 2f;
             lookY = dm.heightPixels / 2f;
-            lookDownTime = t;
-            dispatchSynth(MotionEvent.ACTION_DOWN, lookX, lookY, t);
+            ptrDown(LOOK_ID, t);
         }
-        dispatchSynth(MotionEvent.ACTION_MOVE, lookX, lookY, t);
-        MAIN.removeCallbacks(lookEnd);
-        MAIN.postDelayed(lookEnd, LOOK_IDLE_MS);
+        ptrMove(t);
+        if (!mouseTouching) {
+            MAIN.removeCallbacks(lookEnd);
+            MAIN.postDelayed(lookEnd, LOOK_IDLE_MS);
+        }
     }
 
-    /** Ends the synthetic drag, if one is open. */
+    /** Ends the synthetic look pointer, if it is open. */
     private void endLook(long t) {
         MAIN.removeCallbacks(lookEnd);
         if (!looking) {
             return;
         }
-        dispatchSynth(MotionEvent.ACTION_UP, lookX, lookY, t);
+        ptrUp(LOOK_ID, t);
         looking = false;
     }
 
-    private void dispatchSynth(int action, float x, float y, long time) {
-        dispatchFinger(action, lookDownTime, time, x, y);
+    // ---- the synthetic pointer pair -------------------------------------
+
+    private static final int LOOK_ID = 0;
+    private static final int CLICK_ID = 1;
+
+    private float ptrX(int id) {
+        return id == LOOK_ID ? lookX : clickX;
     }
 
-    private void dispatchFinger(int action, long downTime, long time,
-                                float x, float y) {
-        MotionEvent.PointerProperties p = new MotionEvent.PointerProperties();
-        p.id = 0;
-        p.toolType = MotionEvent.TOOL_TYPE_FINGER;
-        MotionEvent.PointerCoords c = new MotionEvent.PointerCoords();
-        c.x = x;
-        c.y = y;
-        c.pressure = 1f;
-        c.size = 0.05f;
-        MotionEvent m = MotionEvent.obtain(downTime, time, action, 1,
-                new MotionEvent.PointerProperties[]{p},
-                new MotionEvent.PointerCoords[]{c},
-                0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+    private float ptrY(int id) {
+        return id == LOOK_ID ? lookY : clickY;
+    }
+
+    /** Sends an event covering every synthetic pointer currently down. */
+    private void ptrEvent(int action, long time) {
+        int n = pCount;
+        if (n == 0) {
+            return;
+        }
+        MotionEvent.PointerProperties[] props =
+                new MotionEvent.PointerProperties[n];
+        MotionEvent.PointerCoords[] coords = new MotionEvent.PointerCoords[n];
+        for (int i = 0; i < n; i++) {
+            MotionEvent.PointerProperties p = new MotionEvent.PointerProperties();
+            p.id = pIds[i];
+            p.toolType = MotionEvent.TOOL_TYPE_FINGER;
+            props[i] = p;
+            MotionEvent.PointerCoords c = new MotionEvent.PointerCoords();
+            c.x = ptrX(pIds[i]);
+            c.y = ptrY(pIds[i]);
+            c.pressure = 1f;
+            c.size = 0.05f;
+            coords[i] = c;
+        }
+        MotionEvent m = MotionEvent.obtain(gestureDown, time, action, n,
+                props, coords, 0, 0, 1f, 1f, 0, 0,
+                InputDevice.SOURCE_TOUCHSCREEN, 0);
         orig.dispatchTouchEvent(m);
         m.recycle();
+    }
+
+    private void ptrDown(int id, long time) {
+        if (pCount >= pIds.length) {
+            return;
+        }
+        int idx = pCount;
+        if (idx == 0) {
+            gestureDown = time;
+        }
+        pIds[pCount++] = id;
+        int action = idx == 0 ? MotionEvent.ACTION_DOWN
+                : MotionEvent.ACTION_POINTER_DOWN
+                        | (idx << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
+        ptrEvent(action, time);
+    }
+
+    private void ptrUp(int id, long time) {
+        int idx = -1;
+        for (int i = 0; i < pCount; i++) {
+            if (pIds[i] == id) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
+            return;
+        }
+        int action = pCount == 1 ? MotionEvent.ACTION_UP
+                : MotionEvent.ACTION_POINTER_UP
+                        | (idx << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
+        ptrEvent(action, time);
+        for (int i = idx; i < pCount - 1; i++) {
+            pIds[i] = pIds[i + 1];
+        }
+        pCount--;
+    }
+
+    private void ptrMove(long time) {
+        ptrEvent(MotionEvent.ACTION_MOVE, time);
     }
 
     @Override
@@ -1053,7 +1458,9 @@ public final class InputBridge implements Window.Callback {
             if (captured && surface != null) {
                 releaseCapture(surface); // the menu needs to see its cursor
             } else {
-                endLook(SystemClock.uptimeMillis());
+                long now = SystemClock.uptimeMillis();
+                endLook(now);
+                releaseClick(now);
             }
         }
         orig.onWindowFocusChanged(hasFocus);
@@ -1098,7 +1505,9 @@ public final class InputBridge implements Window.Callback {
         if (!hasCapture && captured) {
             captured = false;
             primed = false;
-            endLook(SystemClock.uptimeMillis());
+            long now = SystemClock.uptimeMillis();
+            endLook(now);
+            releaseClick(now); // a lost capture must not leave a finger held
             Log.d(TAG, "xh capture lost");
         }
         orig.onPointerCaptureChanged(hasCapture);
