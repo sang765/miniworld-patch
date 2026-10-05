@@ -19,6 +19,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.animation.PathInterpolator;
 import android.widget.Button;
 import android.widget.CompoundButton;
@@ -70,6 +71,10 @@ public class ModMenuActivity extends Activity
     private void buildMenu() {
         Palette p = Palette.of(this);
         getWindow().setBackgroundDrawable(new ColorDrawable(p.scrim));
+        // base Theme carries backgroundDimAmount=0.6 and only FLAG_DIM_BEHIND
+        // applies it: clearing it keeps our 70% scrim the single darkening
+        // over the game this window now sits on top of
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
 
         FrameLayout root = new FrameLayout(this);
         root.setOnClickListener(this); // tap the scrim to dismiss

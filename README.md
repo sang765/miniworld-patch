@@ -20,7 +20,7 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 |---|--------|-------|
 | 1 | In-game browser / WebView opening is blocked | `ClientMethodCommonApi` (5 JNI/Lua entries) and `MiniUniverseHelper` (3 loadUrl convergence points), plus `android:exported="false"` on `BrowserActivity` |
 | 2 | Device identifiers the client generates itself are spoofed | `IdDevice`, `cn/mini1/utils/b`, `ClientMethodCommonApi.GetFlyerUID` |
-| 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate` |
+| 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate`; the menu window is `Theme.Translucent.NoTitleBar.Fullscreen`, so the sheet draws over the game still visible behind it |
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 | 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
 | 6 | A crash becomes a report the player can copy, save and share | `modmenu.CrashHandler`, installed at the head of `GoogleApplication.onCreate`, takes over the uncaught-exception handler: it stores a report (app, device, thread, exception, logcat) under `files/mwcrash/`, requests `modmenu.CrashActivity` and posts a notification pointing at the same screen, since a background crash may not be allowed to start an activity. It never swallows the throwable - it hands on to whatever was installed before it, so the process still dies as it always did |
@@ -29,7 +29,12 @@ Constants live in `spoof.env`.
 
 The game posts an Android notification on startup (title "Mini World", body
 translated through `modmenu.I18n`); tapping it opens the menu, a
-Material You bottom sheet with one switch per mod. The switches persist in
+Material You bottom sheet with one switch per mod. The window is
+`Theme.Translucent.NoTitleBar.Fullscreen`, so the sheet draws over the game and
+`AppPlayBaseActivity` behind it is only paused, never stopped - its surface
+survives the menu. An opaque menu activity used to stop it instead, and a
+battery-aware ROM (MIUI) recycles a stopped activity, which is what read as the
+game being killed. The switches persist in
 `SharedPreferences`, default to on — which is exactly changes 1, 2 and 4
 above — and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`
 / `isRewardBypass()`. The third switch makes the

@@ -115,7 +115,8 @@ python3 - "$T/mf.txt" <<'PY' || fail=1
 import re, sys
 lines = open(sys.argv[1], encoding="utf-8", errors="replace").read().splitlines()
 
-def exported_of(name):
+def activity_attrs(name):
+    """Attribute lines of the <activity> element owning `name`."""
     idx = next((i for i, l in enumerate(lines) if name in l), None)
     if idx is None:
         raise SystemExit(f"{name} not found in manifest")
@@ -125,11 +126,17 @@ def exported_of(name):
     if not re.match(r"\s*E: activity\b", lines[start]):
         raise SystemExit(f"could not locate the owning <activity> element for {name}")
     indent = len(lines[start]) - len(lines[start].lstrip())
-    value = None
+    out = []
     for l in lines[start + 1:]:
         if re.match(r"\s*[EA]: ", l) and (len(l) - len(l.lstrip())) <= indent \
            and re.match(r"\s*E: ", l):
             break
+        out.append(l)
+    return out
+
+def exported_of(name):
+    value = None
+    for l in activity_attrs(name):
         m = re.search(r":exported\(0x01010010\)=(\S+)", l)
         if m:
             value = m.group(1)
@@ -154,6 +161,25 @@ for name, label in (("org.appplay.lib.browser.BrowserActivity", "BLOCKED"),
     ok = is_false(v)
     print(f"{name.split('.')[-1]} exported = {v} -> {label if ok else 'STILL EXPORTED'}")
     failed = failed or not ok
+
+# The menu has to sit on a translucent-fullscreen window: the game activity
+# behind it then stays visible and is only paused, which is what keeps
+# battery-aware ROMs (MIUI) from recycling it. An opaque menu activity stops
+# the game behind it, and a stopped activity is what a battery saver reclaims -
+# the player sees that as the game dying. 0x01030011 is
+# android.R.style.Theme_Translucent_NoTitleBar_Fullscreen, the id the SDK
+# resolved the manifest reference to; android.jar and the platform's own
+# framework-res agree on it.
+theme = None
+for l in activity_attrs("modmenu.ModMenuActivity"):
+    m = re.search(r":theme\(0x01010000\)=(\S+)", l)
+    if m:
+        theme = m.group(1)
+got = "(missing)" if theme is None else theme.rstrip(')"')
+ok = got == "@0x01030011"
+print(f"ModMenuActivity theme = {got} -> "
+      f"{'MENU OVER LIVE GAME' if ok else 'OPAQUE, GAME GETS STOPPED'}")
+failed = failed or not ok
 sys.exit(1 if failed else 0)
 PY
 

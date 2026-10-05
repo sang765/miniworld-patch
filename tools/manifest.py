@@ -29,17 +29,20 @@ DEFAULT_MANIFEST = WORK / "decoded" / "AndroidManifest.xml"
 DEFAULT_ACTIVITY = "org.appplay.lib.browser.BrowserActivity"
 
 ATTR_RE = re.compile(r'android:exported="[^"]*"')
+ELEMENT_ATTR_RE = re.compile(r'android:[A-Za-z]+="[^"]*"')
 MENU_NAME = "modmenu.ModMenuActivity"
 MENU_ELEMENT = ('<activity android:exported="false" '
                 'android:name="modmenu.ModMenuActivity" '
-                'android:screenOrientation="sensorLandscape"/>')
+                'android:screenOrientation="sensorLandscape" '
+                'android:theme="@android:style/'
+                'Theme.Translucent.NoTitleBar.Fullscreen"/>')
 CRASH_NAME = "modmenu.CrashActivity"
 CRASH_ELEMENT = ('<activity android:exported="false" '
                  'android:name="modmenu.CrashActivity" '
                  'android:excludeFromRecents="true"/>')
 # (class name, element to insert when it is missing, what to report)
 DECLARED = (
-    (MENU_NAME, MENU_ELEMENT, "exported=false, sensorLandscape"),
+    (MENU_NAME, MENU_ELEMENT, "exported=false, sensorLandscape, translucent theme"),
     (CRASH_NAME, CRASH_ELEMENT, "exported=false, excludeFromRecents"),
 )
 
@@ -97,8 +100,20 @@ def main() -> int:
     # Re-read the insertion point every time: inserting shifts the indices,
     # and a stale </application> would land an element inside the previous one.
     for name, element, note in DECLARED:
-        if any(name in l for l in lines):
-            print(f"OK: {name} already declared")
+        present = next((i for i, l in enumerate(lines) if name in l), None)
+        if present is not None:
+            # build.sh reuses work/decoded, so the element may have been
+            # written by an older run. Matching on the name alone would then
+            # report "already declared" and silently drop an attribute this
+            # script has since learned to set.
+            if all(a in lines[present]
+                   for a in ELEMENT_ATTR_RE.findall(element)):
+                print(f"OK: {name} already declared")
+                continue
+            lead = lines[present][: len(lines[present]) - len(lines[present].lstrip())]
+            tail = "\n" if lines[present].endswith("\n") else ""
+            lines[present] = lead + element + tail
+            print(f"updated {name} ({note})")
             continue
         close = next((i for i, l in enumerate(lines) if l.strip() == "</application>"),
                      None)
