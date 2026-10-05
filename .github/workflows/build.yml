@@ -1,14 +1,9 @@
 name: build
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      source_url:
-        description: >-
-          Optional override: an APKMirror release page (or a /download/?key=
-          link). Leave empty to use the release page pinned in scripts/env.sh.
-        required: false
-        default: ""
 
 permissions:
   contents: write
@@ -23,8 +18,6 @@ jobs:
     runs-on: ubuntu-latest
     # source (874M) + two decodes + rebuilt splits + bundle land near 7GB
     timeout-minutes: 240
-    env:
-      SOURCE_URL: ${{ inputs.source_url }}
     steps:
       - uses: actions/checkout@v4
 
