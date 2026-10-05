@@ -23,8 +23,8 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 | 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuActivity`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate` |
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 | 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
-| 6 | OTG keyboard and mouse input reaches the engine like the Windows build | `modmenu.InputBridge`, a `Window.Callback` wrapper installed on every activity as it resumes: keys are injected into `AppPlayer.injectEvent` (after calling `GameSettingsMgr:enableAllKeyBind()` in the game's Lua VM), mouse-button touches are rewritten from `SOURCE_MOUSE` to a finger touch, and pointer motion is injected as-is |
-| 7 | Crosshair mode: the cursor disappears and moving the mouse looks around | `modmenu.InputBridge` holds pointer capture on the game surface while the switch (or F1) is on, rewrites pointer movement into a centre-screen finger drag - the engine's proven camera path - and lands mouse clicks on the crosshair |
+| 6 | OTG keyboard and mouse input reaches the engine like the Windows build | `modmenu.InputBridge`, a `Window.Callback` wrapper installed on every activity as it resumes: keycodes are translated to the ASCII space the bind table lives in before injection into `AppPlayer.injectEvent` (after calling `GameSettingsMgr:enableAllKeyBind()` in the game's Lua VM), W/A/S/D/Space/Shift are additionally mirrored into the game's own player API (`CurMainPlayer:setMoveForward` and friends) because the native matcher never fires on Android, mouse-button touches are rewritten from `SOURCE_MOUSE` to a finger touch, each wheel notch cycles the hotbar through `setCurShortcut`, and pointer motion is injected as-is |
+| 7 | Crosshair mode: the cursor disappears, moving the mouse looks around, a held button mines while you turn | `modmenu.InputBridge` holds pointer capture on the game surface while the switch (or F1) is on: pointer 0 drags the camera around the screen centre (captured coordinates arrive as relative deltas, not absolute positions), pointer 1 holds the block under the crosshair, so holding a mouse button and moving keeps mining while the view turns |
 
 Constants live in `spoof.env`.
 
@@ -73,9 +73,24 @@ Mouse clicks reach Android as `SOURCE_MOUSE`/`TOOL_TYPE_MOUSE` touches, which
 the engine's touch path ignores, so the wrapper rebuilds them as finger
 touches (same coordinates, `TOOL_TYPE_FINGER`, `SOURCE_TOUCHSCREEN`, no button
 state) before passing them on - a mouse click becomes exactly a finger tap.
-System keys (Back, volume, menu) and real finger touches keep their normal
-Android path. Everything logs under the `MWInput` tag (`installed on <activity>`,
-`key <code>/<action> eng=<bool> dev=<id> src=<flags> rep=<count>`,
+Keycodes are translated on the way: `getKeyName(51)` returning `3` proved the
+engine numbers its binds in the PC/ASCII space while `nativeInjectEvent`
+forwards Android codes untouched, so each key becomes its ASCII code first
+(`51 -> 87`, space `62 -> 32`, arrows and the rest mapped; the F-keys the mod
+consumes stay Android-side) and is logged with the translation. Because the
+native keybind matcher still never fires on Android, W/A/S/D, Space and Shift
+are additionally mirrored into the player API the game's own scripts use
+(`CurMainPlayer:setMoveForward/setMoveStrafing/setJumping/setSneaking`) on
+key edges only - one Lua call per press or release, never per repeat -
+logged as `move f=... b=... l=... r=... j=... s=...` with a one-shot
+`MWP8|...` report for the first edge. The engine swallows `ACTION_SCROLL`
+on this build, so each wheel notch also cycles the hotbar through
+`setCurShortcut`, wrapped with the game's own slot bounds
+(`getShortcutStartIndex`/`getCurShortcutItemNum`), logged as
+`wheel <delta>` plus a one-shot `MWP9|...`. System keys (Back, volume,
+menu) and real finger touches keep their normal Android path. Everything
+logs under the `MWInput` tag (`installed on <activity>`,
+`key <code>[-><ascii>]/<action> eng=<bool> dev=<id> src=<flags> rep=<count>`,
 `mouse-touch <action> handled=<bool>`), so a LogFox capture shows exactly
 where an event stops and who produced it. The engine side is not
 something this patch adds - `ProcessKeyEvent`, a `KeyCharacterMap` lookup, the
@@ -85,29 +100,43 @@ something this patch adds - `ProcessKeyEvent`, a `KeyCharacterMap` lookup, the
 
 Crosshair mode (fifth switch, off by default, or F1 while the OTG bridge is
 on) asks the game surface for pointer capture, so the system cursor disappears
-while movement keeps arriving; every movement is rewritten into a finger drag
-around the screen centre - the same path a thumb uses to turn the camera - and
-mouse clicks are rebuilt at the crosshair instead of the locked pointer
-position. A real finger touch, a mouse click or a lost window focus ends the
-synthetic drag first, and capture is released whenever the window loses focus
-so menus can show a cursor again. Captured movement never reaches the window
-callback (rounds 4 and 5 saw zero motion events while capture was held), so the
-surface also gets an `OnCapturedPointerListener` that feeds the same camera
-path, rebuilds mouse buttons as centre touches and forwards scroll. While the
-bridge is on, a 1.5 s poll asks the Lua VM whether a map is active through a
-two-byte state file - the VM has no value-returning channel back into Java -
-and turns the crosshair on or off across that transition; a manual F1 stays in
-effect until the map changes. The first fresh key-down after startup opens the
-game's own settings window on the hotkey page once (logged as `HKUI2|...`, so
-the official rebinding UI can be tried on Android) and fires one-shot Lua
-reports (logged as `MWP4|...`/`MWP5|...` through the engine's error logger -
-`print` never reaches logcat on this build) that dump the control-mode API,
-the `classical`/`rocker` scheme flags, the whole keybind table in both
-keycode spaces and a write test for the state-file channel, so the keybind
-backport is driven by data instead of a guess. F2 cycles the game's own
-control scheme (the `classical`/`rocker` pair the settings switch uses,
-applied through `appalyGameSetData`) and reports `getContrlMode` before and
-after as `MWP6|...`.
+while movement keeps arriving. The scene runs as a pair of synthetic pointers:
+pointer 0 is the camera - a drag that starts at the screen centre and turns
+with the mouse. Captured coordinates arrive as **relative deltas** per the
+Android docs, not absolute positions (summing the event's historical deltas
+first), which is what made earlier rounds snap back to the drag origin; the
+hover and touch paths stay absolute and prime their own baseline. Pointer 1
+is the finger on the block under the crosshair, held down while a mouse
+button is pressed - so holding the button and moving keeps mining while the
+view turns, instead of the touch swallowing the camera drag. A real finger
+touch, a lost window focus or a lost capture lifts both pointers, so no
+state can wedge; capture itself is released whenever the window loses focus
+so menus can show a cursor again. Known risk to check on device: the engine may read the
+second pointer as pinch-zoom; if the camera zooms during hold+look, round 8
+pins zoom through `setZoomInOut`. Captured movement never reaches the window
+callback (rounds 4 and 5 saw zero motion events while capture was held), so
+the surface also gets an `OnCapturedPointerListener` that feeds the same
+camera path from the deltas, rebuilds mouse buttons as centre touches and
+hands scroll to the hotbar. While the bridge is on, a 1.5 s poll asks the
+Lua VM whether a map is active through a two-byte state file - the VM has
+no value-returning channel back into Java - turns the crosshair on or off
+across that transition (a manual F1 stays in effect until the map changes)
+and clears the movement state on map exit so the player never walks on. The
+first fresh key-down after startup opens the game's own settings window on
+the hotkey page once (logged as `HKUI2|...`, so the official rebinding UI
+can be tried on Android) and fires one-shot Lua reports (logged as
+`MWP4|...`/`MWP5|...` through the engine's error logger - `print` never
+reaches logcat on this build) that dump the control-mode API, the
+`classical`/`rocker` scheme flags, the keybind table in both keycode spaces
+with a per-def detail for the first three defs, the engine's
+`GameSettingsMgr` keys, the player object and slot APIs
+(`CurMainPlayer`/`setCurShortcut`) the movement and hotbar scripts need, and
+a write test for the state-file channel (against `mw_probe.txt`, never the
+state file itself), so the keybind backport is driven by data instead of a
+guess. F2 cycles the game's own control scheme (the `classical`/`rocker`
+pair the settings switch uses, applied through `appalyGameSetData`) and
+reports `getContrlMode` plus both scheme flags before and after as
+`MWP6|...`.
 
 Google sign-in keeps working on devices that ship MicroG/GmsCore instead of
 official Play Services. The game logs in through Identity One-Tap, whose
