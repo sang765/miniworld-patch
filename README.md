@@ -367,6 +367,18 @@ with SAI or APKMirror Installer.
   than showing an empty section. This path has not been exercised on a device
   yet, and a crash loop is only bounded (no second screen inside 10 s), not
   proven.
+- `libGameApp.so` is deliberately **not** patched. The native wheel path is a
+  dead end by construction: the wheel value stored at `0x42f2338` and the
+  per-device entries at `0x76b2e18` are read by nothing outside
+  `ProcessMouseEvent` itself (`0x42f1ea4`), so unlocking its input gates
+  cannot make the FairyGUI lists scroll - and two of the nine candidate gate
+  patches trade that dead feature for a JNI abort (`0x42f1f78`) or an ANR
+  (`0x42f1fc8`, the loop exit). What the wheel and right-click *do* reach is
+  Lua: `UIEventType_MouseWheel = 16` and `UIEventType_RightClick = 17` are
+  flat globals, `PlayerState.SetRightClickDown` has no native caller, and
+  `CustomPicMgr.excuteWithRightClickCmd` is a Lua method - which is exactly
+  what the `MWP10|` probe enumerates holders for, so that route gets chosen
+  from the device report rather than by patching bytes.
 - Rebuilding reproduces the same 2585 entries byte for byte (measured by
   diffing two builds), but not the same archive: zip entry timestamps and the
   APK signing block change every run, so the sha256 printed in the release
