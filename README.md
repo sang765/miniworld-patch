@@ -300,10 +300,12 @@ Push the repo, set these secrets, then run the **build** workflow:
 > generating a throwaway key.
 
 The workflow downloads apktool 3.0.3 with a pinned SHA-256, runs
-`scripts/build.sh`, and publishes `MiniWorld-mod.apkm` to a release. The
-source is the release page pinned in `scripts/env.sh`; its download link
-carries a `key=` that expires within the hour, so `fetch_source.sh` scrapes a
-fresh one on every run — dispatching the workflow needs no input.
+`scripts/build.sh`, and publishes `MiniWorld-mod.apkm` to a release. It runs
+on every push to `main` that changes something other than Markdown — a commit
+which only edits documentation is skipped — or on demand from the Actions
+tab, which takes no input. The source is the release page pinned in
+`scripts/env.sh`; its download link carries a `key=` that expires within the
+hour, so `fetch_source.sh` scrapes a fresh one on every run.
 
 > [!NOTE]
 > The pipeline was developed against a Termux apktool reporting `3.0.3-dirty`;
