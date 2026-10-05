@@ -3,6 +3,10 @@ name: build
 on:
   push:
     branches: [main]
+    # the README documents this pipeline, but describing a build is not
+    # changing one - a Markdown-only push must not spend a runner on it
+    paths-ignore:
+      - "**/*.md"
   workflow_dispatch:
 
 permissions:
