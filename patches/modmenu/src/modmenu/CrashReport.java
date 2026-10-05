@@ -87,9 +87,7 @@ final class CrashReport {
         sb.append("process: ").append(process == null ? ctx.getPackageName() : process).append('\n');
         sb.append("mods: webview=").append(flag(ModMenu.isWebBlocked()))
                 .append(" hwid=").append(flag(ModMenu.isSpoofOn()))
-                .append(" reward=").append(flag(ModMenu.isRewardBypass()))
-                .append(" kbdmouse=").append(flag(ModMenu.isKbMouseOn()))
-                .append(" crosshair=").append(flag(ModMenu.isCrosshairOn())).append('\n');
+                .append(" reward=").append(flag(ModMenu.isRewardBypass())).append('\n');
 
         sb.append("\n-- device --\n");
         sb.append("manufacturer: ").append(Build.MANUFACTURER).append('\n');

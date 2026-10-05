@@ -57,7 +57,6 @@ MODMENU_FILES = {
     "smali_classes8/modmenu/Palette.smali",
     "smali_classes8/modmenu/AdReward.smali",
     "smali_classes8/modmenu/GmsCompat.smali",
-    "smali_classes8/modmenu/InputBridge.smali",
     # The crash handler runs inside GoogleApplication.onCreate and names the
     # report and activity classes: a missing one is a NoClassDefFoundError on
     # the game's first frame, so presence has to be proven, not assumed.

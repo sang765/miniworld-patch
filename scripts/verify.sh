@@ -179,13 +179,7 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/CrashActivity;' 'uncaughtException' 'mwcrash' \
            'mod_crash_title' 'mod_crash_notif_title' \
            'spoofValue' \
-           'GameSettingsMgr' 'MWP4|' 'MWP5' 'HKUI2|' 'MWP6|' \
-           'MWP7|' 'MWP8|' 'MWP9|' 'MWP10' 'HKCL|' \
-           'setMoveForward' 'setCurShortcut' 'AXIS_VSCROLL' \
-           'getShortcutGridCount' 'keyBindShortcutLeft' \
-           'stateShown' 'look down' 'settings frame open' 'xh btn2' \
-           'setOnCapturedPointerListener' \
-           'legacySignIn' 'GmsCompat' 'Lmodmenu/InputBridge;'; do
+           'legacySignIn' 'GmsCompat'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else
@@ -203,13 +197,9 @@ import sys
 data = open(sys.argv[1], "rb").read()
 needles = [
     "mod menu, click",                      # en notification text
-    "Keyboard & mouse",                     # en OTG row
     "Giả mạo HWID",                        # vi rows
     "Đổi HWID giả mạo",
     "Nhận thưởng không xem quảng cáo",
-    "Chế độ tâm chuẩn",
-    "准星模式",                              # zh crosshair row
-    "準星模式",                              # zh-Hant crosshair row
     "Game crashed",                         # en crash title + notification
     "Game đã crash",                       # vi crash title
     "游戏已崩溃",                            # zh crash title

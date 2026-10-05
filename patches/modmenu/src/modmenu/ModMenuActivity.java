@@ -49,8 +49,6 @@ public class ModMenuActivity extends Activity
     private Switch webSwitch;
     private Switch hwidSwitch;
     private Switch rewardSwitch;
-    private Switch kbSwitch;
-    private Switch xhSwitch;
     private Button rotateBtn;
     private LinearLayout sheet;
 
@@ -103,23 +101,15 @@ public class ModMenuActivity extends Activity
         webSwitch = makeSwitch(p);
         hwidSwitch = makeSwitch(p);
         rewardSwitch = makeSwitch(p);
-        kbSwitch = makeSwitch(p);
-        xhSwitch = makeSwitch(p);
         webSwitch.setChecked(ModMenu.isWebBlocked());
         hwidSwitch.setChecked(ModMenu.isSpoofOn());
         rewardSwitch.setChecked(ModMenu.isRewardBypass());
-        kbSwitch.setChecked(ModMenu.isKbMouseOn());
-        xhSwitch.setChecked(ModMenu.isCrosshairOn());
         sheet.addView(settingRow(p, I18n.t(this, "mod_web_label"),
                 I18n.t(this, "mod_web_desc"), webSwitch));
         sheet.addView(settingRow(p, I18n.t(this, "mod_hwid_label"),
                 I18n.t(this, "mod_hwid_desc"), hwidSwitch));
         sheet.addView(settingRow(p, I18n.t(this, "mod_reward_label"),
                 I18n.t(this, "mod_reward_desc"), rewardSwitch));
-        sheet.addView(settingRow(p, I18n.t(this, "mod_kb_label"),
-                I18n.t(this, "mod_kb_desc"), kbSwitch));
-        sheet.addView(settingRow(p, I18n.t(this, "mod_xh_label"),
-                I18n.t(this, "mod_xh_desc"), xhSwitch));
 
         rotateBtn = makeButton(I18n.t(this, "mod_rotate"), p.primary, p.onPrimary,
                 (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
@@ -252,10 +242,6 @@ public class ModMenuActivity extends Activity
             ModMenu.setHwidSpoof(this, isChecked);
         } else if (buttonView == rewardSwitch) {
             ModMenu.setRewardBypass(this, isChecked);
-        } else if (buttonView == kbSwitch) {
-            ModMenu.setKbMouse(this, isChecked);
-        } else if (buttonView == xhSwitch) {
-            ModMenu.setCrosshair(this, isChecked);
         }
     }
 
