@@ -235,10 +235,12 @@ Push the repo, set these secrets, then run the **build** workflow:
 The workflow downloads apktool 3.0.3 with a pinned SHA-256, runs
 `scripts/build.sh`, and publishes `MiniWorld-mod.apkm` to a release named
 after the built commit (`mini-world-1.7.15-mod-<short sha>`, title carries
-the same SHA), so the bundle a release holds is always traceable back to
-exactly one commit. It runs on every push to `main` that changes something
-other than Markdown — a commit which only edits documentation is skipped.
-The source is the release page pinned in
+the same SHA), so the surviving bundle always traces back to exactly one
+commit. It then drops every earlier release and its tag: a bundle is
+877 MB and GitHub grants the repository 2 GB, so one release at a time is
+what the quota allows. The workflow runs on every push to `main` that
+changes something other than Markdown — a commit which only edits
+documentation is skipped. The source is the release page pinned in
 `scripts/env.sh`; its download link carries a `key=` that expires within the
 hour, so `fetch_source.sh` scrapes a fresh one on every run.
 

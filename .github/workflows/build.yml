@@ -114,6 +114,16 @@ jobs:
           # commit
           SHA="${GITHUB_SHA:0:7}"
           TAG="mini-world-1.7.15-mod-$SHA"
+          # ...and exactly one release lives in this repo at all: a bundle
+          # is 877 MB and GitHub grants the repository 2 GB, so every
+          # earlier release (and its tag) goes before this one is published
+          OLD=$(gh release list --limit 100 --json tagName --jq '.[].tagName' \
+                | grep -Fxv "$TAG" || true)
+          for old in $OLD; do
+            echo "deleting old release $old"
+            gh release delete "$old" --yes --cleanup-tag \
+              || echo "::warning::could not delete release $old"
+          done
           SUM=$(sha256sum "$BUNDLE" | cut -d' ' -f1)
           SIZE=$(wc -c < "$BUNDLE")
           {
