@@ -198,6 +198,9 @@ done
 # wiring survived, the literals prove the class bodies were compiled in.
 # Hwid/Palette cover the rotation hook and the material-you palette, the
 # button literal proves the rotate action itself was compiled in.
+# "scan shipped at menu close" is menuClosed's own log line, not a method
+# reference: dex keeps a method's type and its name in separate pools, so
+# "IdScan;->menuClosed" is never one contiguous string to grep for.
 for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/Api26;' 'Lmodmenu/Api33;' \
            'Lmodmenu/Hwid;' 'Lmodmenu/Palette;' 'Lmodmenu/AdReward;' \
@@ -207,7 +210,7 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'spoofValue' \
            'legacySignIn' 'GmsCompat' \
            'Lmodmenu/IdScan;' 'Lmodmenu/IdBrowser;' \
-           'IdScan;->menuClosed' \
+           'scan shipped at menu close' \
            'mw_ids.json' 'get(%a+)Num$'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
