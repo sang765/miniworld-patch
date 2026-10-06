@@ -7,12 +7,12 @@ on:
     # changing one - a Markdown-only push must not spend a runner on it
     paths-ignore:
       - "**/*.md"
-  workflow_dispatch:
 
 permissions:
   contents: write
 
-# builds share a single release tag, so never let two run at once
+# each run spends ~40 minutes and near 7 GB of runner disk; queue them one
+# at a time instead of building every push of a burst in parallel
 concurrency:
   group: miniworld-mod-build
   cancel-in-progress: false
@@ -109,7 +109,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           BUNDLE="$PWD/work/out/MiniWorld-mod.apkm"
-          TAG="mini-world-1.7.15-mod"
+          # one release per built commit: tag and title carry the short SHA,
+          # so no later push can overwrite which bundle belongs to which
+          # commit
+          SHA="${GITHUB_SHA:0:7}"
+          TAG="mini-world-1.7.15-mod-$SHA"
           SUM=$(sha256sum "$BUNDLE" | cut -d' ' -f1)
           SIZE=$(wc -c < "$BUNDLE")
           {
@@ -126,12 +130,14 @@ jobs:
             echo "> original and installing it wipes local saves."
             echo
             echo '```'
+            echo "commit  $GITHUB_SHA"
             echo "sha256  $SUM"
             echo "size    $SIZE bytes"
             echo '```'
           } > "$RUNNER_TEMP/notes.md"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            # a single failed upload would otherwise discard a ~40 minute build
+            # rerun of this commit; a single failed upload would otherwise
+            # discard a ~40 minute build
             attempt=0
             until gh release upload "$TAG" "$BUNDLE" --clobber; do
               attempt=$((attempt + 1))
@@ -145,7 +151,7 @@ jobs:
             gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
           else
             gh release create "$TAG" "$BUNDLE" \
-              --title "Mini World 1.7.15 (full splits) mod" \
+              --title "Mini World 1.7.15 (full splits) mod @ $SHA" \
               --notes-file "$RUNNER_TEMP/notes.md"
           fi
 
