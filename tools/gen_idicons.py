@@ -31,6 +31,13 @@ quantized to a 48-colour PNG8 through ImageMagick, cached under
 work/iconcache/, then embedded base64 - dex has no byte-array constants -
 with identical images collapsed into one blob.
 
+Blocks do not ship as the flat tiles the engine keeps them as: the
+inventory draws each block as an isometric cube, so the generator
+composites one per block - blockdef's Texture1 on the top face, Texture2
+(or Texture1) on both flanks, flanks shaded to fake the directional light -
+before the same quantization. A block the face lookup cannot place falls
+back to the flat tile chain, then to the Chinese-name join's item icon.
+
 Keys are cat#id, the scanner's own dedup form, so IdIcons.get() mirrors
 IdNames.get(): item-backed categories fall back to item#id at runtime instead
 of repeating itemdef's rows per category. An id that resolves to no file gets
@@ -180,8 +187,25 @@ def make_lookup(corpus, iconbank, basename_index):
     return probe, iconbank_path
 
 
+def block_face(corpus, name, suffixes):
+    """blockdef texture stem -> one of its tiles under minigame/blocks.
+
+    The engine names block frames the Minecraft way - stem, stem_top,
+    stem_side, stem_dry - so an exact lookup misses half the catalog."""
+    if not name or name.startswith(("[", "<", "@", "%")):
+        return None
+    if name.endswith(".png"):
+        name = name[:-4]
+    for suffix in suffixes:
+        path = "resources/minigame/blocks/%s%s.png" % (name, suffix)
+        if path in corpus:
+            return path
+    return None
+
+
 def build_entries(script, corpus):
-    """{cat#id: pkg path} for every catalog that carries an icon column."""
+    """({cat#id: pkg path}, {block#id: (top, side)}) for every catalog that
+    carries an icon column."""
     basename_index = {}
     for path in corpus:
         if "/" in path:
@@ -198,6 +222,7 @@ def build_entries(script, corpus):
 
     probe, iconbank_path = make_lookup(corpus, iconbank, basename_index)
     entries = {}
+    cubes = {}                      # block#id -> (top tile, side tile)
 
     def put(key, path):
         if path and key not in entries:
@@ -227,13 +252,23 @@ def build_entries(script, corpus):
             put("%s#%d" % (cat, cid),
                 probe(icon_by_zh.get(row["name"], ""), ITEM_PROBES))
 
-    # Blocks the Chinese-name join cannot place still show their own
-    # face: blockdef's Texture1/Texture2 are the tiles the engine draws
-    # them from, so the chip stops reading as a wall of missing glyphs.
-    # put() keeps the join's icon where it had one - a rendered item
-    # icon beats a flat tile.
+    # Blocks: the inventory draws them as isometric cubes, so every block
+    # the face lookup can place gets one - Texture1 on top, Texture2 (the
+    # engine's flank texture: farmland over dirt, leaves over bark) or the
+    # stem's own _side frame on both flanks. Direct assignment on purpose:
+    # the cube beats the join's icon, which is a flat tile itself.
     for cid, row in by_id(load(script, "blockdef"),
                           "texture1", "texture2").items():
+        top = block_face(corpus, row["texture1"],
+                         ("", "_top", "_dry", "_side", "_front"))
+        side = block_face(corpus, row["texture2"], ("",)) \
+            or block_face(corpus, row["texture1"],
+                          ("_side", "_side_dry", "_front")) or top
+        if top:
+            key = "block#%d" % cid
+            entries[key] = "cube|%s|%s" % (top, side)
+            cubes[key] = (top, side)
+            continue
         for value in (row["texture1"], row["texture2"]):
             path = probe(value, BLOCK_PROBES)
             if path:
@@ -274,7 +309,7 @@ def build_entries(script, corpus):
     for cid, row in by_id(load(script, "task"), "icon").items():
         put("task#%d" % cid, probe(row["icon"], ITEM_PROBES))
 
-    return entries
+    return entries, cubes
 
 
 def ensure_extracted(member):
@@ -389,6 +424,59 @@ def convert_one(item):
     return dst
 
 
+def render_cube(top_png, side_png, dst):
+    """Composite the engine's isometric block icon out of two flat tiles.
+
+    The 64 px canvas is a 2:1 isometric cube: the top tile covers the upper
+    diamond, the side tile both flanks, the right flank darkened harder than
+    the left to match the inventory's light. Drawn at 2x and shrunk so the
+    face edges stay antialiased; sides first, top last, so the seams blend
+    under the top face instead of leaving a hairline."""
+    k = MAX_PX * 2
+
+    def quad(x, y, ux, uy, vx, vy):
+        # k x k source square -> the face's parallelogram (coordinates
+        # given on the 64 grid, rendered at 2x)
+        return "0,0 %d,%d  %d,0 %d,%d  0,%d %d,%d" % (
+            2 * x, 2 * y, k,
+            2 * (x + ux), 2 * (y + uy), k,
+            2 * (x + vx), 2 * (y + vy))
+
+    faces = [
+        (side_png, "0.75", quad(0, 16, 32, 16, 0, 32)),
+        (side_png, "0.55", quad(32, 32, 32, -16, 0, 32)),
+        (top_png, None, quad(32, 0, 32, 16, -32, 16)),
+    ]
+    args = ["convert"]
+    for i, (path, shade, dist) in enumerate(faces):
+        args += [path, "-resize", "%dx%d!" % (k, k), "-alpha", "set",
+                 "-virtual-pixel", "transparent"]
+        if shade:
+            args += ["-channel", "RGB", "-evaluate", "multiply", shade,
+                     "+channel"]
+        args += ["-filter", "Lanczos",
+                 "-define", "distort:viewport=%dx%d+0+0" % (k, k),
+                 "-distort", "Affine", dist,
+                 "-write", "mpr:f%d" % i, "+delete"]
+    args += ["-size", "%dx%d" % (k, k), "xc:none",
+             "mpr:f0", "-composite", "mpr:f1", "-composite",
+             "mpr:f2", "-composite",
+             "-resize", "%dx%d" % (MAX_PX, MAX_PX),
+             "-alpha", "set", "-colors", str(COLORS), "+dither",
+             "-define", "png:compression-filter=0",
+             "-define", "png:compression-level=9",
+             "PNG8:%s" % dst]
+    run = subprocess.run(args, capture_output=True, timeout=60)
+    if run.returncode != 0 or not os.path.isfile(dst) \
+            or os.path.getsize(dst) == 0:
+        try:
+            os.remove(dst)
+        except OSError:
+            pass
+        return None
+    return dst
+
+
 JAVA_HEAD = """\
 package modmenu;
 
@@ -401,11 +489,12 @@ import java.util.HashMap;
 
 /**
  * Row icons for the id browser, generated by tools/gen_idicons.py out of the
- * game's own texture packs - the exact files the engine draws its inventory
- * art from. Keys are cat#id, the scanner's dedup form, so a miss falls back
- * to item#id for the categories whose ids live in itemdef (ITEM_CATS below).
- * A null return means the game ships no icon for that id; the row draws its
- * placeholder then.
+ * game's own texture packs - item art as shipped, block art composited into
+ * the isometric cube the inventory draws from blockdef's tiles. Keys are
+ * cat#id, the scanner's dedup form, so a miss falls back to item#id for the
+ * categories whose ids live in itemdef (ITEM_CATS below). A null return
+ * means the game ships no icon for that id; the row draws its placeholder
+ * then.
  */
 public final class IdIcons {
     private static final String[] ITEM_CATS = {
@@ -538,10 +627,13 @@ def main():
         corpus |= set(pkg.names())
     print("corpus: %d paths" % len(corpus))
 
-    entries = build_entries(script, corpus)
-    wanted = sorted(set(entries.values()))
-    print("entries: %d keys over %d distinct icons"
-          % (len(entries), len(wanted)))
+    entries, cubes = build_entries(script, corpus)
+    sources = set()
+    for pair in cubes.values():
+        sources.update(pair)
+    wanted = sorted(set(entries.values()) | sources)
+    print("entries: %d keys over %d distinct icons (%d blocks as cubes)"
+          % (len(entries), len(wanted), len(cubes)))
 
     # preload records: the pkgs are shared across the pool threads and
     # zipfile's decompressor is not
@@ -578,7 +670,32 @@ def main():
                 bad += 1
                 if bad <= 5:
                     print("  no icon (see entries with no map line)")
-    print("converted: %d ok, %d skipped" % (ok, bad))
+        print("converted: %d ok, %d skipped" % (ok, bad))
+
+        def make_cube(item):
+            """block key -> its cube PNG; the tiles are flat icons by now."""
+            key, faces = item
+            dst = os.path.join(
+                PNG_DIR,
+                hashlib.sha1(entries[key].encode()).hexdigest()[:24] + ".png")
+            if os.path.isfile(dst) and os.path.getsize(dst) > 0:
+                return dst
+            cached = [os.path.join(PNG_DIR,
+                                   hashlib.sha1(p.encode()).hexdigest()[:24]
+                                   + ".png") for p in faces]
+            cached = [p if os.path.isfile(p) and os.path.getsize(p) > 0
+                      else None for p in cached]
+            if not cached[0]:
+                return None
+            return render_cube(cached[0], cached[1] or cached[0], dst)
+
+        cube_ok = cube_bad = 0
+        for dst in pool.map(make_cube, sorted(cubes.items())):
+            if dst:
+                cube_ok += 1
+            else:
+                cube_bad += 1
+        print("cubes: %d rendered, %d skipped" % (cube_ok, cube_bad))
 
     # one blob per distinct image; index order follows sorted keys
     blobs = []
