@@ -171,7 +171,11 @@ final class IdBrowser {
                 copy(shown.get(position).id);
             }
         });
-        LinearLayout.LayoutParams lLp = new LinearLayout.LayoutParams(0, 0, 1f);
+        // width comes from MATCH_PARENT, not from weight: in a vertical
+        // LinearLayout weight only distributes height, so 0 width here would
+        // measure the rows at EXACTLY(0) and nothing would ever draw
+        LinearLayout.LayoutParams lLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
         lLp.topMargin = dp(8);
         panel.addView(list, lLp);
 
