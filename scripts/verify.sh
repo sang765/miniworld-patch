@@ -205,7 +205,9 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/CrashActivity;' 'uncaughtException' 'mwcrash' \
            'mod_crash_title' 'mod_crash_notif_title' \
            'spoofValue' \
-           'legacySignIn' 'GmsCompat'; do
+           'legacySignIn' 'GmsCompat' \
+           'Lmodmenu/IdScan;' 'Lmodmenu/IdBrowser;' \
+           'mw_ids.json' 'get(%a+)Num$'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else
@@ -230,6 +232,10 @@ needles = [
     "Game đã crash",                       # vi crash title
     "游戏已崩溃",                            # zh crash title
     "遊戲已崩潰",                            # zh-Hant crash title
+    "Scan again",                           # en id_rescan
+    "Quét lại",                             # vi id_rescan
+    "ID 浏览器",                             # zh id browser row
+    "ID 瀏覽器",                             # zh-Hant id browser row
 ]
 failed = False
 for s in needles:

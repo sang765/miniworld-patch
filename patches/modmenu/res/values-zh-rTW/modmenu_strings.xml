@@ -22,4 +22,19 @@
     <string name="mod_crash_failed">操作失敗</string>
     <string name="mod_crash_notif_title">遊戲已崩潰</string>
     <string name="mod_crash_notif_text">點選查看崩潰報告</string>
+    <string name="mod_id_label">ID 瀏覽器</string>
+    <string name="mod_id_desc">搜尋、篩選並複製遊戲裡的所有 ID</string>
+    <string name="id_title">遊戲 ID 瀏覽器</string>
+    <string name="id_search">依名稱或 ID 搜尋</string>
+    <string name="id_all">全部</string>
+    <string name="id_copy">複製</string>
+    <string name="id_copy_all">複製全部</string>
+    <string name="id_rescan">重新掃描</string>
+    <string name="id_scanning">正在掃描遊戲腳本...</string>
+    <string name="id_empty">沒有符合的結果</string>
+    <string name="id_nodata">還沒有 ID — 請點重新掃描</string>
+    <string name="id_hint_map">進入地圖或房間才能看到插件物品</string>
+    <string name="id_copied">已複製</string>
+    <string name="id_fail">掃描失敗 — 先進入地圖再重新掃描</string>
+    <string name="id_items">項</string>
 </resources>

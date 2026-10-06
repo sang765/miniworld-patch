@@ -52,6 +52,8 @@ public class ModMenuActivity extends Activity
     private Switch rewardSwitch;
     private Button rotateBtn;
     private LinearLayout sheet;
+    private FrameLayout root;
+    private IdBrowser browser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,7 +78,7 @@ public class ModMenuActivity extends Activity
         // over the game this window now sits on top of
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
 
-        FrameLayout root = new FrameLayout(this);
+        root = new FrameLayout(this);
         root.setOnClickListener(this); // tap the scrim to dismiss
 
         sheet = new LinearLayout(this);
@@ -122,6 +124,21 @@ public class ModMenuActivity extends Activity
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
         rLp.topMargin = dp(20);
         sheet.addView(rotateBtn, rLp);
+
+        Button idBtn = makeButton(I18n.t(this, "mod_id_label"), 0, p.primary,
+                (p.primary & 0x00FFFFFF) | 0x14000000);
+        // its own listener: makeButton wires every pill to onClick, whose
+        // default action is closing the menu
+        idBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                openBrowser();
+            }
+        });
+        LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
+        iLp.topMargin = dp(6);
+        sheet.addView(idBtn, iLp);
 
         Button close = makeButton(I18n.t(this, "mod_close"), 0, p.primary,
                 (p.primary & 0x00FFFFFF) | 0x14000000);
@@ -265,6 +282,30 @@ public class ModMenuActivity extends Activity
         }
     }
 
+    /** Menu button: bring the ID browser panel up over the sheet. */
+    private void openBrowser() {
+        try {
+            if (browser == null) {
+                browser = new IdBrowser(this, Palette.of(this), root);
+            }
+            browser.open();
+        } catch (RuntimeException e) {
+            Log.e("ModMenu", "id browser failed, closing", e);
+            finish();
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        // the browser is a panel of this activity, not an activity of its
+        // own: back has to close it before it closes the menu
+        if (browser != null && browser.isShowing()) {
+            browser.close();
+            return;
+        }
+        super.onBackPressed();
+    }
+
     private GradientDrawable roundTop(int color, float radius) {
         GradientDrawable d = new GradientDrawable();
         d.setColor(color);
@@ -298,7 +339,7 @@ public class ModMenuActivity extends Activity
         return round(size, size, size / 2f, color);
     }
 
-    private int dp(int value) {
+    int dp(int value) {
         return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
     }
 

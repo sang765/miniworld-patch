@@ -22,4 +22,19 @@
     <string name="mod_crash_failed">Action failed</string>
     <string name="mod_crash_notif_title">Game crashed</string>
     <string name="mod_crash_notif_text">Tap to open the crash report</string>
+    <string name="mod_id_label">ID browser</string>
+    <string name="mod_id_desc">Search, filter and copy every id the game exposes</string>
+    <string name="id_title">Game ID browser</string>
+    <string name="id_search">Search by name or id</string>
+    <string name="id_all">All</string>
+    <string name="id_copy">Copy</string>
+    <string name="id_copy_all">Copy all</string>
+    <string name="id_rescan">Scan again</string>
+    <string name="id_scanning">Scanning the game scripts...</string>
+    <string name="id_empty">No matches</string>
+    <string name="id_nodata">No ids yet - tap Scan again</string>
+    <string name="id_hint_map">Join a map or room to see plugin items</string>
+    <string name="id_copied">Copied</string>
+    <string name="id_fail">Scan failed - open a map, then scan again</string>
+    <string name="id_items">items</string>
 </resources>
