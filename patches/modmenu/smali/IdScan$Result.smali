@@ -83,35 +83,35 @@
         }
     .end annotation
 
-    .line 78
+    .line 100
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
-    .line 79
+    .line 101
     iput-object p1, p0, Lmodmenu/IdScan$Result;->entries:Ljava/util/List;
 
-    .line 80
+    .line 102
     iput-object p2, p0, Lmodmenu/IdScan$Result;->globals:Ljava/util/List;
 
-    .line 81
+    .line 103
     iput-object p3, p0, Lmodmenu/IdScan$Result;->methods:Ljava/util/List;
 
-    .line 82
+    .line 104
     iput-object p4, p0, Lmodmenu/IdScan$Result;->notes:Ljava/util/List;
 
-    .line 83
+    .line 105
     iput-boolean p5, p0, Lmodmenu/IdScan$Result;->inMap:Z
 
-    .line 84
+    .line 106
     iput-object p6, p0, Lmodmenu/IdScan$Result;->error:Ljava/lang/String;
 
-    .line 85
+    .line 107
     return-void
 .end method
 
 .method static fail(Ljava/lang/String;)Lmodmenu/IdScan$Result;
     .locals 7
 
-    .line 88
+    .line 110
     new-instance v0, Lmodmenu/IdScan$Result;
 
     new-instance v1, Ljava/util/ArrayList;

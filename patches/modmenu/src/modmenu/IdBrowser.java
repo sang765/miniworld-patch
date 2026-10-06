@@ -34,7 +34,11 @@ import java.util.Set;
  * - the pipeline still allows no layout resource. IdScan does the work; this
  * class only renders, and it says what it knows: an empty list after a scan
  * means the registry had not loaded yet (status says so), and a scan taken
- * outside a map carries the plugin-items hint instead of hiding them.
+ * outside a map carries the plugin-items hint instead of hiding them. A scan
+ * never runs while the panel is up - our window has the game paused behind
+ * it, so its script loop is not pumping - which is why Scan again arms the
+ * scan and the status points at the menu closing instead of pretending to
+ * work.
  *
  * Categories are the raw keys the scan produced (item, buff, skin, ...): they
  * are the ids' own vocabulary, not menu chrome, so they stay untranslated
@@ -62,7 +66,16 @@ final class IdBrowser {
     private String cat = "";
     private String query = "";
     private IdScan.Result last;
-    private boolean scanning;
+    /** A scan is armed and waiting for the menu to close - the engine
+     *  cannot run it while our window has the game paused behind it. */
+    private boolean deferred;
+
+    private final IdScan.Listener listener = new IdScan.Listener() {
+        @Override
+        public void onDone(IdScan.Result r) {
+            load(r);
+        }
+    };
 
     IdBrowser(ModMenuActivity activity, Palette p, FrameLayout parent) {
         this.activity = activity;
@@ -204,12 +217,22 @@ final class IdBrowser {
 
     void open() {
         panel.setVisibility(View.VISIBLE);
-        renderStatus();
-        // a first open, or a retry after a failed run - otherwise the cached
-        // scan is kept so reopening does not pay for the same work again
-        if (!scanning && (last == null || last.error != null)) {
-            scan();
+        IdScan.setListener(listener);
+        IdScan.Result c = IdScan.current(activity);
+        if (c != null && c != last) {
+            load(c);
         }
+        if (c == null) {
+            // nothing scanned in this run yet: arm it and say where it will
+            // happen, because the panel itself is the one place it cannot
+            IdScan.request();
+            deferred = true;
+        } else if (c.error != null) {
+            // the status keeps the error visible; the retry itself is armed
+            // for the next menu close
+            IdScan.request();
+        }
+        renderStatus();
     }
 
     void close() {
@@ -217,26 +240,20 @@ final class IdBrowser {
     }
 
     private void scan() {
-        if (scanning) {
-            return;
+        IdScan.request();
+        deferred = true;
+        renderStatus();
+    }
+
+    private void load(IdScan.Result r) {
+        last = r;
+        deferred = false;
+        all.clear();
+        if (r.error == null) {
+            all.addAll(r.entries);
         }
-        scanning = true;
-        rescan.setAlpha(0.5f);
-        status.setText(I18n.t(activity, "id_scanning"));
-        IdScan.scan(activity, new IdScan.Listener() {
-            @Override
-            public void onDone(IdScan.Result r) {
-                scanning = false;
-                rescan.setAlpha(1f);
-                last = r;
-                all.clear();
-                if (r.error == null) {
-                    all.addAll(r.entries);
-                }
-                rebuildChips();
-                applyFilter();
-            }
-        });
+        rebuildChips();
+        applyFilter();
     }
 
     private void rebuildChips() {
@@ -323,12 +340,18 @@ final class IdBrowser {
     }
 
     private void renderStatus() {
-        if (scanning) {
+        if (IdScan.scanning()) {
             status.setText(I18n.t(activity, "id_scanning"));
             return;
         }
+        if (deferred) {
+            status.setText(I18n.t(activity, "id_deferred"));
+            return;
+        }
         if (last != null && last.error != null) {
-            status.setText(I18n.t(activity, "id_fail"));
+            // the raw reason beside the message: timeout, timeout(ran),
+            // nopath and a Lua error all point at different fixes
+            status.setText(I18n.t(activity, "id_fail") + " (" + last.error + ")");
             return;
         }
         if (all.isEmpty()) {

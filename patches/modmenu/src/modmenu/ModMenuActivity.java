@@ -70,6 +70,22 @@ public class ModMenuActivity extends Activity
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // the engine pumps its script queue from the game loop, which this
+        // window pauses: a wanted scan ships right here, as the game is
+        // about to run again. menuClosed never throws - it runs on the
+        // game's main thread, where that would reach its crash handler
+        IdScan.menuClosed(this);
+    }
+
+    @Override
+    protected void onDestroy() {
+        IdScan.setListener(null);
+        super.onDestroy();
+    }
+
     private void buildMenu() {
         Palette p = Palette.of(this);
         getWindow().setBackgroundDrawable(new ColorDrawable(p.scrim));

@@ -28,21 +28,21 @@
 .method constructor <init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
     .locals 0
 
-    .line 61
+    .line 83
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
-    .line 62
+    .line 84
     iput-object p1, p0, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
 
-    .line 63
+    .line 85
     iput-object p2, p0, Lmodmenu/IdScan$Entry;->name:Ljava/lang/String;
 
-    .line 64
+    .line 86
     iput-object p3, p0, Lmodmenu/IdScan$Entry;->cat:Ljava/lang/String;
 
-    .line 65
+    .line 87
     iput-object p4, p0, Lmodmenu/IdScan$Entry;->src:Ljava/lang/String;
 
-    .line 66
+    .line 88
     return-void
 .end method

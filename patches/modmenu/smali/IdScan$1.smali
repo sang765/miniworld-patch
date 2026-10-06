@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdScan;->scan(Landroid/content/Context;Lmodmenu/IdScan$Listener;)V
+    value = Lmodmenu/IdScan;->menuClosed(Landroid/content/Context;)V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -18,13 +18,11 @@
 
 
 # instance fields
-.field final synthetic val$listener:Lmodmenu/IdScan$Listener;
-
-.field final synthetic val$paths:[Ljava/lang/String;
+.field final synthetic val$p:[Ljava/lang/String;
 
 
 # direct methods
-.method constructor <init>([Ljava/lang/String;Lmodmenu/IdScan$Listener;)V
+.method constructor <init>([Ljava/lang/String;)V
     .locals 0
     .annotation system Ldalvik/annotation/Signature;
         value = {
@@ -32,10 +30,8 @@
         }
     .end annotation
 
-    .line 122
-    iput-object p1, p0, Lmodmenu/IdScan$1;->val$paths:[Ljava/lang/String;
-
-    iput-object p2, p0, Lmodmenu/IdScan$1;->val$listener:Lmodmenu/IdScan$Listener;
+    .line 181
+    iput-object p1, p0, Lmodmenu/IdScan$1;->val$p:[Ljava/lang/String;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -47,20 +43,73 @@
 .method public run()V
     .locals 3
 
-    .line 125
-    iget-object v0, p0, Lmodmenu/IdScan$1;->val$paths:[Ljava/lang/String;
+    .line 184
+    iget-object v0, p0, Lmodmenu/IdScan$1;->val$p:[Ljava/lang/String;
 
     invoke-static {v0}, Lmodmenu/IdScan;->access$000([Ljava/lang/String;)Lmodmenu/IdScan$Result;
 
     move-result-object v0
 
-    .line 126
+    .line 185
+    invoke-static {v0}, Lmodmenu/IdScan;->access$102(Lmodmenu/IdScan$Result;)Lmodmenu/IdScan$Result;
+
+    .line 186
     const/4 v1, 0x0
 
-    invoke-static {v1}, Lmodmenu/IdScan;->access$102(Z)Z
+    invoke-static {v1}, Lmodmenu/IdScan;->access$202(Z)Z
 
-    .line 127
-    invoke-static {}, Lmodmenu/IdScan;->access$200()Landroid/os/Handler;
+    .line 187
+    iget-object v2, v0, Lmodmenu/IdScan$Result;->error:Ljava/lang/String;
+
+    if-nez v2, :cond_0
+
+    .line 188
+    invoke-static {v1}, Lmodmenu/IdScan;->access$302(Z)Z
+
+    .line 190
+    :cond_0
+    new-instance v1, Ljava/lang/StringBuilder;
+
+    invoke-direct {v1}, Ljava/lang/StringBuilder;-><init>()V
+
+    const-string v2, "scan done: entries="
+
+    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    move-result-object v1
+
+    iget-object v2, v0, Lmodmenu/IdScan$Result;->entries:Ljava/util/List;
+
+    invoke-interface {v2}, Ljava/util/List;->size()I
+
+    move-result v2
+
+    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(I)Ljava/lang/StringBuilder;
+
+    move-result-object v1
+
+    const-string v2, " error="
+
+    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    move-result-object v1
+
+    iget-object v2, v0, Lmodmenu/IdScan$Result;->error:Ljava/lang/String;
+
+    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    move-result-object v1
+
+    invoke-virtual {v1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+
+    move-result-object v1
+
+    const-string v2, "MWIds"
+
+    invoke-static {v2, v1}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+
+    .line 192
+    invoke-static {}, Lmodmenu/IdScan;->access$500()Landroid/os/Handler;
 
     move-result-object v1
 
@@ -70,6 +119,6 @@
 
     invoke-virtual {v1, v2}, Landroid/os/Handler;->post(Ljava/lang/Runnable;)Z
 
-    .line 133
+    .line 201
     return-void
 .end method

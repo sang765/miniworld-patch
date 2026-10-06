@@ -32,6 +32,16 @@ import java.util.List;
  * Java. Both the external and the internal files dir are written, and the
  * poller reads both, so a ROM that grants either one still works.
  *
+ * The engine drains that channel from its own game loop - nativeCallLuaString
+ * queues the source for LuaInterfaceProxy::callLuaString to pump - and the
+ * menu window pauses the game behind it (that pause is what keeps MIUI from
+ * killing it). A script sent while the menu is up therefore waits for a loop
+ * that is not running: it never lands, and the panel just times out. So
+ * request() only records the wish; menuClosed(), called when the window goes
+ * away and the game resumes right after, is where the scan actually ships.
+ * The poller outlives the activity, and the panel reads the cached result on
+ * the next open.
+ *
  * The script itself is pcall-wrapped end to end and does no unprotected
  * call: a wrong guess about a registry only loses that one source, never the
  * scan, and never the game.
@@ -43,7 +53,19 @@ public final class IdScan {
     private static final long POLL_MS = 250;
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
-    private static volatile boolean running;
+
+    /** A scan is wanted but not landed yet: request() sets it, a clean
+     *  result clears it, a failed one keeps it so the next menu close
+     *  retries on its own. Volatile: written from the browser and the poll
+     *  thread, read on the menu-close path. */
+    private static volatile boolean wantScan;
+    private static volatile boolean polling;
+    /** A dispatch went out at least once, so a result file can only be a
+     *  late landing of our own script, never a leftover of an old run. */
+    private static volatile boolean sent;
+    private static volatile Result cached;
+    /** The browser, main thread only; ModMenuActivity clears it in onDestroy. */
+    private static Listener listener;
 
     private IdScan() {}
 
@@ -90,48 +112,101 @@ public final class IdScan {
         }
     }
 
+    /** Records that a scan is wanted; it ships on the next menu close. */
+    public static void request() {
+        wantScan = true;
+    }
+
+    public static void setListener(Listener l) {
+        listener = l;
+    }
+
+    public static boolean scanning() {
+        return polling;
+    }
+
     /**
-     * Sends the scan script and calls back on the main thread once the JSON
-     * file lands, or with an error after the timeout. The file is deleted
-     * first so a stale result can never be mistaken for this run's.
+     * The last scan. When the last attempt failed the result file is read
+     * once more directly: the script may have landed after the poller gave
+     * up, and that output is as fresh as any other.
      */
-    public static void scan(Context ctx, final Listener listener) {
-        if (running) {
-            listener.onDone(Result.fail("busy"));
-            return;
-        }
-        final String[] paths = paths(ctx);
-        if (paths == null) {
-            listener.onDone(Result.fail("nopath"));
-            return;
-        }
-        // delete and send inside the guard: this runs on the tap path of the
-        // game's own main thread, where an escaping RuntimeException would
-        // reach the game's uncaught handler and take the process down
-        try {
-            for (int i = 0; i < paths.length; i++) {
-                new File(paths[i]).delete();
-            }
-            running = true;
-            CommonNatives.javaCallLuaEvent(script(paths[0], paths[1]), new Object[0]);
-        } catch (RuntimeException e) {
-            running = false;
-            listener.onDone(Result.fail("send: " + e));
-            return;
-        }
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final Result r = await(paths);
-                running = false;
-                MAIN.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        listener.onDone(r);
+    public static Result current(Context ctx) {
+        Result c = cached;
+        if (sent && (c == null || c.error != null)) {
+            String[] p = paths(ctx);
+            if (p != null) {
+                for (int i = 0; i < p.length; i++) {
+                    String body = read(p[i]);
+                    if (body != null && body.length() > 2) {
+                        Result r = parse(body);
+                        if (r != null && r.error == null) {
+                            cached = r;
+                            wantScan = false;
+                            return r;
+                        }
                     }
-                });
+                }
             }
-        }, "mw-idscan").start();
+        }
+        return c;
+    }
+
+    /**
+     * Called when the menu window goes away - the moment the game resumes
+     * and its script loop comes back, so this is where a wanted scan is
+     * dispatched. Everything is guarded: this runs on the game's main
+     * thread in the activity's onPause, where an escaping exception would
+     * reach the game's uncaught handler and take the process down.
+     */
+    public static void menuClosed(Context ctx) {
+        if (!wantScan || polling) {
+            return;
+        }
+        final String[] p = paths(ctx);
+        if (p == null) {
+            Log.d(TAG, "no writable files dir");
+            cached = Result.fail("nopath");
+            return;
+        }
+        // delete, send and start the poller inside the guard: this runs on
+        // the game's main thread in onPause, where an escaping exception
+        // would reach the game's uncaught handler
+        try {
+            for (int i = 0; i < p.length; i++) {
+                new File(p[i]).delete();
+            }
+            polling = true;
+            CommonNatives.javaCallLuaEvent(script(p[0], p[1]), new Object[0]);
+            sent = true;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final Result r = awaitGuarded(p);
+                    cached = r;
+                    polling = false;
+                    if (r.error == null) {
+                        wantScan = false;
+                    }
+                    Log.d(TAG, "scan done: entries=" + r.entries.size()
+                            + " error=" + r.error);
+                    MAIN.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Listener l = listener;
+                            if (l != null) {
+                                l.onDone(r);
+                            }
+                        }
+                    });
+                }
+            }, "mw-idscan").start();
+            Log.d(TAG, "scan shipped at menu close");
+        } catch (RuntimeException e) {
+            polling = false;
+            Log.d(TAG, "dispatch failed: " + e);
+            cached = Result.fail("send: " + e);
+            return; // wantScan stays set: the next menu close retries
+        }
     }
 
     /** External files dir first, internal as fallback; both are written. */
@@ -153,12 +228,24 @@ public final class IdScan {
         }
     }
 
+    private static Result awaitGuarded(String[] paths) {
+        try {
+            return await(paths);
+        } catch (RuntimeException e) {
+            // a stray throw here would leave polling stuck and silence
+            // every later scan, so it becomes the reported result instead
+            return Result.fail("poll: " + e);
+        }
+    }
+
     private static Result await(String[] paths) {
         long deadline = System.currentTimeMillis() + TIMEOUT_MS;
+        boolean ran = false;
         while (System.currentTimeMillis() < deadline) {
             for (int i = 0; i < paths.length; i++) {
                 String body = read(paths[i]);
                 if (body != null && body.length() > 2) {
+                    ran = true; // something was written: the script ran
                     Result r = parse(body);
                     if (r != null) {
                         return r;
@@ -172,7 +259,9 @@ public final class IdScan {
                 break;
             }
         }
-        return Result.fail("timeout");
+        // a marker without a payload means the script started and never
+        // finished; nothing at all means the game never picked it up
+        return Result.fail(ran ? "timeout(ran)" : "timeout");
     }
 
     private static String read(String path) {
@@ -202,6 +291,11 @@ public final class IdScan {
     private static Result parse(String body) {
         try {
             JSONObject o = new JSONObject(body);
+            // the script writes this marker before anything else: it is what
+            // tells a run that started from one that never did
+            if (o.optInt("started", 0) != 0) {
+                return null;
+            }
             List<String> notes = strings(o, "n");
             String error = null;
             if (!notes.isEmpty() && notes.get(0).startsWith("err:")) {
@@ -324,6 +418,8 @@ public final class IdScan {
                 + " one(p1)"
                 + " if p2~=p1 then one(p2) end"
                 + " end"
+                // marker: written before the scan, overwritten by its result
+                + " w('{\"started\":1}')"
                 + " local ok,err=pcall(function()"
                 + " local E={} local G={} local M={} local N={}"
                 + " local cap=3000 local gcap=400 local mcap=500"
@@ -581,6 +677,10 @@ public final class IdScan {
                 + " if not ok then"
                 + " w('{\"inmap\":0,\"n\":'..enc({'err:'..tostring(err)})"
                 + "..',\"g\":[],\"m\":[],\"e\":[]}')"
+                // the JSON above is the answer Java reads, this one the
+                // answer logcat gets - CallLuaString swallows the failure
+                // in Java, but the engine still logs it
+                + " error('MWID|'..tostring(err),0)"
                 + " end"
                 + " end)";
     }

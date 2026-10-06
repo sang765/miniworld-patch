@@ -207,6 +207,7 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'spoofValue' \
            'legacySignIn' 'GmsCompat' \
            'Lmodmenu/IdScan;' 'Lmodmenu/IdBrowser;' \
+           'IdScan;->menuClosed' \
            'mw_ids.json' 'get(%a+)Num$'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"

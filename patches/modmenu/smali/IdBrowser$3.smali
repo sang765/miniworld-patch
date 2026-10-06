@@ -3,7 +3,7 @@
 .source "IdBrowser.java"
 
 # interfaces
-.implements Landroid/widget/AdapterView$OnItemClickListener;
+.implements Landroid/text/TextWatcher;
 
 
 # annotations
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 154
+    .line 137
     iput-object p1, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,37 +43,45 @@
 
 
 # virtual methods
-.method public onItemClick(Landroid/widget/AdapterView;Landroid/view/View;IJ)V
-    .locals 0
-    .annotation system Ldalvik/annotation/Signature;
-        value = {
-            "(",
-            "Landroid/widget/AdapterView<",
-            "*>;",
-            "Landroid/view/View;",
-            "IJ)V"
-        }
-    .end annotation
+.method public afterTextChanged(Landroid/text/Editable;)V
+    .locals 1
 
-    .line 158
+    .line 146
+    iget-object v0, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
+
+    invoke-virtual {p1}, Ljava/lang/Object;->toString()Ljava/lang/String;
+
+    move-result-object p1
+
+    invoke-virtual {p1}, Ljava/lang/String;->trim()Ljava/lang/String;
+
+    move-result-object p1
+
+    invoke-virtual {p1}, Ljava/lang/String;->toLowerCase()Ljava/lang/String;
+
+    move-result-object p1
+
+    invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$202(Lmodmenu/IdBrowser;Ljava/lang/String;)Ljava/lang/String;
+
+    .line 147
     iget-object p1, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
 
-    iget-object p2, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
+    invoke-static {p1}, Lmodmenu/IdBrowser;->access$300(Lmodmenu/IdBrowser;)V
 
-    invoke-static {p2}, Lmodmenu/IdBrowser;->access$300(Lmodmenu/IdBrowser;)Ljava/util/List;
+    .line 148
+    return-void
+.end method
 
-    move-result-object p2
+.method public beforeTextChanged(Ljava/lang/CharSequence;III)V
+    .locals 0
 
-    invoke-interface {p2, p3}, Ljava/util/List;->get(I)Ljava/lang/Object;
+    .line 139
+    return-void
+.end method
 
-    move-result-object p2
+.method public onTextChanged(Ljava/lang/CharSequence;III)V
+    .locals 0
 
-    check-cast p2, Lmodmenu/IdScan$Entry;
-
-    iget-object p2, p2, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
-
-    invoke-static {p1, p2}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;Ljava/lang/String;)V
-
-    .line 159
+    .line 142
     return-void
 .end method

@@ -43,7 +43,7 @@
         }
     .end annotation
 
-    .line 127
+    .line 192
     iput-object p1, p0, Lmodmenu/IdScan$1$1;->this$0:Lmodmenu/IdScan$1;
 
     iput-object p2, p0, Lmodmenu/IdScan$1$1;->val$r:Lmodmenu/IdScan$Result;
@@ -58,15 +58,20 @@
 .method public run()V
     .locals 2
 
-    .line 130
-    iget-object v0, p0, Lmodmenu/IdScan$1$1;->this$0:Lmodmenu/IdScan$1;
+    .line 195
+    invoke-static {}, Lmodmenu/IdScan;->access$400()Lmodmenu/IdScan$Listener;
 
-    iget-object v0, v0, Lmodmenu/IdScan$1;->val$listener:Lmodmenu/IdScan$Listener;
+    move-result-object v0
 
+    .line 196
+    if-eqz v0, :cond_0
+
+    .line 197
     iget-object v1, p0, Lmodmenu/IdScan$1$1;->val$r:Lmodmenu/IdScan$Result;
 
     invoke-interface {v0, v1}, Lmodmenu/IdScan$Listener;->onDone(Lmodmenu/IdScan$Result;)V
 
-    .line 131
+    .line 199
+    :cond_0
     return-void
 .end method

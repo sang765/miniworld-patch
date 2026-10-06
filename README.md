@@ -24,7 +24,7 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 | 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
 | 6 | A crash becomes a report the player can copy, save and share | `modmenu.CrashHandler`, installed at the head of `GoogleApplication.onCreate`, takes over the uncaught-exception handler: it stores a report (app, device, thread, exception, logcat) under `files/mwcrash/`, requests `modmenu.CrashActivity` and posts a notification pointing at the same screen, since a background crash may not be allowed to start an activity. It never swallows the throwable - it hands on to whatever was installed before it, so the process still dies as it always did |
-| 7 | Search, filter and copy every id the game defines - items, plugin items, buffs, sounds, effects, skins, mobs, blocks, ... | `modmenu.IdBrowser` (full-height panel: search box, one chip per category, copy per row and copy-all) fed by `modmenu.IdScan`, which ships one pcall-wrapped Lua scan through `CommonNatives.javaCallLuaEvent` and reads back the JSON the script writes to `files/mw_ids.json` with `io.open` |
+| 7 | Search, filter and copy every id the game defines - items, plugin items, buffs, sounds, effects, skins, mobs, blocks, ... | `modmenu.IdBrowser` (full-height panel: search box, one chip per category, copy per row and copy-all) fed by `modmenu.IdScan`, which ships one pcall-wrapped Lua scan when the menu closes (the window pauses the game's script loop) through `CommonNatives.javaCallLuaEvent` and reads back the JSON the script writes to `files/mw_ids.json` with `io.open` |
 
 Constants live in `spoof.env`.
 
@@ -57,10 +57,18 @@ items, plugin items, buffs, sounds, effects, skins, mobs, blocks and whatever
 else the scan turns up, by id and by name. Its data source is the running
 game, not a baked list: every catalog is a C++ config table the engine loads
 from the `.pkg` archives, and those are encrypted in native code, so nothing
-of the sort can be read offline. On **Scan again** `modmenu.IdScan` ships one
-`pcall`-wrapped Lua script through `CommonNatives.javaCallLuaEvent`
-(`javaCallLuaEvent` is void and the VM has no value-returning path back into
-Java, so the script answers by writing `files/mw_ids.json` with `io.open`).
+of the sort can be read offline. **Scan again** only records the request:
+`modmenu.IdScan` ships the one `pcall`-wrapped Lua script when the menu
+closes, because the engine does not execute it there and then - it queues the
+source for its own game loop (`nativeCallLuaString` →
+`LuaInterfaceProxy::callLuaString`), and that loop is paused as long as our
+window sits over the game, so a script sent from inside the panel would wait
+for a loop that never runs. `javaCallLuaEvent` is void and the VM has no
+value-returning path back into Java, so the script answers by writing
+`files/mw_ids.json` with `io.open`; the poller outlives the panel, the next
+open reads the cached result, and a failed scan line carries the raw reason -
+`timeout` (the queue was never drained) and `timeout(ran)` (the script
+started and did not finish) are different problems.
 The script walks the engine's `getXNum()` / `getXDef(i)` getters, any record
 table a name match turns up, and a couple of id-map functions harvested from
 `libGameApp.so`; it dumps the globals it saw either way, so a scan that finds

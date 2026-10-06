@@ -3,12 +3,12 @@
 .source "IdBrowser.java"
 
 # interfaces
-.implements Lmodmenu/IdScan$Listener;
+.implements Landroid/view/View$OnClickListener;
 
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdBrowser;->scan()V
+    value = Lmodmenu/IdBrowser;-><init>(Lmodmenu/ModMenuActivity;Lmodmenu/Palette;Landroid/widget/FrameLayout;)V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 226
+    .line 192
     iput-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,68 +43,71 @@
 
 
 # virtual methods
-.method public onDone(Lmodmenu/IdScan$Result;)V
+.method public onClick(Landroid/view/View;)V
     .locals 2
 
-    .line 229
-    iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+    .line 195
+    new-instance p1, Ljava/lang/StringBuilder;
 
-    const/4 v1, 0x0
+    invoke-direct {p1}, Ljava/lang/StringBuilder;-><init>()V
 
-    invoke-static {v0, v1}, Lmodmenu/IdBrowser;->access$602(Lmodmenu/IdBrowser;Z)Z
+    .line 196
+    const/4 v0, 0x0
 
-    .line 230
-    iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+    :goto_0
+    iget-object v1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v0}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;)Landroid/widget/Button;
+    invoke-static {v1}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;)Ljava/util/List;
 
-    move-result-object v0
+    move-result-object v1
 
-    const/high16 v1, 0x3f800000    # 1.0f
+    invoke-interface {v1}, Ljava/util/List;->size()I
 
-    invoke-virtual {v0, v1}, Landroid/widget/Button;->setAlpha(F)V
+    move-result v1
 
-    .line 231
-    iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+    if-ge v0, v1, :cond_1
 
-    invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$802(Lmodmenu/IdBrowser;Lmodmenu/IdScan$Result;)Lmodmenu/IdScan$Result;
+    .line 197
+    if-lez v0, :cond_0
 
-    .line 232
-    iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+    .line 198
+    const/16 v1, 0xa
 
-    invoke-static {v0}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)Ljava/util/List;
+    invoke-virtual {p1, v1}, Ljava/lang/StringBuilder;->append(C)Ljava/lang/StringBuilder;
 
-    move-result-object v0
-
-    invoke-interface {v0}, Ljava/util/List;->clear()V
-
-    .line 233
-    iget-object v0, p1, Lmodmenu/IdScan$Result;->error:Ljava/lang/String;
-
-    if-nez v0, :cond_0
-
-    .line 234
-    iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
-
-    invoke-static {v0}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)Ljava/util/List;
-
-    move-result-object v0
-
-    iget-object p1, p1, Lmodmenu/IdScan$Result;->entries:Ljava/util/List;
-
-    invoke-interface {v0, p1}, Ljava/util/List;->addAll(Ljava/util/Collection;)Z
-
-    .line 236
+    .line 200
     :cond_0
-    iget-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+    iget-object v1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {p1}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;)V
+    invoke-static {v1}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;)Ljava/util/List;
 
-    .line 237
-    iget-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+    move-result-object v1
 
-    invoke-static {p1}, Lmodmenu/IdBrowser;->access$200(Lmodmenu/IdBrowser;)V
+    invoke-interface {v1, v0}, Ljava/util/List;->get(I)Ljava/lang/Object;
 
-    .line 238
+    move-result-object v1
+
+    check-cast v1, Lmodmenu/IdScan$Entry;
+
+    iget-object v1, v1, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
+
+    invoke-virtual {p1, v1}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    .line 196
+    add-int/lit8 v0, v0, 0x1
+
+    goto :goto_0
+
+    .line 202
+    :cond_1
+    iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+
+    invoke-virtual {p1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+
+    move-result-object p1
+
+    invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$500(Lmodmenu/IdBrowser;Ljava/lang/String;)V
+
+    .line 203
     return-void
 .end method
