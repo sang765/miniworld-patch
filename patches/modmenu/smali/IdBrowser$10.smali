@@ -1,14 +1,14 @@
-.class Lmodmenu/IdBrowser$7;
+.class Lmodmenu/IdBrowser$10;
 .super Ljava/lang/Object;
 .source "IdBrowser.java"
 
 # interfaces
-.implements Landroid/widget/AbsListView$OnScrollListener;
+.implements Ljava/lang/Runnable;
 
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdBrowser;-><init>(Lmodmenu/ModMenuActivity;Lmodmenu/Palette;Landroid/widget/FrameLayout;)V
+    value = Lmodmenu/IdBrowser;->applyFilter()V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,8 +33,8 @@
         }
     .end annotation
 
-    .line 253
-    iput-object p1, p0, Lmodmenu/IdBrowser$7;->this$0:Lmodmenu/IdBrowser;
+    .line 468
+    iput-object p1, p0, Lmodmenu/IdBrowser$10;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -43,21 +43,14 @@
 
 
 # virtual methods
-.method public onScroll(Landroid/widget/AbsListView;III)V
-    .locals 0
+.method public run()V
+    .locals 1
 
-    .line 257
-    iget-object p1, p0, Lmodmenu/IdBrowser$7;->this$0:Lmodmenu/IdBrowser;
+    .line 471
+    iget-object v0, p0, Lmodmenu/IdBrowser$10;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {p1}, Lmodmenu/IdBrowser;->access$800(Lmodmenu/IdBrowser;)V
+    invoke-static {v0}, Lmodmenu/IdBrowser;->access$800(Lmodmenu/IdBrowser;)V
 
-    .line 258
-    return-void
-.end method
-
-.method public onScrollStateChanged(Landroid/widget/AbsListView;I)V
-    .locals 0
-
-    .line 261
+    .line 472
     return-void
 .end method

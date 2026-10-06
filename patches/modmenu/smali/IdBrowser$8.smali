@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdBrowser;->chip(Ljava/lang/String;Ljava/lang/String;)Landroid/view/View;
+    value = Lmodmenu/IdBrowser;-><init>(Lmodmenu/ModMenuActivity;Lmodmenu/Palette;Landroid/widget/FrameLayout;)V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -20,33 +20,21 @@
 # instance fields
 .field final synthetic this$0:Lmodmenu/IdBrowser;
 
-.field final synthetic val$value:Ljava/lang/String;
-
 
 # direct methods
-.method constructor <init>(Lmodmenu/IdBrowser;Ljava/lang/String;)V
+.method constructor <init>(Lmodmenu/IdBrowser;)V
     .locals 0
     .annotation system Ldalvik/annotation/MethodParameters;
         accessFlags = {
-            0x8010,
-            0x1010
+            0x8010
         }
         names = {
-            null,
             null
         }
     .end annotation
 
-    .annotation system Ldalvik/annotation/Signature;
-        value = {
-            "()V"
-        }
-    .end annotation
-
-    .line 339
+    .line 271
     iput-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
-
-    iput-object p2, p0, Lmodmenu/IdBrowser$8;->val$value:Ljava/lang/String;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -56,25 +44,13 @@
 
 # virtual methods
 .method public onClick(Landroid/view/View;)V
-    .locals 1
+    .locals 0
 
-    .line 342
+    .line 274
     iget-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
 
-    iget-object v0, p0, Lmodmenu/IdBrowser$8;->val$value:Ljava/lang/String;
+    invoke-static {p1}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)V
 
-    invoke-static {p1, v0}, Lmodmenu/IdBrowser;->access$902(Lmodmenu/IdBrowser;Ljava/lang/String;)Ljava/lang/String;
-
-    .line 343
-    iget-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
-
-    invoke-static {p1}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;)V
-
-    .line 344
-    iget-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
-
-    invoke-static {p1}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;)V
-
-    .line 345
+    .line 275
     return-void
 .end method

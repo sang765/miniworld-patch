@@ -3,12 +3,12 @@
 .source "IdBrowser.java"
 
 # interfaces
-.implements Landroid/view/View$OnClickListener;
+.implements Ljava/lang/Runnable;
 
 
 # annotations
-.annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdBrowser;-><init>(Lmodmenu/ModMenuActivity;Lmodmenu/Palette;Landroid/widget/FrameLayout;)V
+.annotation system Ldalvik/annotation/EnclosingClass;
+    value = Lmodmenu/IdBrowser;
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 119
+    .line 130
     iput-object p1, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,14 +43,34 @@
 
 
 # virtual methods
-.method public onClick(Landroid/view/View;)V
-    .locals 0
+.method public run()V
+    .locals 3
 
-    .line 122
-    iget-object p1, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
+    .line 133
+    iget-object v0, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-virtual {p1}, Lmodmenu/IdBrowser;->close()V
+    invoke-static {v0}, Lmodmenu/IdBrowser;->access$300(Lmodmenu/IdBrowser;)Landroid/view/View;
 
-    .line 123
+    move-result-object v0
+
+    invoke-virtual {v0}, Landroid/view/View;->animate()Landroid/view/ViewPropertyAnimator;
+
+    move-result-object v0
+
+    const/4 v1, 0x0
+
+    invoke-virtual {v0, v1}, Landroid/view/ViewPropertyAnimator;->alpha(F)Landroid/view/ViewPropertyAnimator;
+
+    move-result-object v0
+
+    const-wide/16 v1, 0xfa
+
+    invoke-virtual {v0, v1, v2}, Landroid/view/ViewPropertyAnimator;->setDuration(J)Landroid/view/ViewPropertyAnimator;
+
+    move-result-object v0
+
+    invoke-virtual {v0}, Landroid/view/ViewPropertyAnimator;->start()V
+
+    .line 134
     return-void
 .end method

@@ -25,18 +25,23 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * The ID browser: search, filter and copy every id the game exposes.
+ * The ID browser: search, filter and copy every id the game defines.
  *
  * A full-height panel over the sheet, built in code like the rest of the menu
- * - the pipeline still allows no layout resource. IdScan does the work; this
- * class only renders, and it says what it knows: an empty list after a scan
- * means the registry had not loaded yet (status says so), and a scan taken
- * outside a map carries the plugin-items hint instead of hiding them. A scan
+ * - the pipeline still allows no layout resource. IdIndex supplies every id
+ * the catalogs define, IdScan whatever a run of the VM adds on top; this
+ * class merges the two, sorts by id and renders, and it says what it knows:
+ * a scan that surfaced nothing new means the registry had not loaded yet
+ * (status says so), and a scan taken outside a map carries the plugin-items
+ * hint instead of hiding them. A scan
  * never runs while the panel is up - our window has the game paused behind
  * it, so its script loop is not pumping - which is why opening with no data
  * and Scan again both close the window: the scan ships on the way out and
@@ -53,10 +58,46 @@ import java.util.Set;
  * while the surrounding UI follows I18n.
  */
 final class IdBrowser {
+    /**
+     * Chip order, fixed so a category never jumps around between opens.
+     * 'recipe' is absent because the merge relabels those rows into craft -
+     * both names address crafting's ids, and one row should own one chip.
+     */
     private static final String[] CAT_ORDER = {
-            "item", "plugin", "buff", "effect", "sound", "skin", "role",
-            "avatar", "block", "recipe", "craft", "projectile", "summon",
-            "pet", "mob", "monster", "tool", "food", "npc", "other"};
+            "item", "plugin", "block", "tool", "weapon", "equip", "armor",
+            "food", "projectile", "buff", "effect", "sound", "skin", "role",
+            "avatar", "mob", "monster", "pet", "summon", "craft", "task",
+            "achievement", "horse", "mount", "crop", "seed", "furniture",
+            "home", "shop", "mall", "trade", "npc", "activity", "award",
+            "bag", "emoji", "festival", "title", "tower", "other"};
+
+    /** Numeric id order; ids that are not numbers follow, alphabetically. */
+    private static final Comparator<IdScan.Entry> BY_ID =
+            new Comparator<IdScan.Entry>() {
+                @Override
+                public int compare(IdScan.Entry a, IdScan.Entry b) {
+                    long x = num(a.id), y = num(b.id);
+                    if (x >= 0 && y >= 0) {
+                        return x < y ? -1 : (x == y ? 0 : 1);
+                    }
+                    if (x >= 0) {
+                        return -1;
+                    }
+                    if (y >= 0) {
+                        return 1;
+                    }
+                    return a.id.compareTo(b.id);
+                }
+            };
+
+    private static long num(String s) {
+        try {
+            long v = Long.parseLong(s);
+            return v < 0 ? -1 : v;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
 
     private final ModMenuActivity activity;
     private final Palette p;
@@ -289,9 +330,40 @@ final class IdBrowser {
     private void load(IdScan.Result r) {
         last = r;
         all.clear();
-        if (r.error == null) {
-            all.addAll(r.entries);
+        // The catalogs first: every id they define, already categorized,
+        // listed even when no scan ever ran - that is where the coverage
+        // used to fall short. The scan only adds what the catalogs have
+        // never heard of: a plugin id, a runtime record.
+        String[] keys = IdIndex.keys();
+        Set<String> index = new HashSet<String>(keys.length * 2);
+        for (int i = 0; i < keys.length; i++) {
+            index.add(keys[i]);
+            int hash = keys[i].indexOf('#');
+            all.add(new IdScan.Entry(keys[i].substring(hash + 1), "",
+                    keys[i].substring(0, hash), ""));
         }
+        if (r.error == null) {
+            for (int i = 0; i < r.entries.size(); i++) {
+                IdScan.Entry e = r.entries.get(i);
+                // recipe and craft address crafting's ids (gen_idnames
+                // maps both catalogs there): one row, one chip
+                String c = e.cat.equals("recipe") ? "craft" : e.cat;
+                if (IdIndex.itemCat(c)) {
+                    // the catalogs own this id space - their category
+                    // outranks a constant-name guess like WEAPON_* -> 0
+                    if (IdIndex.inItemSpace(e.id)) {
+                        continue;
+                    }
+                } else if (index.contains(c + "#" + e.id)) {
+                    continue;
+                }
+                all.add(c.equals(e.cat) ? e
+                        : new IdScan.Entry(e.id, e.name, c, e.src));
+            }
+        }
+        // scan order is discovery order; readers look for ids, so sort by
+        // id - the non-numeric ones, plugin-style, follow
+        Collections.sort(all, BY_ID);
         rebuildChips();
         applyFilter();
     }
@@ -361,10 +433,20 @@ final class IdBrowser {
         t.setBackground(d);
     }
 
-    /** The row's name: the game's own text for it, else its scanned label. */
+    /**
+     * The row's name: the game's own text for it, else its scanned label,
+     * else - a catalog row the game left nameless - the id itself, so no
+     * seeded row ever renders blank.
+     */
     private String display(IdScan.Entry e) {
         String name = IdNames.get(activity, e.cat, e.id);
-        return name != null ? name : (e.name.length() > 0 ? e.name : e.src);
+        if (name != null) {
+            return name;
+        }
+        if (e.name.length() > 0) {
+            return e.name;
+        }
+        return e.src.length() > 0 ? e.src : e.id;
     }
 
     private void applyFilter() {

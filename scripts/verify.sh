@@ -214,6 +214,7 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'mw_ids.json' 'get(%a+)Num$' 'constants=' \
            'scan step ' '{"started":1,"s":0}' \
            'IDNAMES1' 'Đá Flamas' \
+           'Lmodmenu/IdIndex;' 'IDINDEX1' \
            'Lmodmenu/IdIcons;' 'IDICONS1' 'iVBORw0KGgo'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
