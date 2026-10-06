@@ -2,6 +2,7 @@ package modmenu;
 
 import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -47,6 +48,9 @@ import android.widget.Toast;
 public class ModMenuActivity extends Activity
         implements CompoundButton.OnCheckedChangeListener, View.OnClickListener {
 
+    /** Scan-completion notification extra: reopen straight into the browser. */
+    public static final String EXTRA_OPEN_IDS = "open_ids";
+
     private Switch webSwitch;
     private Switch hwidSwitch;
     private Switch rewardSwitch;
@@ -64,9 +68,24 @@ public class ModMenuActivity extends Activity
         try {
             buildMenu();
             slideSheetUp();
+            // the scan-completion notification lands here: the scan already
+            // ran, so go straight to the list instead of sitting on the menu
+            if (getIntent() != null
+                    && getIntent().getBooleanExtra(EXTRA_OPEN_IDS, false)) {
+                openBrowser();
+            }
         } catch (RuntimeException e) {
             Log.e("ModMenu", "menu UI failed, closing", e);
             finish();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // the same tap delivered to a live instance rather than a fresh one
+        if (intent != null && intent.getBooleanExtra(EXTRA_OPEN_IDS, false)) {
+            openBrowser();
         }
     }
 

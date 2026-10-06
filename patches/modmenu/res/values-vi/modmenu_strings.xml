@@ -35,6 +35,7 @@
     <string name="id_hint_map">Vào map hoặc phòng để thấy item của plugin</string>
     <string name="id_copied">Đã copy</string>
     <string name="id_fail">Quét thất bại — đóng menu rồi mở lại</string>
-    <string name="id_deferred">Quét sẽ chạy khi bạn đóng menu — mở lại để xem kết quả</string>
+    <string name="id_notif_title">Quét hoàn thành</string>
+    <string name="id_notif_text">Bấm để xem danh sách ID</string>
     <string name="id_items">mục</string>
 </resources>

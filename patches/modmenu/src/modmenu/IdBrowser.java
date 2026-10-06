@@ -36,9 +36,9 @@ import java.util.Set;
  * means the registry had not loaded yet (status says so), and a scan taken
  * outside a map carries the plugin-items hint instead of hiding them. A scan
  * never runs while the panel is up - our window has the game paused behind
- * it, so its script loop is not pumping - which is why Scan again arms the
- * scan and the status points at the menu closing instead of pretending to
- * work.
+ * it, so its script loop is not pumping - which is why opening with no data
+ * and Scan again both close the window: the scan ships on the way out and
+ * the result comes back as a notification that reopens this panel.
  *
  * Categories are the raw keys the scan produced (item, buff, skin, ...): they
  * are the ids' own vocabulary, not menu chrome, so they stay untranslated
@@ -69,9 +69,6 @@ final class IdBrowser {
     private String cat = "";
     private String query = "";
     private IdScan.Result last;
-    /** A scan is armed and waiting for the menu to close - the engine
-     *  cannot run it while our window has the game paused behind it. */
-    private boolean deferred;
 
     private final IdScan.Listener listener = new IdScan.Listener() {
         @Override
@@ -243,18 +240,21 @@ final class IdBrowser {
     }
 
     void open() {
+        IdScan.Result c = IdScan.current(activity);
+        if (c == null) {
+            // nothing scanned in this run yet, and this window is the one
+            // place the script cannot run: leave so the scan ships on the
+            // way out, and come back through the completion notification
+            IdScan.request();
+            activity.finish();
+            return;
+        }
         panel.setVisibility(View.VISIBLE);
         IdScan.setListener(listener);
-        IdScan.Result c = IdScan.current(activity);
-        if (c != null && c != last) {
+        if (c != last) {
             load(c);
         }
-        if (c == null) {
-            // nothing scanned in this run yet: arm it and say where it will
-            // happen, because the panel itself is the one place it cannot
-            IdScan.request();
-            deferred = true;
-        } else if (c.error != null) {
+        if (c.error != null) {
             // the status keeps the error visible; the retry itself is armed
             // for the next menu close
             IdScan.request();
@@ -264,17 +264,20 @@ final class IdBrowser {
 
     void close() {
         panel.setVisibility(View.GONE);
+        // nobody is watching any more: a result landing now has to announce
+        // itself instead of loading into a hidden panel
+        IdScan.setListener(null);
     }
 
     private void scan() {
+        // the script ships when this window goes away, so ask for the scan
+        // by leaving; the result returns as a notification
         IdScan.request();
-        deferred = true;
-        renderStatus();
+        activity.finish();
     }
 
     private void load(IdScan.Result r) {
         last = r;
-        deferred = false;
         all.clear();
         if (r.error == null) {
             all.addAll(r.entries);
@@ -402,10 +405,6 @@ final class IdBrowser {
     private void renderStatus() {
         if (IdScan.scanning()) {
             status.setText(I18n.t(activity, "id_scanning"));
-            return;
-        }
-        if (deferred) {
-            status.setText(I18n.t(activity, "id_deferred"));
             return;
         }
         if (last != null && last.error != null) {

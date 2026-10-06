@@ -43,7 +43,7 @@
         }
     .end annotation
 
-    .line 203
+    .line 213
     iput-object p1, p0, Lmodmenu/IdScan$1$1;->this$0:Lmodmenu/IdScan$1;
 
     iput-object p2, p0, Lmodmenu/IdScan$1$1;->val$r:Lmodmenu/IdScan$Result;
@@ -58,20 +58,40 @@
 .method public run()V
     .locals 2
 
-    .line 206
+    .line 216
     invoke-static {}, Lmodmenu/IdScan;->access$400()Lmodmenu/IdScan$Listener;
 
     move-result-object v0
 
-    .line 207
-    if-eqz v0, :cond_0
+    .line 217
+    nop
 
-    .line 208
+    .line 219
     iget-object v1, p0, Lmodmenu/IdScan$1$1;->val$r:Lmodmenu/IdScan$Result;
 
+    .line 217
+    if-eqz v0, :cond_0
+
+    .line 218
     invoke-interface {v0, v1}, Lmodmenu/IdScan$Listener;->onDone(Lmodmenu/IdScan$Result;)V
 
-    .line 210
+    goto :goto_0
+
+    .line 219
     :cond_0
+    iget-object v0, v1, Lmodmenu/IdScan$Result;->error:Ljava/lang/String;
+
+    if-nez v0, :cond_1
+
+    .line 222
+    iget-object v0, p0, Lmodmenu/IdScan$1$1;->this$0:Lmodmenu/IdScan$1;
+
+    iget-object v0, v0, Lmodmenu/IdScan$1;->val$app:Landroid/content/Context;
+
+    invoke-static {v0}, Lmodmenu/IdScan;->access$500(Landroid/content/Context;)V
+
+    .line 224
+    :cond_1
+    :goto_0
     return-void
 .end method

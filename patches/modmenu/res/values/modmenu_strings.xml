@@ -35,6 +35,7 @@
     <string name="id_hint_map">Join a map or room to see plugin items</string>
     <string name="id_copied">Copied</string>
     <string name="id_fail">Scan failed - close and reopen the menu</string>
-    <string name="id_deferred">Scan runs when you close the menu - reopen it to see results</string>
+    <string name="id_notif_title">Scan complete</string>
+    <string name="id_notif_text">Tap to open the id list</string>
     <string name="id_items">items</string>
 </resources>

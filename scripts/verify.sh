@@ -239,6 +239,8 @@ needles = [
     "遊戲已崩潰",                            # zh-Hant crash title
     "Scan again",                           # en id_rescan
     "Quét lại",                             # vi id_rescan
+    "Scan complete",                        # en scan-done notification
+    "Quét hoàn thành",                     # vi scan-done notification
     "ID 浏览器",                             # zh id browser row
     "ID 瀏覽器",                             # zh-Hant id browser row
 ]

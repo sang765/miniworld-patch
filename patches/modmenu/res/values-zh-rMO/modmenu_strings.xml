@@ -35,6 +35,7 @@
     <string name="id_hint_map">進入地圖或房間才能看到插件物品</string>
     <string name="id_copied">已複製</string>
     <string name="id_fail">掃描失敗 — 關閉選單後重新開啟</string>
-    <string name="id_deferred">關閉選單時會執行掃描 — 重新開啟即可查看結果</string>
+    <string name="id_notif_title">掃描完成</string>
+    <string name="id_notif_text">點擊查看 ID 列表</string>
     <string name="id_items">項</string>
 </resources>

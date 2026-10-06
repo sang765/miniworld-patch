@@ -18,6 +18,8 @@
 
 .field private static final MAIN:Landroid/os/Handler;
 
+.field private static final NOTIF_ID:I = 0x431
+
 .field private static final POLL_MS:J = 0xfaL
 
 .field private static final TAG:Ljava/lang/String; = "MWIds"
@@ -41,7 +43,7 @@
 .method static constructor <clinit>()V
     .locals 2
 
-    .line 61
+    .line 70
     new-instance v0, Landroid/os/Handler;
 
     invoke-static {}, Landroid/os/Looper;->getMainLooper()Landroid/os/Looper;
@@ -52,7 +54,7 @@
 
     sput-object v0, Lmodmenu/IdScan;->MAIN:Landroid/os/Handler;
 
-    .line 72
+    .line 81
     const/4 v0, -0x1
 
     sput v0, Lmodmenu/IdScan;->progress:I
@@ -63,7 +65,7 @@
 .method private constructor <init>()V
     .locals 0
 
-    .line 80
+    .line 89
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -72,7 +74,7 @@
 .method static synthetic access$000([Ljava/lang/String;)Lmodmenu/IdScan$Result;
     .locals 0
 
-    .line 55
+    .line 62
     invoke-static {p0}, Lmodmenu/IdScan;->awaitGuarded([Ljava/lang/String;)Lmodmenu/IdScan$Result;
 
     move-result-object p0
@@ -83,7 +85,7 @@
 .method static synthetic access$102(Lmodmenu/IdScan$Result;)Lmodmenu/IdScan$Result;
     .locals 0
 
-    .line 55
+    .line 62
     sput-object p0, Lmodmenu/IdScan;->cached:Lmodmenu/IdScan$Result;
 
     return-object p0
@@ -92,7 +94,7 @@
 .method static synthetic access$202(Z)Z
     .locals 0
 
-    .line 55
+    .line 62
     sput-boolean p0, Lmodmenu/IdScan;->polling:Z
 
     return p0
@@ -101,7 +103,7 @@
 .method static synthetic access$302(Z)Z
     .locals 0
 
-    .line 55
+    .line 62
     sput-boolean p0, Lmodmenu/IdScan;->wantScan:Z
 
     return p0
@@ -110,16 +112,25 @@
 .method static synthetic access$400()Lmodmenu/IdScan$Listener;
     .locals 1
 
-    .line 55
+    .line 62
     sget-object v0, Lmodmenu/IdScan;->listener:Lmodmenu/IdScan$Listener;
 
     return-object v0
 .end method
 
-.method static synthetic access$500()Landroid/os/Handler;
+.method static synthetic access$500(Landroid/content/Context;)V
+    .locals 0
+
+    .line 62
+    invoke-static {p0}, Lmodmenu/IdScan;->postDone(Landroid/content/Context;)V
+
+    return-void
+.end method
+
+.method static synthetic access$600()Landroid/os/Handler;
     .locals 1
 
-    .line 55
+    .line 62
     sget-object v0, Lmodmenu/IdScan;->MAIN:Landroid/os/Handler;
 
     return-object v0
@@ -128,7 +139,7 @@
 .method private static await([Ljava/lang/String;)Lmodmenu/IdScan$Result;
     .locals 8
 
-    .line 253
+    .line 312
     invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
 
     move-result-wide v0
@@ -137,12 +148,12 @@
 
     add-long/2addr v0, v2
 
-    .line 254
+    .line 313
     const/4 v2, 0x0
 
     const/4 v3, 0x0
 
-    .line 255
+    .line 314
     :goto_0
     invoke-static {}, Ljava/lang/System;->currentTimeMillis()J
 
@@ -152,7 +163,7 @@
 
     if-gez v6, :cond_3
 
-    .line 256
+    .line 315
     const/4 v4, 0x0
 
     :goto_1
@@ -160,14 +171,14 @@
 
     if-ge v4, v5, :cond_2
 
-    .line 257
+    .line 316
     aget-object v5, p0, v4
 
     invoke-static {v5}, Lmodmenu/IdScan;->read(Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v5
 
-    .line 258
+    .line 317
     if-eqz v5, :cond_1
 
     invoke-virtual {v5}, Ljava/lang/String;->length()I
@@ -178,34 +189,34 @@
 
     if-le v6, v7, :cond_1
 
-    .line 259
+    .line 318
     nop
 
-    .line 260
+    .line 319
     invoke-static {v5}, Lmodmenu/IdScan;->noteProgress(Ljava/lang/String;)V
 
-    .line 261
+    .line 320
     invoke-static {v5}, Lmodmenu/IdScan;->parse(Ljava/lang/String;)Lmodmenu/IdScan$Result;
 
     move-result-object v3
 
-    .line 262
+    .line 321
     if-eqz v3, :cond_0
 
-    .line 263
+    .line 322
     return-object v3
 
-    .line 262
+    .line 321
     :cond_0
     const/4 v3, 0x1
 
-    .line 256
+    .line 315
     :cond_1
     add-int/lit8 v4, v4, 0x1
 
     goto :goto_1
 
-    .line 269
+    .line 328
     :cond_2
     const-wide/16 v4, 0xfa
 
@@ -214,21 +225,21 @@
     :try_end_0
     .catch Ljava/lang/InterruptedException; {:try_start_0 .. :try_end_0} :catch_0
 
-    .line 272
+    .line 331
     goto :goto_0
 
-    .line 270
+    .line 329
     :catch_0
     move-exception p0
 
-    .line 271
+    .line 330
     nop
 
-    .line 276
+    .line 335
     :cond_3
     if-eqz v3, :cond_5
 
-    .line 277
+    .line 336
     new-instance p0, Ljava/lang/StringBuilder;
 
     invoke-direct {p0}, Ljava/lang/StringBuilder;-><init>()V
@@ -285,11 +296,11 @@
 
     goto :goto_3
 
-    .line 278
+    .line 337
     :cond_5
     const-string p0, "timeout"
 
-    .line 276
+    .line 335
     :goto_3
     invoke-static {p0}, Lmodmenu/IdScan$Result;->fail(Ljava/lang/String;)Lmodmenu/IdScan$Result;
 
@@ -301,7 +312,7 @@
 .method private static awaitGuarded([Ljava/lang/String;)Lmodmenu/IdScan$Result;
     .locals 2
 
-    .line 244
+    .line 303
     :try_start_0
     invoke-static {p0}, Lmodmenu/IdScan;->await([Ljava/lang/String;)Lmodmenu/IdScan$Result;
 
@@ -311,11 +322,11 @@
 
     return-object p0
 
-    .line 245
+    .line 304
     :catch_0
     move-exception p0
 
-    .line 248
+    .line 307
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -344,10 +355,10 @@
 .method public static current(Landroid/content/Context;)Lmodmenu/IdScan$Result;
     .locals 6
 
-    .line 144
+    .line 153
     sget-object v0, Lmodmenu/IdScan;->cached:Lmodmenu/IdScan$Result;
 
-    .line 145
+    .line 154
     sget-boolean v1, Lmodmenu/IdScan;->sent:Z
 
     if-eqz v1, :cond_2
@@ -358,16 +369,16 @@
 
     if-eqz v1, :cond_2
 
-    .line 146
+    .line 155
     :cond_0
     invoke-static {p0}, Lmodmenu/IdScan;->paths(Landroid/content/Context;)[Ljava/lang/String;
 
     move-result-object p0
 
-    .line 147
+    .line 156
     if-eqz p0, :cond_2
 
-    .line 148
+    .line 157
     const/4 v1, 0x0
 
     const/4 v2, 0x0
@@ -377,14 +388,14 @@
 
     if-ge v2, v3, :cond_2
 
-    .line 149
+    .line 158
     aget-object v3, p0, v2
 
     invoke-static {v3}, Lmodmenu/IdScan;->read(Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v3
 
-    .line 150
+    .line 159
     if-eqz v3, :cond_1
 
     invoke-virtual {v3}, Ljava/lang/String;->length()I
@@ -395,42 +406,85 @@
 
     if-le v4, v5, :cond_1
 
-    .line 151
+    .line 160
     invoke-static {v3}, Lmodmenu/IdScan;->parse(Ljava/lang/String;)Lmodmenu/IdScan$Result;
 
     move-result-object v3
 
-    .line 152
+    .line 161
     if-eqz v3, :cond_1
 
     iget-object v4, v3, Lmodmenu/IdScan$Result;->error:Ljava/lang/String;
 
     if-nez v4, :cond_1
 
-    .line 153
+    .line 162
     sput-object v3, Lmodmenu/IdScan;->cached:Lmodmenu/IdScan$Result;
 
-    .line 154
+    .line 163
     sput-boolean v1, Lmodmenu/IdScan;->wantScan:Z
 
-    .line 155
+    .line 164
     return-object v3
 
-    .line 148
+    .line 157
     :cond_1
     add-int/lit8 v2, v2, 0x1
 
     goto :goto_0
 
-    .line 161
+    .line 170
     :cond_2
     return-object v0
+.end method
+
+.method private static legacy(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Landroid/app/PendingIntent;)Landroid/app/Notification;
+    .locals 1
+
+    .line 274
+    new-instance v0, Landroid/app/Notification$Builder;
+
+    invoke-direct {v0, p0}, Landroid/app/Notification$Builder;-><init>(Landroid/content/Context;)V
+
+    .line 275
+    invoke-virtual {v0, p1}, Landroid/app/Notification$Builder;->setContentTitle(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;
+
+    move-result-object p1
+
+    .line 276
+    invoke-virtual {p1, p2}, Landroid/app/Notification$Builder;->setContentText(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;
+
+    move-result-object p1
+
+    .line 277
+    invoke-virtual {p0}, Landroid/content/Context;->getApplicationInfo()Landroid/content/pm/ApplicationInfo;
+
+    move-result-object p0
+
+    iget p0, p0, Landroid/content/pm/ApplicationInfo;->icon:I
+
+    invoke-virtual {p1, p0}, Landroid/app/Notification$Builder;->setSmallIcon(I)Landroid/app/Notification$Builder;
+
+    move-result-object p0
+
+    .line 278
+    invoke-virtual {p0, p3}, Landroid/app/Notification$Builder;->setContentIntent(Landroid/app/PendingIntent;)Landroid/app/Notification$Builder;
+
+    move-result-object p0
+
+    .line 279
+    invoke-virtual {p0}, Landroid/app/Notification$Builder;->build()Landroid/app/Notification;
+
+    move-result-object p0
+
+    .line 274
+    return-object p0
 .end method
 
 .method private static luaStr(Ljava/lang/String;)Ljava/lang/String;
     .locals 2
 
-    .line 388
+    .line 447
     if-nez p0, :cond_0
 
     const-string p0, ""
@@ -459,9 +513,9 @@
 .end method
 
 .method public static menuClosed(Landroid/content/Context;)V
-    .locals 5
+    .locals 6
 
-    .line 172
+    .line 181
     sget-boolean v0, Lmodmenu/IdScan;->wantScan:Z
 
     if-eqz v0, :cond_3
@@ -472,23 +526,23 @@
 
     goto/16 :goto_1
 
-    .line 175
+    .line 184
     :cond_0
     invoke-static {p0}, Lmodmenu/IdScan;->paths(Landroid/content/Context;)[Ljava/lang/String;
 
-    move-result-object p0
+    move-result-object v0
 
-    .line 176
-    const-string v0, "MWIds"
+    .line 185
+    const-string v1, "MWIds"
 
-    if-nez p0, :cond_1
+    if-nez v0, :cond_1
 
-    .line 177
+    .line 186
     const-string p0, "no writable files dir"
 
-    invoke-static {v0, p0}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+    invoke-static {v1, p0}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
 
-    .line 178
+    .line 187
     const-string p0, "nopath"
 
     invoke-static {p0}, Lmodmenu/IdScan$Result;->fail(Ljava/lang/String;)Lmodmenu/IdScan$Result;
@@ -497,118 +551,123 @@
 
     sput-object p0, Lmodmenu/IdScan;->cached:Lmodmenu/IdScan$Result;
 
-    .line 179
+    .line 188
     return-void
 
-    .line 185
+    .line 194
     :cond_1
-    const/4 v1, 0x0
-
     const/4 v2, 0x0
+
+    const/4 v3, 0x0
 
     :goto_0
     :try_start_0
-    array-length v3, p0
+    array-length v4, v0
 
-    if-ge v2, v3, :cond_2
+    if-ge v3, v4, :cond_2
 
-    .line 186
-    new-instance v3, Ljava/io/File;
+    .line 195
+    new-instance v4, Ljava/io/File;
 
-    aget-object v4, p0, v2
+    aget-object v5, v0, v3
 
-    invoke-direct {v3, v4}, Ljava/io/File;-><init>(Ljava/lang/String;)V
+    invoke-direct {v4, v5}, Ljava/io/File;-><init>(Ljava/lang/String;)V
 
-    invoke-virtual {v3}, Ljava/io/File;->delete()Z
+    invoke-virtual {v4}, Ljava/io/File;->delete()Z
 
-    .line 185
-    add-int/lit8 v2, v2, 0x1
+    .line 194
+    add-int/lit8 v3, v3, 0x1
 
     goto :goto_0
 
-    .line 188
+    .line 197
     :cond_2
-    const/4 v2, 0x1
+    const/4 v3, 0x1
 
-    sput-boolean v2, Lmodmenu/IdScan;->polling:Z
+    sput-boolean v3, Lmodmenu/IdScan;->polling:Z
 
-    .line 189
-    const/4 v3, -0x1
+    .line 198
+    const/4 v4, -0x1
 
-    sput v3, Lmodmenu/IdScan;->progress:I
+    sput v4, Lmodmenu/IdScan;->progress:I
 
-    .line 190
-    aget-object v3, p0, v1
+    .line 199
+    aget-object v4, v0, v2
 
-    aget-object v4, p0, v2
+    aget-object v5, v0, v3
 
-    invoke-static {v3, v4}, Lmodmenu/IdScan;->script(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {v4, v5}, Lmodmenu/IdScan;->script(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 
-    move-result-object v3
+    move-result-object v4
 
-    new-array v4, v1, [Ljava/lang/Object;
+    new-array v5, v2, [Ljava/lang/Object;
 
-    invoke-static {v3, v4}, Lorg/appplay/lib/CommonNatives;->javaCallLuaEvent(Ljava/lang/String;[Ljava/lang/Object;)V
+    invoke-static {v4, v5}, Lorg/appplay/lib/CommonNatives;->javaCallLuaEvent(Ljava/lang/String;[Ljava/lang/Object;)V
 
-    .line 191
-    sput-boolean v2, Lmodmenu/IdScan;->sent:Z
+    .line 200
+    sput-boolean v3, Lmodmenu/IdScan;->sent:Z
 
-    .line 192
-    new-instance v2, Ljava/lang/Thread;
+    .line 201
+    invoke-virtual {p0}, Landroid/content/Context;->getApplicationContext()Landroid/content/Context;
 
-    new-instance v3, Lmodmenu/IdScan$1;
+    move-result-object p0
 
-    invoke-direct {v3, p0}, Lmodmenu/IdScan$1;-><init>([Ljava/lang/String;)V
+    .line 202
+    new-instance v3, Ljava/lang/Thread;
+
+    new-instance v4, Lmodmenu/IdScan$1;
+
+    invoke-direct {v4, v0, p0}, Lmodmenu/IdScan$1;-><init>([Ljava/lang/String;Landroid/content/Context;)V
 
     const-string p0, "mw-idscan"
 
-    invoke-direct {v2, v3, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;Ljava/lang/String;)V
+    invoke-direct {v3, v4, p0}, Ljava/lang/Thread;-><init>(Ljava/lang/Runnable;Ljava/lang/String;)V
 
-    .line 213
-    invoke-virtual {v2}, Ljava/lang/Thread;->start()V
+    .line 227
+    invoke-virtual {v3}, Ljava/lang/Thread;->start()V
 
-    .line 214
+    .line 228
     const-string p0, "scan shipped at menu close"
 
-    invoke-static {v0, p0}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+    invoke-static {v1, p0}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
     :try_end_0
     .catch Ljava/lang/RuntimeException; {:try_start_0 .. :try_end_0} :catch_0
 
-    .line 220
+    .line 234
     nop
 
-    .line 221
+    .line 235
     return-void
 
-    .line 215
+    .line 229
     :catch_0
     move-exception p0
 
-    .line 216
-    sput-boolean v1, Lmodmenu/IdScan;->polling:Z
+    .line 230
+    sput-boolean v2, Lmodmenu/IdScan;->polling:Z
 
-    .line 217
-    new-instance v1, Ljava/lang/StringBuilder;
+    .line 231
+    new-instance v0, Ljava/lang/StringBuilder;
 
-    invoke-direct {v1}, Ljava/lang/StringBuilder;-><init>()V
+    invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
 
     const-string v2, "dispatch failed: "
 
-    invoke-virtual {v1, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v0, v2}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
 
-    move-result-object v1
+    move-result-object v0
 
-    invoke-virtual {v1, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/Object;)Ljava/lang/StringBuilder;
+    invoke-virtual {v0, p0}, Ljava/lang/StringBuilder;->append(Ljava/lang/Object;)Ljava/lang/StringBuilder;
 
-    move-result-object v1
+    move-result-object v0
 
-    invoke-virtual {v1}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    invoke-virtual {v0}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
 
-    move-result-object v1
+    move-result-object v0
 
-    invoke-static {v0, v1}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+    invoke-static {v1, v0}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
 
-    .line 218
+    .line 232
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -633,10 +692,10 @@
 
     sput-object p0, Lmodmenu/IdScan;->cached:Lmodmenu/IdScan$Result;
 
-    .line 219
+    .line 233
     return-void
 
-    .line 173
+    .line 182
     :cond_3
     :goto_1
     return-void
@@ -645,7 +704,7 @@
 .method private static noteProgress(Ljava/lang/String;)V
     .locals 3
 
-    .line 289
+    .line 348
     const-string v0, "\"started\""
 
     invoke-virtual {p0, v0}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
@@ -654,10 +713,10 @@
 
     if-nez v0, :cond_0
 
-    .line 290
+    .line 349
     return-void
 
-    .line 293
+    .line 352
     :cond_0
     :try_start_0
     new-instance v0, Lorg/json/JSONObject;
@@ -672,17 +731,17 @@
 
     move-result p0
 
-    .line 294
+    .line 353
     if-ltz p0, :cond_1
 
     sget v0, Lmodmenu/IdScan;->progress:I
 
     if-eq p0, v0, :cond_1
 
-    .line 295
+    .line 354
     sput p0, Lmodmenu/IdScan;->progress:I
 
-    .line 296
+    .line 355
     const-string v0, "MWIds"
 
     new-instance v1, Ljava/lang/StringBuilder;
@@ -707,15 +766,15 @@
     :try_end_0
     .catch Ljava/lang/Exception; {:try_start_0 .. :try_end_0} :catch_0
 
-    .line 301
+    .line 360
     :cond_1
     goto :goto_0
 
-    .line 298
+    .line 357
     :catch_0
     move-exception p0
 
-    .line 302
+    .line 361
     :goto_0
     return-void
 .end method
@@ -723,7 +782,7 @@
 .method private static parse(Ljava/lang/String;)Lmodmenu/IdScan$Result;
     .locals 17
 
-    .line 330
+    .line 389
     const-string v0, "n"
 
     const/4 v1, 0x0
@@ -735,7 +794,7 @@
 
     invoke-direct {v2, v3}, Lorg/json/JSONObject;-><init>(Ljava/lang/String;)V
 
-    .line 333
+    .line 392
     const-string v3, "started"
 
     const/4 v4, 0x0
@@ -746,19 +805,19 @@
 
     if-eqz v3, :cond_0
 
-    .line 334
+    .line 393
     return-object v1
 
-    .line 336
+    .line 395
     :cond_0
     invoke-static {v2, v0}, Lmodmenu/IdScan;->strings(Lorg/json/JSONObject;Ljava/lang/String;)Ljava/util/List;
 
     move-result-object v9
 
-    .line 337
+    .line 396
     nop
 
-    .line 338
+    .line 397
     invoke-interface {v9}, Ljava/util/List;->isEmpty()Z
 
     move-result v3
@@ -779,7 +838,7 @@
 
     if-eqz v3, :cond_1
 
-    .line 339
+    .line 398
     invoke-interface {v9, v4}, Ljava/util/List;->get(I)Ljava/lang/Object;
 
     move-result-object v3
@@ -790,7 +849,7 @@
 
     goto :goto_0
 
-    .line 341
+    .line 400
     :cond_1
     move-object v11, v1
 
@@ -799,14 +858,14 @@
 
     invoke-direct {v7}, Ljava/util/ArrayList;-><init>()V
 
-    .line 342
+    .line 401
     const-string v3, "g"
 
     invoke-virtual {v2, v3}, Lorg/json/JSONObject;->optJSONArray(Ljava/lang/String;)Lorg/json/JSONArray;
 
     move-result-object v3
 
-    .line 343
+    .line 402
     const/4 v5, 0x0
 
     :goto_1
@@ -818,15 +877,15 @@
 
     if-ge v5, v6, :cond_3
 
-    .line 344
+    .line 403
     invoke-virtual {v3, v5}, Lorg/json/JSONArray;->optJSONObject(I)Lorg/json/JSONObject;
 
     move-result-object v6
 
-    .line 345
+    .line 404
     if-eqz v6, :cond_2
 
-    .line 346
+    .line 405
     new-instance v8, Ljava/lang/StringBuilder;
 
     invoke-direct {v8}, Ljava/lang/StringBuilder;-><init>()V
@@ -867,26 +926,26 @@
 
     invoke-interface {v7, v6}, Ljava/util/List;->add(Ljava/lang/Object;)Z
 
-    .line 343
+    .line 402
     :cond_2
     add-int/lit8 v5, v5, 0x1
 
     goto :goto_1
 
-    .line 349
+    .line 408
     :cond_3
     new-instance v8, Ljava/util/ArrayList;
 
     invoke-direct {v8}, Ljava/util/ArrayList;-><init>()V
 
-    .line 350
+    .line 409
     const-string v3, "m"
 
     invoke-virtual {v2, v3}, Lorg/json/JSONObject;->optJSONArray(Ljava/lang/String;)Lorg/json/JSONArray;
 
     move-result-object v3
 
-    .line 351
+    .line 410
     const/4 v5, 0x0
 
     :goto_2
@@ -898,15 +957,15 @@
 
     if-ge v5, v6, :cond_5
 
-    .line 352
+    .line 411
     invoke-virtual {v3, v5}, Lorg/json/JSONArray;->optJSONObject(I)Lorg/json/JSONObject;
 
     move-result-object v6
 
-    .line 353
+    .line 412
     if-eqz v6, :cond_4
 
-    .line 354
+    .line 413
     new-instance v10, Ljava/lang/StringBuilder;
 
     invoke-direct {v10}, Ljava/lang/StringBuilder;-><init>()V
@@ -941,26 +1000,26 @@
 
     invoke-interface {v8, v6}, Ljava/util/List;->add(Ljava/lang/Object;)Z
 
-    .line 351
+    .line 410
     :cond_4
     add-int/lit8 v5, v5, 0x1
 
     goto :goto_2
 
-    .line 357
+    .line 416
     :cond_5
     new-instance v6, Ljava/util/ArrayList;
 
     invoke-direct {v6}, Ljava/util/ArrayList;-><init>()V
 
-    .line 358
+    .line 417
     const-string v3, "e"
 
     invoke-virtual {v2, v3}, Lorg/json/JSONObject;->optJSONArray(Ljava/lang/String;)Lorg/json/JSONArray;
 
     move-result-object v3
 
-    .line 359
+    .line 418
     const/4 v5, 0x0
 
     :goto_3
@@ -972,20 +1031,20 @@
 
     if-ge v5, v10, :cond_8
 
-    .line 360
+    .line 419
     invoke-virtual {v3, v5}, Lorg/json/JSONArray;->optJSONObject(I)Lorg/json/JSONObject;
 
     move-result-object v10
 
-    .line 361
+    .line 420
     if-nez v10, :cond_6
 
-    .line 362
+    .line 421
     move-object/from16 v16, v1
 
     goto :goto_4
 
-    .line 364
+    .line 423
     :cond_6
     const-string v12, "i"
 
@@ -993,19 +1052,19 @@
 
     move-result-object v12
 
-    .line 365
+    .line 424
     invoke-virtual {v12}, Ljava/lang/String;->length()I
 
     move-result v13
 
     if-nez v13, :cond_7
 
-    .line 366
+    .line 425
     move-object/from16 v16, v1
 
     goto :goto_4
 
-    .line 368
+    .line 427
     :cond_7
     new-instance v13, Lmodmenu/IdScan$Entry;
 
@@ -1028,17 +1087,17 @@
 
     const-string v15, "s"
 
-    .line 369
+    .line 428
     invoke-virtual {v10, v15}, Lorg/json/JSONObject;->optString(Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v10
 
     invoke-direct {v13, v12, v14, v1, v10}, Lmodmenu/IdScan$Entry;-><init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 
-    .line 368
+    .line 427
     invoke-interface {v6, v13}, Ljava/util/List;->add(Ljava/lang/Object;)Z
 
-    .line 359
+    .line 418
     :goto_4
     add-int/lit8 v5, v5, 0x1
 
@@ -1049,12 +1108,12 @@
     :cond_8
     move-object/from16 v16, v1
 
-    .line 371
+    .line 430
     new-instance v5, Lmodmenu/IdScan$Result;
 
     const-string v0, "inmap"
 
-    .line 372
+    .line 431
     invoke-virtual {v2, v0, v4}, Lorg/json/JSONObject;->optInt(Ljava/lang/String;I)I
 
     move-result v0
@@ -1075,10 +1134,10 @@
     :try_end_1
     .catch Ljava/lang/Exception; {:try_start_1 .. :try_end_1} :catch_0
 
-    .line 371
+    .line 430
     return-object v5
 
-    .line 373
+    .line 432
     :catch_0
     move-exception v0
 
@@ -1089,7 +1148,7 @@
 
     move-object/from16 v16, v1
 
-    .line 374
+    .line 433
     :goto_6
     return-object v16
 .end method
@@ -1097,7 +1156,7 @@
 .method private static paths(Landroid/content/Context;)[Ljava/lang/String;
     .locals 4
 
-    .line 226
+    .line 285
     const-string v0, "mw_ids.json"
 
     const/4 v1, 0x0
@@ -1107,13 +1166,13 @@
 
     move-result-object v2
 
-    .line 227
+    .line 286
     if-nez v2, :cond_0
 
-    .line 228
+    .line 287
     return-object v1
 
-    .line 230
+    .line 289
     :cond_0
     new-instance v3, Ljava/io/File;
 
@@ -1123,22 +1182,22 @@
 
     move-result-object v2
 
-    .line 231
+    .line 290
     invoke-virtual {p0, v1}, Landroid/content/Context;->getExternalFilesDir(Ljava/lang/String;)Ljava/io/File;
 
     move-result-object p0
 
-    .line 232
+    .line 291
     if-nez p0, :cond_1
 
-    .line 233
+    .line 292
     filled-new-array {v2, v2}, [Ljava/lang/String;
 
     move-result-object p0
 
     return-object p0
 
-    .line 235
+    .line 294
     :cond_1
     new-instance v3, Ljava/io/File;
 
@@ -1156,11 +1215,11 @@
 
     return-object p0
 
-    .line 236
+    .line 295
     :catch_0
     move-exception p0
 
-    .line 237
+    .line 296
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -1183,17 +1242,153 @@
 
     invoke-static {v0, p0}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
 
-    .line 238
+    .line 297
     return-object v1
+.end method
+
+.method private static postDone(Landroid/content/Context;)V
+    .locals 7
+
+    .line 244
+    const-string v0, "MWIds"
+
+    :try_start_0
+    sget v1, Landroid/os/Build$VERSION;->SDK_INT:I
+
+    const/16 v2, 0x21
+
+    if-lt v1, v2, :cond_0
+
+    invoke-static {p0}, Lmodmenu/Api33;->canPost(Landroid/content/Context;)Z
+
+    move-result v1
+
+    if-nez v1, :cond_0
+
+    .line 245
+    return-void
+
+    .line 247
+    :cond_0
+    const-string v1, "notification"
+
+    .line 248
+    invoke-virtual {p0, v1}, Landroid/content/Context;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;
+
+    move-result-object v1
+
+    check-cast v1, Landroid/app/NotificationManager;
+
+    .line 249
+    if-nez v1, :cond_1
+
+    .line 250
+    return-void
+
+    .line 252
+    :cond_1
+    new-instance v2, Landroid/content/Intent;
+
+    const-class v3, Lmodmenu/ModMenuActivity;
+
+    invoke-direct {v2, p0, v3}, Landroid/content/Intent;-><init>(Landroid/content/Context;Ljava/lang/Class;)V
+
+    .line 253
+    const/high16 v3, 0x14000000
+
+    invoke-virtual {v2, v3}, Landroid/content/Intent;->addFlags(I)Landroid/content/Intent;
+
+    move-result-object v2
+
+    const-string v3, "open_ids"
+
+    .line 254
+    const/4 v4, 0x1
+
+    invoke-virtual {v2, v3, v4}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Z)Landroid/content/Intent;
+
+    move-result-object v2
+
+    .line 255
+    const/4 v3, 0x2
+
+    const/high16 v4, 0xc000000
+
+    invoke-static {p0, v3, v2, v4}, Landroid/app/PendingIntent;->getActivity(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;
+
+    move-result-object v2
+
+    .line 257
+    const-string v3, "id_notif_title"
+
+    invoke-static {p0, v3}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v3
+
+    .line 258
+    const-string v4, "id_notif_text"
+
+    invoke-static {p0, v4}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v4
+
+    .line 259
+    sget v5, Landroid/os/Build$VERSION;->SDK_INT:I
+
+    const/16 v6, 0x1a
+
+    if-lt v5, v6, :cond_2
+
+    .line 260
+    invoke-static {p0, v1, v3, v4, v2}, Lmodmenu/Api26;->build(Landroid/content/Context;Landroid/app/NotificationManager;Ljava/lang/String;Ljava/lang/String;Landroid/app/PendingIntent;)Landroid/app/Notification;
+
+    move-result-object p0
+
+    goto :goto_0
+
+    .line 261
+    :cond_2
+    invoke-static {p0, v3, v4, v2}, Lmodmenu/IdScan;->legacy(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;Landroid/app/PendingIntent;)Landroid/app/Notification;
+
+    move-result-object p0
+
+    .line 262
+    :goto_0
+    const/16 v2, 0x431
+
+    invoke-virtual {v1, v2, p0}, Landroid/app/NotificationManager;->notify(ILandroid/app/Notification;)V
+
+    .line 263
+    const-string p0, "scan notification posted"
+
+    invoke-static {v0, p0}, Landroid/util/Log;->d(Ljava/lang/String;Ljava/lang/String;)I
+    :try_end_0
+    .catchall {:try_start_0 .. :try_end_0} :catchall_0
+
+    .line 268
+    goto :goto_1
+
+    .line 264
+    :catchall_0
+    move-exception p0
+
+    .line 267
+    const-string v1, "scan notification failed"
+
+    invoke-static {v0, v1, p0}, Landroid/util/Log;->w(Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)I
+
+    .line 269
+    :goto_1
+    return-void
 .end method
 
 .method private static read(Ljava/lang/String;)Ljava/lang/String;
     .locals 5
 
-    .line 305
+    .line 364
     nop
 
-    .line 307
+    .line 366
     const/4 v0, 0x0
 
     :try_start_0
@@ -1204,18 +1399,18 @@
     .catch Ljava/lang/Exception; {:try_start_0 .. :try_end_0} :catch_3
     .catchall {:try_start_0 .. :try_end_0} :catchall_1
 
-    .line 308
+    .line 367
     :try_start_1
     new-instance p0, Ljava/io/ByteArrayOutputStream;
 
     invoke-direct {p0}, Ljava/io/ByteArrayOutputStream;-><init>()V
 
-    .line 309
+    .line 368
     const/16 v2, 0x2000
 
     new-array v2, v2, [B
 
-    .line 311
+    .line 370
     :goto_0
     invoke-virtual {v1, v2}, Ljava/io/FileInputStream;->read([B)I
 
@@ -1223,14 +1418,14 @@
 
     if-lez v3, :cond_0
 
-    .line 312
+    .line 371
     const/4 v4, 0x0
 
     invoke-virtual {p0, v2, v4, v3}, Ljava/io/ByteArrayOutputStream;->write([BII)V
 
     goto :goto_0
 
-    .line 314
+    .line 373
     :cond_0
     const-string v2, "UTF-8"
 
@@ -1241,27 +1436,27 @@
     .catch Ljava/lang/Exception; {:try_start_1 .. :try_end_1} :catch_1
     .catchall {:try_start_1 .. :try_end_1} :catchall_0
 
-    .line 318
+    .line 377
     nop
 
-    .line 320
+    .line 379
     :try_start_2
     invoke-virtual {v1}, Ljava/io/FileInputStream;->close()V
     :try_end_2
     .catch Ljava/lang/Exception; {:try_start_2 .. :try_end_2} :catch_0
 
-    .line 322
+    .line 381
     goto :goto_1
 
-    .line 321
+    .line 380
     :catch_0
     move-exception v0
 
-    .line 314
+    .line 373
     :goto_1
     return-object p0
 
-    .line 318
+    .line 377
     :catchall_0
     move-exception p0
 
@@ -1269,64 +1464,64 @@
 
     goto :goto_2
 
-    .line 315
+    .line 374
     :catch_1
     move-exception p0
 
     goto :goto_4
 
-    .line 318
+    .line 377
     :catchall_1
     move-exception p0
 
     :goto_2
     if-eqz v0, :cond_1
 
-    .line 320
+    .line 379
     :try_start_3
     invoke-virtual {v0}, Ljava/io/FileInputStream;->close()V
     :try_end_3
     .catch Ljava/lang/Exception; {:try_start_3 .. :try_end_3} :catch_2
 
-    .line 322
+    .line 381
     goto :goto_3
 
-    .line 321
+    .line 380
     :catch_2
     move-exception v0
 
-    .line 324
+    .line 383
     :cond_1
     :goto_3
     throw p0
 
-    .line 315
+    .line 374
     :catch_3
     move-exception p0
 
     move-object v1, v0
 
-    .line 316
+    .line 375
     :goto_4
     nop
 
-    .line 318
+    .line 377
     if-eqz v1, :cond_2
 
-    .line 320
+    .line 379
     :try_start_4
     invoke-virtual {v1}, Ljava/io/FileInputStream;->close()V
     :try_end_4
     .catch Ljava/lang/Exception; {:try_start_4 .. :try_end_4} :catch_4
 
-    .line 322
+    .line 381
     goto :goto_5
 
-    .line 321
+    .line 380
     :catch_4
     move-exception p0
 
-    .line 316
+    .line 375
     :cond_2
     :goto_5
     return-object v0
@@ -1335,19 +1530,19 @@
 .method public static request()V
     .locals 1
 
-    .line 127
+    .line 136
     const/4 v0, 0x1
 
     sput-boolean v0, Lmodmenu/IdScan;->wantScan:Z
 
-    .line 128
+    .line 137
     return-void
 .end method
 
 .method public static scanning()Z
     .locals 1
 
-    .line 135
+    .line 144
     sget-boolean v0, Lmodmenu/IdScan;->polling:Z
 
     return v0
@@ -1356,7 +1551,7 @@
 .method static script(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
     .locals 2
 
-    .line 405
+    .line 464
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -1367,7 +1562,7 @@
 
     move-result-object v0
 
-    .line 406
+    .line 465
     invoke-static {p0}, Lmodmenu/IdScan;->luaStr(Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object p0
@@ -1382,7 +1577,7 @@
 
     move-result-object p0
 
-    .line 407
+    .line 466
     invoke-static {p1}, Lmodmenu/IdScan;->luaStr(Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object p1
@@ -1401,17 +1596,17 @@
 
     move-result-object p0
 
-    .line 405
+    .line 464
     return-object p0
 .end method
 
 .method public static setListener(Lmodmenu/IdScan$Listener;)V
     .locals 0
 
-    .line 131
+    .line 140
     sput-object p0, Lmodmenu/IdScan;->listener:Lmodmenu/IdScan$Listener;
 
-    .line 132
+    .line 141
     return-void
 .end method
 
@@ -1429,17 +1624,17 @@
         }
     .end annotation
 
-    .line 379
+    .line 438
     new-instance v0, Ljava/util/ArrayList;
 
     invoke-direct {v0}, Ljava/util/ArrayList;-><init>()V
 
-    .line 380
+    .line 439
     invoke-virtual {p0, p1}, Lorg/json/JSONObject;->optJSONArray(Ljava/lang/String;)Lorg/json/JSONArray;
 
     move-result-object p0
 
-    .line 381
+    .line 440
     const/4 p1, 0x0
 
     :goto_0
@@ -1451,19 +1646,19 @@
 
     if-ge p1, v1, :cond_0
 
-    .line 382
+    .line 441
     invoke-virtual {p0, p1}, Lorg/json/JSONArray;->optString(I)Ljava/lang/String;
 
     move-result-object v1
 
     invoke-interface {v0, v1}, Ljava/util/List;->add(Ljava/lang/Object;)Z
 
-    .line 381
+    .line 440
     add-int/lit8 p1, p1, 0x1
 
     goto :goto_0
 
-    .line 384
+    .line 443
     :cond_0
     return-object v0
 .end method

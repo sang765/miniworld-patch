@@ -1,6 +1,11 @@
 package modmenu;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -39,8 +44,10 @@ import java.util.List;
  * that is not running: it never lands, and the panel just times out. So
  * request() only records the wish; menuClosed(), called when the window goes
  * away and the game resumes right after, is where the scan actually ships.
- * The poller outlives the activity, and the panel reads the cached result on
- * the next open.
+ * The poller outlives the activity: a result that lands with no panel
+ * listening posts a tappable notification that reopens the browser, so the
+ * scan itself can own the whole round trip - menu closes, scan runs, result
+ * comes back - without anybody holding the window open.
  *
  * The script wraps every source in pcall, which contains a wrong guess as
  * a Lua error - but no pcall can contain a native fault, so it calls only
@@ -57,6 +64,8 @@ public final class IdScan {
     private static final String FILE = "mw_ids.json";
     private static final long TIMEOUT_MS = 15000;
     private static final long POLL_MS = 250;
+    /** ModMenu 1071, CrashHandler 1072 - the scan's own. */
+    private static final int NOTIF_ID = 1073;
 
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
 
@@ -189,6 +198,7 @@ public final class IdScan {
             progress = -1;
             CommonNatives.javaCallLuaEvent(script(p[0], p[1]), new Object[0]);
             sent = true;
+            final Context app = ctx.getApplicationContext();
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -206,6 +216,10 @@ public final class IdScan {
                             Listener l = listener;
                             if (l != null) {
                                 l.onDone(r);
+                            } else if (r.error == null) {
+                                // the menu was already gone: nobody saw this
+                                // land, so the browser announces itself
+                                postDone(app);
                             }
                         }
                     });
@@ -218,6 +232,51 @@ public final class IdScan {
             cached = Result.fail("send: " + e);
             return; // wantScan stays set: the next menu close retries
         }
+    }
+
+    /**
+     * The scan finished with nobody watching it - the normal path once the
+     * menu closes to let it run. The notification reopens the menu straight
+     * into the browser, where the fresh list is waiting.
+     */
+    private static void postDone(Context c) {
+        try {
+            if (Build.VERSION.SDK_INT >= 33 && !Api33.canPost(c)) {
+                return;
+            }
+            NotificationManager nm = (NotificationManager)
+                    c.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) {
+                return;
+            }
+            Intent intent = new Intent(c, ModMenuActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    .putExtra(ModMenuActivity.EXTRA_OPEN_IDS, true);
+            PendingIntent pi = PendingIntent.getActivity(c, 2, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            String title = I18n.t(c, "id_notif_title");
+            String text = I18n.t(c, "id_notif_text");
+            Notification n = Build.VERSION.SDK_INT >= 26
+                    ? Api26.build(c, nm, title, text, pi)
+                    : legacy(c, title, text, pi);
+            nm.notify(NOTIF_ID, n);
+            Log.d(TAG, "scan notification posted");
+        } catch (Throwable t) {
+            // a scan is done whatever the notification layer says; the list
+            // is still reachable from the menu
+            Log.w(TAG, "scan notification failed", t);
+        }
+    }
+
+    // pre-26 path; the channel-taking Builder exists only on 26+
+    private static Notification legacy(Context c, String title, String text,
+                                       PendingIntent pi) {
+        return new Notification.Builder(c)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setSmallIcon(c.getApplicationInfo().icon)
+                .setContentIntent(pi)
+                .build();
     }
 
     /** External files dir first, internal as fallback; both are written. */

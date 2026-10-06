@@ -43,7 +43,7 @@
         }
     .end annotation
 
-    .line 326
+    .line 329
     iput-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
 
     iput-object p2, p0, Lmodmenu/IdBrowser$8;->val$value:Ljava/lang/String;
@@ -58,23 +58,23 @@
 .method public onClick(Landroid/view/View;)V
     .locals 1
 
-    .line 329
+    .line 332
     iget-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
 
     iget-object v0, p0, Lmodmenu/IdBrowser$8;->val$value:Ljava/lang/String;
 
     invoke-static {p1, v0}, Lmodmenu/IdBrowser;->access$902(Lmodmenu/IdBrowser;Ljava/lang/String;)Ljava/lang/String;
 
-    .line 330
+    .line 333
     iget-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;)V
 
-    .line 331
+    .line 334
     iget-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;)V
 
-    .line 332
+    .line 335
     return-void
 .end method
