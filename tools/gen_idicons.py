@@ -79,6 +79,16 @@ BUFF_PROBES = [
     "resources/minigame/ui/bufficons/%s.png",
     "resources/minigame/items/%s.png",
 ]
+# blockdef carries no icon column: Texture1/Texture2 are the tiles the
+# engine draws the block from, living under minigame/blocks. The frame
+# suffixes cover the handful of blocks whose base name is only a model
+# frame, not a full tile.
+BLOCK_PROBES = [
+    "resources/minigame/blocks/%s.png",
+    "resources/minigame/blocks/%s_side.png",
+    "resources/minigame/blocks/%s_top.png",
+    "resources/minigame/blocks/%s_front.png",
+]
 # iconbank Classification -> folder (checked before any basename search)
 CLS_DIRS = {
     1: "resources/minigame/ui/bufficons",
@@ -216,6 +226,19 @@ def build_entries(script, corpus):
         for cid, row in by_id(load(script, stem), "name").items():
             put("%s#%d" % (cat, cid),
                 probe(icon_by_zh.get(row["name"], ""), ITEM_PROBES))
+
+    # Blocks the Chinese-name join cannot place still show their own
+    # face: blockdef's Texture1/Texture2 are the tiles the engine draws
+    # them from, so the chip stops reading as a wall of missing glyphs.
+    # put() keeps the join's icon where it had one - a rendered item
+    # icon beats a flat tile.
+    for cid, row in by_id(load(script, "blockdef"),
+                          "texture1", "texture2").items():
+        for value in (row["texture1"], row["texture2"]):
+            path = probe(value, BLOCK_PROBES)
+            if path:
+                put("block#%d" % cid, path)
+                break
 
     # buffs: iconbank by id, IconName as the direct fallback
     for cid, row in by_id(load(script, "buffdef"),

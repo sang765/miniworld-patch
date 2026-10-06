@@ -27,7 +27,7 @@
 .method constructor <init>(I)V
     .locals 0
 
-    .line 5402
+    .line 6035
     invoke-direct {p0, p1}, Landroid/util/LruCache;-><init>(I)V
 
     return-void
@@ -38,7 +38,7 @@
 .method protected sizeOf(Ljava/lang/Integer;Landroid/graphics/Bitmap;)I
     .locals 0
 
-    .line 5405
+    .line 6038
     invoke-virtual {p2}, Landroid/graphics/Bitmap;->getByteCount()I
 
     move-result p1
@@ -59,7 +59,7 @@
         }
     .end annotation
 
-    .line 5402
+    .line 6035
     check-cast p1, Ljava/lang/Integer;
 
     check-cast p2, Landroid/graphics/Bitmap;

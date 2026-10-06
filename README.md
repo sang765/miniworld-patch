@@ -73,7 +73,9 @@ the language has no word for it. Beside the name sits the id's own art:
 `modmenu.IdIcons` maps the same `cat#id` keys to the exact texture the
 engine draws from (`tools/gen_idicons.py` decodes the CRN/ETC2A item icons
 out of `common_res`/`game_res`, resizes them to 64 px and embeds them
-base64), or the cross glyph when the game ships no icon for that id.
+base64); a block the item-icon join misses still draws `blockdef`'s own
+`Texture1`/`Texture2` tile out of `minigame/blocks`, and the cross glyph
+remains for what the engine has no face for at all - air, helper blocks.
 Opening the browser with nothing scanned
 yet, or **Scan again**, records the request and closes the menu on the spot:
 `modmenu.IdScan` ships the one `pcall`-wrapped Lua script when the window
