@@ -42,9 +42,15 @@ import java.util.List;
  * The poller outlives the activity, and the panel reads the cached result on
  * the next open.
  *
- * The script itself is pcall-wrapped end to end and does no unprotected
- * call: a wrong guess about a registry only loses that one source, never the
- * scan, and never the game.
+ * The script wraps every source in pcall, which contains a wrong guess as
+ * a Lua error - but no pcall can contain a native fault, so it calls only
+ * what has already survived a scan on device: the getXNum()/getXDef()
+ * getters the methods dump finds, the two id-map readers, isInGame.
+ * Probing every *Mgr global by name and sweeping Get*Count() pairs read
+ * sound and segfaulted the game once, so they stay out until they can be
+ * tried one call at a time. Each step stamps its number into the marker
+ * file and the poller says it out loud: a native fault, the one failure
+ * nothing here can catch, still leaves the step it hit in logcat.
  */
 public final class IdScan {
     private static final String TAG = "MWIds";
@@ -60,6 +66,10 @@ public final class IdScan {
      *  thread, read on the menu-close path. */
     private static volatile boolean wantScan;
     private static volatile boolean polling;
+    /** The step the running script last stamped into its marker file: the
+     *  poller logs every new one, so a native death - which no pcall can
+     *  catch - still names the step it hit. */
+    private static volatile int progress = -1;
     /** A dispatch went out at least once, so a result file can only be a
      *  late landing of our own script, never a leftover of an old run. */
     private static volatile boolean sent;
@@ -176,6 +186,7 @@ public final class IdScan {
                 new File(p[i]).delete();
             }
             polling = true;
+            progress = -1;
             CommonNatives.javaCallLuaEvent(script(p[0], p[1]), new Object[0]);
             sent = true;
             new Thread(new Runnable() {
@@ -246,6 +257,7 @@ public final class IdScan {
                 String body = read(paths[i]);
                 if (body != null && body.length() > 2) {
                     ran = true; // something was written: the script ran
+                    noteProgress(body);
                     Result r = parse(body);
                     if (r != null) {
                         return r;
@@ -261,7 +273,32 @@ public final class IdScan {
         }
         // a marker without a payload means the script started and never
         // finished; nothing at all means the game never picked it up
-        return Result.fail(ran ? "timeout(ran)" : "timeout");
+        return Result.fail(ran
+                ? "timeout(ran" + (progress >= 0 ? ",s" + progress : "") + ")"
+                : "timeout");
+    }
+
+    /**
+     * While the scan runs, the file at the result path only ever carries the
+     * marker, and each step restamps it with its number first. Saying that
+     * number out loud is the one thing that survives a native fault: the
+     * process dies, no Java code of ours runs again, and the last line
+     * logged is all that is left of where the scan stopped.
+     */
+    private static void noteProgress(String body) {
+        if (!body.contains("\"started\"")) {
+            return; // the final payload, not the marker
+        }
+        try {
+            int s = new JSONObject(body).optInt("s", -1);
+            if (s >= 0 && s != progress) {
+                progress = s;
+                Log.d(TAG, "scan step " + s);
+            }
+        } catch (Exception ignored) {
+            // a half-written marker reads as unparsable; the next poll
+            // sees the completed one
+        }
     }
 
     private static String read(String path) {
@@ -355,9 +392,11 @@ public final class IdScan {
      * The scan script. Every source is isolated in its own pcall so one bad
      * registry cannot end the run, and the caps keep the whole thing short
      * enough to run on the engine's script thread without stalling a frame:
-     * 15 count getters x 1000 records, 15 named probes x 5000 records,
-     * 12 record tables x 1000 keys, 10000 entries in total - the id
-     * constants the VM defines (BLOCK_STONE, ITEM_PEARL, ...) are its bulk.
+     * 15 count getters x 1000 records, 12 record tables x 1000 keys, 10000
+     * entries in total - the id constants the VM defines (BLOCK_STONE,
+     * ITEM_PEARL, ...) are their bulk. Before each step the script restamps
+     * the marker with that step's number, so a native fault - the one
+     * failure no pcall contains - leaves the step it hit behind.
      *
      * The script source ends as an expression - javaCallLuaEvent appends
      * "();" to it.
@@ -420,7 +459,7 @@ public final class IdScan {
                 + " if p2~=p1 then one(p2) end"
                 + " end"
                 // marker: written before the scan, overwritten by its result
-                + " w('{\"started\":1}')"
+                + " w('{\"started\":1,\"s\":0}')"
                 + " local ok,err=pcall(function()"
                 + " local E={} local G={} local M={} local N={}"
                 + " local seen={}"
@@ -536,33 +575,19 @@ public final class IdScan {
                 //    of a manager, with its type - this is the map of what
                 //    the VM exposes, and it is what a failed scan still
                 //    hands back for the next round.
+                + " w('{\"started\":1,\"s\":1}')"
                 + " local gcount=0"
-                + " local OWN={} local CP={}"
                 + " for k,v in pairs(_G) do"
                 + " gcount=gcount+1"
-                + " if type(k)=='string' then"
-                + " if #G<gcap and hasWord(k,INV) then"
+                + " if type(k)=='string' and #G<gcap and hasWord(k,INV) then"
                 + " G[#G+1]={n=k,t=type(v)}"
-                + " end"
-                // owner candidates for the named probes: registries live
-                // behind FooMgr / FooDef / FooCsv names far more often not
-                + " if #OWN<40 and (string.match(k,'Mgr$') or"
-                + " string.match(k,'Manager$') or string.match(k,'Csv$') or"
-                + " string.match(k,'Def$') or string.match(k,'Define$')) then"
-                + " OWN[#OWN+1]=k"
-                + " end"
-                // Get*Count() globals - the GetRoleSkinsCount /
-                // GetRoleSkinByIndex pair shape seen in libGameApp.so
-                + " if #CP<40 and type(v)=='function' then"
-                + " local cb=string.match(k,'^Get([A-Z][%a]+)Count$')"
-                + " if cb then CP[#CP+1]={f=k,b=cb} end"
-                + " end"
                 + " end"
                 + " end"
                 + " N[#N+1]='globals='..tostring(gcount)"
                 // 2. methods: a userdata's method table is not enumerable
                 //    through pairs() itself, but its metatable's __index is -
                 //    that turns "guess the API" into a list.
+                + " w('{\"started\":1,\"s\":2}')"
                 + " local owners={'DefMgr','ClientCurGame','GameSettingsMgr',"
                 + "'GameSettings'}"
                 + " for i=1,#G do owners[#owners+1]=G[i].n end"
@@ -606,6 +631,7 @@ public final class IdScan {
                 //    proved by DefMgr:getHotkeyNum/getHotkeyDef. Only names
                 //    without a mutating word are called, and each job runs in
                 //    its own pcall so one bad registry cannot end the scan.
+                + " w('{\"started\":1,\"s\":3}')"
                 + " local jobs={}"
                 + " for i=1,#M do"
                 + " local n=M[i].n"
@@ -664,94 +690,9 @@ public final class IdScan {
                 + " end)"
                 + " end"
                 + " end"
-                // 4. named registry probes: userdata like DefMgr resolves
-                //    names through an __index function, so pairs() never
-                //    sees its methods - but getHotkeyNum/getHotkeyDef
-                //    proved the call shape works, so the known content
-                //    bases are tried by name on every manager/def global
-                + " local BASES={'Item','Block','Buff','Effect','Sound',"
-                + "'Particle','Skin','RoleSkin','Role','Avatar','Monster',"
-                + "'Mob','Pet','PetSkill','Recipe','Craft','Projectile',"
-                + "'Summon','Food','Npc','Tool','Key','Hotkey','Task',"
-                + "'Quest','Achievement','Award','Home','Horse','Actor',"
-                + "'Score','Shop','Trade','Mall','Equip','Weapon','Armor',"
-                + "'Tower','Bag','Backpack','Map','World','Language','Text',"
-                + "'Tutorial','Guide','Emoji','Title','Sign','Chat',"
-                + "'Festival','Activity','Mount','Vehicle','Furniture',"
-                + "'Decoration','Frame','Book','Crop','Seed','Music',"
-                + "'GSound','Seq','StatusEffect'}"
-                + " local prows={'DefMgr'}"
-                + " for i=1,#OWN do prows[#prows+1]=OWN[i] end"
-                + " local pseen={} local probed=0"
-                + " for i=1,#prows do"
-                + " local o=prows[i]"
-                + " if probed>=15 or #E>=cap then break end"
-                + " if o~=nil and not pseen[o] then"
-                + " pseen[o]=1"
-                + " local obj=_G[o]"
-                + " if obj~=nil then"
-                + " for b=1,#BASES do"
-                + " if probed>=15 or #E>=cap then break end"
-                + " local base=BASES[b]"
-                + " local gn='get'..base..'Num'"
-                + " if not has(gn,BAD) then"
-                + " local oka,nfn=pcall(function()"
-                + " return obj[gn] or obj['get'..base..'Count'] end)"
-                + " local okb,dfn=pcall(function()"
-                + " return obj['get'..base..'Def'] or obj['get'..base..'ByIndex']"
-                + " or obj['get'..base..'Info'] or obj['Get'..base..'Def'] end)"
-                + " if oka and okb and type(nfn)=='function'"
-                + " and type(dfn)=='function' then"
-                + " probed=probed+1"
-                + " pcall(function()"
-                + " local cnt=nfn(obj)"
-                + " if type(cnt)~='number' or cnt<1 or cnt>30000 then return end"
-                + " local cat=catOf(base)"
-                + " local lim=cnt>5000 and 5000 or cnt"
-                + " for k=1,lim do"
-                + " add(dfn(obj,k),cat,o..'.'..base,k)"
-                + " if #E>=cap then break end"
-                + " end"
-                + " N[#N+1]='probe '..o..'.'..base..'='..tostring(cnt)"
-                + " end)"
-                + " end"
-                + " end"
-                + " end"
-                + " end"
-                + " end"
-                + " end"
-                + " N[#N+1]='probes='..tostring(probed)"
-                // 5. Get*Count()/Get*ByIndex() global pairs. Content gated:
-                //    a pair whose base names nothing ("ChatMsg") reads
-                //    runtime state, not ids
-                + " local pp=0"
-                + " for i=1,#CP do"
-                + " if pp>=10 or #E>=cap then break end"
-                + " local b1=CP[i].b"
-                + " local cat=catOf(b1)"
-                + " if cat~='other' then"
-                + " local b2=string.gsub(b1,'s$','')"
-                + " local f1=_G[CP[i].f]"
-                + " local f2=_G['Get'..b1..'ByIndex'] or _G['Get'..b1..'Def']"
-                + " or _G['Get'..b2..'ByIndex'] or _G['Get'..b2..'Def']"
-                + " if type(f1)=='function' and type(f2)=='function' then"
-                + " pp=pp+1"
-                + " pcall(function()"
-                + " local cnt=f1()"
-                + " if type(cnt)~='number' or cnt<1 or cnt>30000 then return end"
-                + " local lim=cnt>1500 and 1500 or cnt"
-                + " for k=1,lim do"
-                + " add(f2(k),cat,CP[i].f,k)"
-                + " if #E>=cap then break end"
-                + " end"
-                + " N[#N+1]='pair '..CP[i].f..'='..tostring(cnt)"
-                + " end)"
-                + " end"
-                + " end"
-                + " end"
-                + " N[#N+1]='pairs='..tostring(pp)"
-                // 6. record tables sitting in _G under a content name: the
+                // 4. record tables sitting in _G under a content name: the
                 //    key becomes the id when the record carries none.
+                + " w('{\"started\":1,\"s\":4}')"
                 + " local hvt=0"
                 + " for i=1,#G do"
                 + " if #E>=cap or hvt>=12 then break end"
@@ -776,8 +717,9 @@ public final class IdScan {
                 + " end)"
                 + " end"
                 + " end"
-                // 7. a few names harvested from libGameApp.so that read as
+                // 5. a few names harvested from libGameApp.so that read as
                 //    id maps rather than count/getter pairs
+                + " w('{\"started\":1,\"s\":5}')"
                 + " local FNS={'GetSoundStrDefCsvIdMap',"
                 + "'GetParticlesStrDefCsvIdMap'}"
                 + " for i=1,#FNS do"
@@ -802,10 +744,11 @@ public final class IdScan {
                 + " end)"
                 + " end"
                 + " end"
-                // 8. id constants: the VM defines thousands of NUMBER
+                // 6. id constants: the VM defines thousands of NUMBER
                 //    globals shaped BLOCK_STONE / ITEM_PEARL - the name is
                 //    the label, the value is the id. Runs last so a record
                 //    that carries a real name keeps any id it shares.
+                + " w('{\"started\":1,\"s\":6}')"
                 + " local FAM={item='item',block='block',mob='mob',"
                 + "monster='monster',buff='buff',buffattrt='buff',"
                 + "effect='effect',status_effect='effect',seq='sound',"
@@ -839,9 +782,10 @@ public final class IdScan {
                 + " end"
                 + " end"
                 + " N[#N+1]='constants='..tostring(cn)"
-                // 9. in-map state: plugin items only exist while a map is
+                // 7. in-map state: plugin items only exist while a map is
                 //    loaded, and the browser says so instead of showing an
                 //    empty plugin row as if nothing were wrong.
+                + " w('{\"started\":1,\"s\":7}')"
                 + " local inmap=false"
                 + " pcall(function()"
                 + " local ci=_G.ClientCurGame"

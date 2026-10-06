@@ -67,19 +67,22 @@ for a loop that never runs. `javaCallLuaEvent` is void and the VM has no
 value-returning path back into Java, so the script answers by writing
 `files/mw_ids.json` with `io.open`; the poller outlives the panel, the next
 open reads the cached result, and a failed scan line carries the raw reason -
-`timeout` (the queue was never drained) and `timeout(ran)` (the script
-started and did not finish) are different problems.
-The script walks the engine's `getXNum()` / `getXDef(i)` getters, probes the
-known bases by name on every `*Mgr` / `*Def` global (a userdata like `DefMgr`
-resolves names through an `__index` function, so its methods never show up in
-a `pairs()` dump - but the call shape still works), matches record tables by
-word rather than by raw substring (`"taskinfo"` contains `"skin"`), and
-harvests the `ITEM_*` / `BLOCK_*` / `MOB_*` id constants the VM defines, where
-the name is the label and the value is the id. It dumps the globals it saw
-either way, so a scan that finds
-nothing still reports which names the VM exposes. Every source runs inside
-its own `pcall` under hard caps, so a wrong guess costs one registry - never
-the scan and never the process. Plugin items exist only while a map is
+`timeout` (the queue was never drained) and `timeout(ran,s3)` (the script
+started, reached step 3 and did not finish) are different problems.
+The script walks the engine's `getXNum()` / `getXDef(i)` getters, matches
+record tables by word rather than by raw substring (`"taskinfo"` contains
+`"skin"`), and harvests the `ITEM_*` / `BLOCK_*` / `MOB_*` id constants the
+VM defines, where the name is the label and the value is the id. It dumps
+the globals it saw either way, so a scan that finds nothing still reports
+which names the VM exposes. Every source runs inside its own `pcall` under
+hard caps, so a wrong guess costs one registry, never the scan. A `pcall`
+cannot contain a native fault, though, so the script calls nothing whose
+call shape has not already survived a scan on device: probing the known
+bases by name on every `*Mgr` global and sweeping `Get*Count()` pairs read
+sound and segfaulted the game once, so they stay out until they can be tried
+one call at a time. Each step stamps its number into the marker file before
+it runs, so the last `scan step N` line in logcat says where a scan stopped
+even when the process did not come back. Plugin items exist only while a map is
 loaded, which the panel says out loud (a hint sits next to the count when the
 scan ran outside one) instead of showing an empty category as if nothing
 were wrong.
