@@ -30,7 +30,7 @@
         }
     .end annotation
 
-    .line 449
+    .line 505
     iput-object p1, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Landroid/widget/BaseAdapter;-><init>()V
@@ -41,7 +41,7 @@
 .method synthetic constructor <init>(Lmodmenu/IdBrowser;Lmodmenu/IdBrowser$1;)V
     .locals 0
 
-    .line 449
+    .line 505
     invoke-direct {p0, p1}, Lmodmenu/IdBrowser$Adapter;-><init>(Lmodmenu/IdBrowser;)V
 
     return-void
@@ -52,10 +52,10 @@
 .method public getCount()I
     .locals 1
 
-    .line 452
+    .line 508
     iget-object v0, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v0}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;)Ljava/util/List;
+    invoke-static {v0}, Lmodmenu/IdBrowser;->access$500(Lmodmenu/IdBrowser;)Ljava/util/List;
 
     move-result-object v0
 
@@ -77,7 +77,7 @@
         }
     .end annotation
 
-    .line 449
+    .line 505
     invoke-virtual {p0, p1}, Lmodmenu/IdBrowser$Adapter;->getItem(I)Lmodmenu/IdScan$Entry;
 
     move-result-object p1
@@ -88,10 +88,10 @@
 .method public getItem(I)Lmodmenu/IdScan$Entry;
     .locals 1
 
-    .line 457
+    .line 513
     iget-object v0, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v0}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;)Ljava/util/List;
+    invoke-static {v0}, Lmodmenu/IdBrowser;->access$500(Lmodmenu/IdBrowser;)Ljava/util/List;
 
     move-result-object v0
 
@@ -107,7 +107,7 @@
 .method public getItemId(I)J
     .locals 2
 
-    .line 462
+    .line 518
     int-to-long v0, p1
 
     return-wide v0
@@ -116,10 +116,10 @@
 .method public getView(ILandroid/view/View;Landroid/view/ViewGroup;)Landroid/view/View;
     .locals 9
 
-    .line 467
+    .line 523
     iget-object p3, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {p3}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;)Ljava/util/List;
+    invoke-static {p3}, Lmodmenu/IdBrowser;->access$500(Lmodmenu/IdBrowser;)Ljava/util/List;
 
     move-result-object p3
 
@@ -129,12 +129,12 @@
 
     check-cast p1, Lmodmenu/IdScan$Entry;
 
-    .line 470
+    .line 526
     instance-of p3, p2, Landroid/widget/LinearLayout;
 
     if-eqz p3, :cond_0
 
-    .line 471
+    .line 527
     invoke-virtual {p2}, Landroid/view/View;->getTag()Ljava/lang/Object;
 
     move-result-object p3
@@ -143,10 +143,10 @@
 
     if-eqz p3, :cond_0
 
-    .line 472
+    .line 528
     check-cast p2, Landroid/widget/LinearLayout;
 
-    .line 473
+    .line 529
     invoke-virtual {p2}, Landroid/widget/LinearLayout;->getTag()Ljava/lang/Object;
 
     move-result-object p3
@@ -155,29 +155,29 @@
 
     goto/16 :goto_0
 
-    .line 475
+    .line 531
     :cond_0
     new-instance p2, Landroid/widget/LinearLayout;
 
     iget-object p3, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {p3}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
+    invoke-static {p3}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
 
     move-result-object p3
 
     invoke-direct {p2, p3}, Landroid/widget/LinearLayout;-><init>(Landroid/content/Context;)V
 
-    .line 476
+    .line 532
     const/16 p3, 0x10
 
     invoke-virtual {p2, p3}, Landroid/widget/LinearLayout;->setGravity(I)V
 
-    .line 477
+    .line 533
     iget-object p3, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
     const/16 v0, 0xc
 
-    invoke-static {p3, v0}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;I)I
+    invoke-static {p3, v0}, Lmodmenu/IdBrowser;->access$1200(Lmodmenu/IdBrowser;I)I
 
     move-result p3
 
@@ -185,7 +185,7 @@
 
     const/16 v2, 0x8
 
-    invoke-static {v1, v2}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;I)I
+    invoke-static {v1, v2}, Lmodmenu/IdBrowser;->access$1200(Lmodmenu/IdBrowser;I)I
 
     move-result v1
 
@@ -193,25 +193,25 @@
 
     const/4 v4, 0x4
 
-    invoke-static {v3, v4}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;I)I
+    invoke-static {v3, v4}, Lmodmenu/IdBrowser;->access$1200(Lmodmenu/IdBrowser;I)I
 
     move-result v3
 
     iget-object v4, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v4, v2}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;I)I
+    invoke-static {v4, v2}, Lmodmenu/IdBrowser;->access$1200(Lmodmenu/IdBrowser;I)I
 
     move-result v2
 
     invoke-virtual {p2, p3, v1, v3, v2}, Landroid/widget/LinearLayout;->setPadding(IIII)V
 
-    .line 478
+    .line 534
     new-instance p3, Landroid/graphics/drawable/RippleDrawable;
 
     iget-object v1, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    .line 479
-    invoke-static {v1}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
+    .line 535
+    invoke-static {v1}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
 
     move-result-object v1
 
@@ -233,14 +233,14 @@
 
     iget-object v5, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    .line 480
-    invoke-static {v5, v0}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;I)I
+    .line 536
+    invoke-static {v5, v0}, Lmodmenu/IdBrowser;->access$1200(Lmodmenu/IdBrowser;I)I
 
     move-result v0
 
     const/4 v5, -0x1
 
-    invoke-static {v4, v0, v5}, Lmodmenu/IdBrowser;->access$1200(Lmodmenu/IdBrowser;II)Landroid/graphics/drawable/GradientDrawable;
+    invoke-static {v4, v0, v5}, Lmodmenu/IdBrowser;->access$1400(Lmodmenu/IdBrowser;II)Landroid/graphics/drawable/GradientDrawable;
 
     move-result-object v0
 
@@ -248,20 +248,20 @@
 
     invoke-direct {p3, v1, v4, v0}, Landroid/graphics/drawable/RippleDrawable;-><init>(Landroid/content/res/ColorStateList;Landroid/graphics/drawable/Drawable;Landroid/graphics/drawable/Drawable;)V
 
-    .line 478
+    .line 534
     invoke-virtual {p2, p3}, Landroid/widget/LinearLayout;->setBackground(Landroid/graphics/drawable/Drawable;)V
 
-    .line 481
+    .line 537
     new-instance p3, Lmodmenu/IdBrowser$Holder;
 
     invoke-direct {p3, v4}, Lmodmenu/IdBrowser$Holder;-><init>(Lmodmenu/IdBrowser$1;)V
 
-    .line 482
+    .line 538
     new-instance v0, Landroid/widget/TextView;
 
     iget-object v1, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v1}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
+    invoke-static {v1}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
 
     move-result-object v1
 
@@ -269,26 +269,26 @@
 
     iput-object v0, p3, Lmodmenu/IdBrowser$Holder;->id:Landroid/widget/TextView;
 
-    .line 483
+    .line 539
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->id:Landroid/widget/TextView;
 
     const/high16 v1, 0x41600000    # 14.0f
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setTextSize(F)V
 
-    .line 484
+    .line 540
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->id:Landroid/widget/TextView;
 
     sget-object v1, Landroid/graphics/Typeface;->MONOSPACE:Landroid/graphics/Typeface;
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setTypeface(Landroid/graphics/Typeface;)V
 
-    .line 485
+    .line 541
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->id:Landroid/widget/TextView;
 
     iget-object v1, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v1}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
+    invoke-static {v1}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
 
     move-result-object v1
 
@@ -296,12 +296,12 @@
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setTextColor(I)V
 
-    .line 486
+    .line 542
     new-instance v0, Landroid/widget/TextView;
 
     iget-object v1, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v1}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
+    invoke-static {v1}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
 
     move-result-object v1
 
@@ -309,19 +309,19 @@
 
     iput-object v0, p3, Lmodmenu/IdBrowser$Holder;->name:Landroid/widget/TextView;
 
-    .line 487
+    .line 543
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->name:Landroid/widget/TextView;
 
     const/high16 v1, 0x41500000    # 13.0f
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setTextSize(F)V
 
-    .line 488
+    .line 544
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->name:Landroid/widget/TextView;
 
     iget-object v4, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v4}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
+    invoke-static {v4}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
 
     move-result-object v4
 
@@ -329,61 +329,61 @@
 
     invoke-virtual {v0, v4}, Landroid/widget/TextView;->setTextColor(I)V
 
-    .line 489
+    .line 545
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->name:Landroid/widget/TextView;
 
     const/4 v4, 0x1
 
     invoke-virtual {v0, v4}, Landroid/widget/TextView;->setSingleLine(Z)V
 
-    .line 490
+    .line 546
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->name:Landroid/widget/TextView;
 
     sget-object v6, Landroid/text/TextUtils$TruncateAt;->END:Landroid/text/TextUtils$TruncateAt;
 
     invoke-virtual {v0, v6}, Landroid/widget/TextView;->setEllipsize(Landroid/text/TextUtils$TruncateAt;)V
 
-    .line 491
+    .line 547
     new-instance v0, Landroid/widget/LinearLayout;
 
     iget-object v6, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v6}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
+    invoke-static {v6}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
 
     move-result-object v6
 
     invoke-direct {v0, v6}, Landroid/widget/LinearLayout;-><init>(Landroid/content/Context;)V
 
-    .line 492
+    .line 548
     invoke-virtual {v0, v4}, Landroid/widget/LinearLayout;->setOrientation(I)V
 
-    .line 493
+    .line 549
     iget-object v6, p3, Lmodmenu/IdBrowser$Holder;->id:Landroid/widget/TextView;
 
     invoke-virtual {v0, v6}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;)V
 
-    .line 494
+    .line 550
     new-instance v6, Landroid/widget/LinearLayout$LayoutParams;
 
     const/4 v7, -0x2
 
     invoke-direct {v6, v5, v7}, Landroid/widget/LinearLayout$LayoutParams;-><init>(II)V
 
-    .line 497
+    .line 553
     iget-object v5, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v5, v4}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;I)I
+    invoke-static {v5, v4}, Lmodmenu/IdBrowser;->access$1200(Lmodmenu/IdBrowser;I)I
 
     move-result v4
 
     iput v4, v6, Landroid/widget/LinearLayout$LayoutParams;->topMargin:I
 
-    .line 498
+    .line 554
     iget-object v4, p3, Lmodmenu/IdBrowser$Holder;->name:Landroid/widget/TextView;
 
     invoke-virtual {v0, v4, v6}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
 
-    .line 499
+    .line 555
     new-instance v4, Landroid/widget/LinearLayout$LayoutParams;
 
     const/high16 v5, 0x3f800000    # 1.0f
@@ -394,12 +394,12 @@
 
     invoke-virtual {p2, v0, v4}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
 
-    .line 501
+    .line 557
     iget-object v0, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
     iget-object v4, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v4}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
+    invoke-static {v4}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/ModMenuActivity;
 
     move-result-object v4
 
@@ -411,7 +411,7 @@
 
     iget-object v5, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v5}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
+    invoke-static {v5}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
 
     move-result-object v5
 
@@ -419,8 +419,8 @@
 
     iget-object v8, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    .line 502
-    invoke-static {v8}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
+    .line 558
+    invoke-static {v8}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Lmodmenu/Palette;
 
     move-result-object v8
 
@@ -430,41 +430,41 @@
 
     or-int/2addr v2, v3
 
-    .line 501
-    invoke-static {v0, v4, v6, v5, v2}, Lmodmenu/IdBrowser;->access$1400(Lmodmenu/IdBrowser;Ljava/lang/String;III)Landroid/widget/Button;
+    .line 557
+    invoke-static {v0, v4, v6, v5, v2}, Lmodmenu/IdBrowser;->access$1600(Lmodmenu/IdBrowser;Ljava/lang/String;III)Landroid/widget/Button;
 
     move-result-object v0
 
     iput-object v0, p3, Lmodmenu/IdBrowser$Holder;->copy:Landroid/widget/Button;
 
-    .line 503
+    .line 559
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->copy:Landroid/widget/Button;
 
     invoke-virtual {v0, v1}, Landroid/widget/Button;->setTextSize(F)V
 
-    .line 504
+    .line 560
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->copy:Landroid/widget/Button;
 
     new-instance v1, Landroid/widget/LinearLayout$LayoutParams;
 
     iget-object v2, p0, Lmodmenu/IdBrowser$Adapter;->this$0:Lmodmenu/IdBrowser;
 
-    .line 505
+    .line 561
     const/16 v3, 0x20
 
-    invoke-static {v2, v3}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;I)I
+    invoke-static {v2, v3}, Lmodmenu/IdBrowser;->access$1200(Lmodmenu/IdBrowser;I)I
 
     move-result v2
 
     invoke-direct {v1, v7, v2}, Landroid/widget/LinearLayout$LayoutParams;-><init>(II)V
 
-    .line 504
+    .line 560
     invoke-virtual {p2, v0, v1}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
 
-    .line 506
+    .line 562
     invoke-virtual {p2, p3}, Landroid/widget/LinearLayout;->setTag(Ljava/lang/Object;)V
 
-    .line 508
+    .line 564
     :goto_0
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->id:Landroid/widget/TextView;
 
@@ -472,7 +472,7 @@
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 509
+    .line 565
     iget-object v0, p3, Lmodmenu/IdBrowser$Holder;->name:Landroid/widget/TextView;
 
     iget-object v1, p1, Lmodmenu/IdScan$Entry;->name:Ljava/lang/String;
@@ -493,7 +493,7 @@
     :goto_1
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 510
+    .line 566
     iget-object p3, p3, Lmodmenu/IdBrowser$Holder;->copy:Landroid/widget/Button;
 
     new-instance v0, Lmodmenu/IdBrowser$Adapter$1;
@@ -502,6 +502,6 @@
 
     invoke-virtual {p3, v0}, Landroid/widget/Button;->setOnClickListener(Landroid/view/View$OnClickListener;)V
 
-    .line 516
+    .line 572
     return-object p2
 .end method

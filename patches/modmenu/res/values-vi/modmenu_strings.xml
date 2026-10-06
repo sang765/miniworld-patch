@@ -28,7 +28,6 @@
     <string name="id_search">Tìm theo tên hoặc ID</string>
     <string name="id_all">Tất cả</string>
     <string name="id_copy">Copy</string>
-    <string name="id_copy_all">Copy tất cả</string>
     <string name="id_rescan">Quét lại</string>
     <string name="id_scanning">Đang quét script của game...</string>
     <string name="id_empty">Không có kết quả</string>

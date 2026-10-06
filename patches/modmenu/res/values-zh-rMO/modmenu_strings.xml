@@ -28,7 +28,6 @@
     <string name="id_search">依名稱或 ID 搜尋</string>
     <string name="id_all">全部</string>
     <string name="id_copy">複製</string>
-    <string name="id_copy_all">複製全部</string>
     <string name="id_rescan">重新掃描</string>
     <string name="id_scanning">正在掃描遊戲腳本...</string>
     <string name="id_empty">沒有符合的結果</string>

@@ -3,7 +3,7 @@
 .source "IdBrowser.java"
 
 # interfaces
-.implements Landroid/view/View$OnClickListener;
+.implements Landroid/widget/AdapterView$OnItemClickListener;
 
 
 # annotations
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 185
+    .line 183
     iput-object p1, p0, Lmodmenu/IdBrowser$5;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,14 +43,37 @@
 
 
 # virtual methods
-.method public onClick(Landroid/view/View;)V
+.method public onItemClick(Landroid/widget/AdapterView;Landroid/view/View;IJ)V
     .locals 0
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Landroid/widget/AdapterView<",
+            "*>;",
+            "Landroid/view/View;",
+            "IJ)V"
+        }
+    .end annotation
 
-    .line 188
+    .line 187
     iget-object p1, p0, Lmodmenu/IdBrowser$5;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {p1}, Lmodmenu/IdBrowser;->access$600(Lmodmenu/IdBrowser;)V
+    iget-object p2, p0, Lmodmenu/IdBrowser$5;->this$0:Lmodmenu/IdBrowser;
 
-    .line 189
+    invoke-static {p2}, Lmodmenu/IdBrowser;->access$500(Lmodmenu/IdBrowser;)Ljava/util/List;
+
+    move-result-object p2
+
+    invoke-interface {p2, p3}, Ljava/util/List;->get(I)Ljava/lang/Object;
+
+    move-result-object p2
+
+    check-cast p2, Lmodmenu/IdScan$Entry;
+
+    iget-object p2, p2, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
+
+    invoke-static {p1, p2}, Lmodmenu/IdBrowser;->access$600(Lmodmenu/IdBrowser;Ljava/lang/String;)V
+
+    .line 188
     return-void
 .end method

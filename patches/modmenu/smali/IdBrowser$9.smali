@@ -1,14 +1,14 @@
-.class Lmodmenu/IdBrowser$3;
+.class Lmodmenu/IdBrowser$9;
 .super Ljava/lang/Object;
 .source "IdBrowser.java"
 
 # interfaces
-.implements Landroid/view/View$OnClickListener;
+.implements Ljava/lang/Runnable;
 
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdBrowser;-><init>(Lmodmenu/ModMenuActivity;Lmodmenu/Palette;Landroid/widget/FrameLayout;)V
+    value = Lmodmenu/IdBrowser;->applyFilter()V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,8 +33,8 @@
         }
     .end annotation
 
-    .line 114
-    iput-object p1, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
+    .line 366
+    iput-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -43,14 +43,14 @@
 
 
 # virtual methods
-.method public onClick(Landroid/view/View;)V
-    .locals 0
+.method public run()V
+    .locals 1
 
-    .line 117
-    iget-object p1, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
+    .line 369
+    iget-object v0, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-virtual {p1}, Lmodmenu/IdBrowser;->close()V
+    invoke-static {v0}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;)V
 
-    .line 118
+    .line 370
     return-void
 .end method

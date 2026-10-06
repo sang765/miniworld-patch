@@ -57,6 +57,9 @@ final class IdBrowser {
     private final TextView status;
     private final EditText search;
     private final ListView list;
+    /** List plus the thin scrolling bar drawn over its right edge. */
+    private final FrameLayout listWrap;
+    private final View thumb;
     private final Button rescan;
 
     private final List<IdScan.Entry> all = new ArrayList<IdScan.Entry>();
@@ -74,6 +77,14 @@ final class IdBrowser {
         @Override
         public void onDone(IdScan.Result r) {
             load(r);
+        }
+    };
+
+    /** Fades the bar out once the list has been still for a moment. */
+    private final Runnable hideThumb = new Runnable() {
+        @Override
+        public void run() {
+            thumb.animate().alpha(0f).setDuration(250).start();
         }
     };
 
@@ -163,7 +174,12 @@ final class IdBrowser {
         list.setDivider(null);
         list.setDividerHeight(0);
         list.setAdapter(adapter);
-        list.setFastScrollEnabled(true);
+        // the framework fast-scroller is a fat arrowed thumb that parked over
+        // the rows' Copy buttons; scrolling gets a thin M3-style bar drawn on
+        // top of the list instead, and the system scrollbar stays off so no
+        // second bar doubles it
+        list.setFastScrollEnabled(false);
+        list.setVerticalScrollBarEnabled(false);
         list.setOnItemClickListener(new android.widget.AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(android.widget.AdapterView<?> parent, View view,
@@ -171,13 +187,37 @@ final class IdBrowser {
                 copy(shown.get(position).id);
             }
         });
+        listWrap = new FrameLayout(activity);
         // width comes from MATCH_PARENT, not from weight: in a vertical
         // LinearLayout weight only distributes height, so 0 width here would
         // measure the rows at EXACTLY(0) and nothing would ever draw
+        listWrap.addView(list, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT));
+        thumb = new View(activity);
+        // plain, non-clickable view: taps fall through to the list underneath
+        thumb.setBackground(round(dp(2), (p.onSurface & 0x00FFFFFF) | 0x59000000));
+        thumb.setAlpha(0f);
+        thumb.setVisibility(View.INVISIBLE);
+        FrameLayout.LayoutParams thLp = new FrameLayout.LayoutParams(
+                dp(4), dp(28), Gravity.TOP | Gravity.END);
+        thLp.rightMargin = dp(3);
+        thumb.setLayoutParams(thLp);
+        listWrap.addView(thumb);
+        list.setOnScrollListener(new android.widget.AbsListView.OnScrollListener() {
+            @Override
+            public void onScroll(android.widget.AbsListView v, int first,
+                                  int visible, int total) {
+                showThumb();
+            }
+
+            @Override
+            public void onScrollStateChanged(android.widget.AbsListView v, int state) {}
+        });
         LinearLayout.LayoutParams lLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
         lLp.topMargin = dp(8);
-        panel.addView(list, lLp);
+        panel.addView(listWrap, lLp);
 
         LinearLayout foot = new LinearLayout(activity);
         rescan = pill(I18n.t(activity, "id_rescan"), 0, p.primary,
@@ -189,24 +229,7 @@ final class IdBrowser {
             }
         });
         LinearLayout.LayoutParams rsLp = new LinearLayout.LayoutParams(0, dp(40), 1f);
-        rsLp.rightMargin = dp(8);
         foot.addView(rescan, rsLp);
-        Button copyAll = pill(I18n.t(activity, "id_copy_all"), p.primary, p.onPrimary,
-                (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
-        copyAll.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                StringBuilder b = new StringBuilder();
-                for (int i = 0; i < shown.size(); i++) {
-                    if (i > 0) {
-                        b.append('\n');
-                    }
-                    b.append(shown.get(i).id);
-                }
-                copy(b.toString());
-            }
-        });
-        foot.addView(copyAll, new LinearLayout.LayoutParams(0, dp(40), 1f));
         panel.addView(foot, matchWrap());
 
         parent.addView(panel, new FrameLayout.LayoutParams(
@@ -340,7 +363,40 @@ final class IdBrowser {
             shown.add(e);
         }
         adapter.notifyDataSetChanged();
+        list.post(new Runnable() {
+            @Override
+            public void run() {
+                showThumb();
+            }
+        });
         renderStatus();
+    }
+
+    /**
+     * The M3 scrolling bar: sized to the share of rows on screen, parked at
+     * the scroll position, visible only while the list is moving. Hidden
+     * entirely when everything fits - a bar over a list that cannot scroll
+     * is noise.
+     */
+    private void showThumb() {
+        int n = adapter.getCount();
+        int h = listWrap.getHeight();
+        int first = list.getFirstVisiblePosition();
+        int visible = list.getLastVisiblePosition() - first + 1;
+        if (n <= 0 || h <= 0 || visible >= n) {
+            thumb.setVisibility(View.INVISIBLE);
+            return;
+        }
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) thumb.getLayoutParams();
+        lp.height = Math.max(dp(24), Math.min(h, (int) (h * (visible / (float) n))));
+        lp.topMargin = (int) ((h - lp.height)
+                * (n <= 1 ? 0f : first / (float) (n - 1)));
+        thumb.setLayoutParams(lp);
+        thumb.setVisibility(View.VISIBLE);
+        thumb.animate().cancel();
+        thumb.setAlpha(1f);
+        thumb.removeCallbacks(hideThumb);
+        thumb.postDelayed(hideThumb, 1200);
     }
 
     private void renderStatus() {

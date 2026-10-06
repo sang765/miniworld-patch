@@ -28,7 +28,6 @@
     <string name="id_search">Search by name or id</string>
     <string name="id_all">All</string>
     <string name="id_copy">Copy</string>
-    <string name="id_copy_all">Copy all</string>
     <string name="id_rescan">Scan again</string>
     <string name="id_scanning">Scanning the game scripts...</string>
     <string name="id_empty">No matches</string>
