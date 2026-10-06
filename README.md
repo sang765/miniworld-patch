@@ -69,9 +69,14 @@ value-returning path back into Java, so the script answers by writing
 open reads the cached result, and a failed scan line carries the raw reason -
 `timeout` (the queue was never drained) and `timeout(ran)` (the script
 started and did not finish) are different problems.
-The script walks the engine's `getXNum()` / `getXDef(i)` getters, any record
-table a name match turns up, and a couple of id-map functions harvested from
-`libGameApp.so`; it dumps the globals it saw either way, so a scan that finds
+The script walks the engine's `getXNum()` / `getXDef(i)` getters, probes the
+known bases by name on every `*Mgr` / `*Def` global (a userdata like `DefMgr`
+resolves names through an `__index` function, so its methods never show up in
+a `pairs()` dump - but the call shape still works), matches record tables by
+word rather than by raw substring (`"taskinfo"` contains `"skin"`), and
+harvests the `ITEM_*` / `BLOCK_*` / `MOB_*` id constants the VM defines, where
+the name is the label and the value is the id. It dumps the globals it saw
+either way, so a scan that finds
 nothing still reports which names the VM exposes. Every source runs inside
 its own `pcall` under hard caps, so a wrong guess costs one registry - never
 the scan and never the process. Plugin items exist only while a map is
