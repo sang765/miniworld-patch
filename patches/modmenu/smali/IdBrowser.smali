@@ -917,12 +917,12 @@
 .method private applyFilter()V
     .locals 4
 
-    .line 303
+    .line 308
     iget-object v0, p0, Lmodmenu/IdBrowser;->shown:Ljava/util/List;
 
     invoke-interface {v0}, Ljava/util/List;->clear()V
 
-    .line 304
+    .line 309
     const/4 v0, 0x0
 
     :goto_0
@@ -934,7 +934,7 @@
 
     if-ge v0, v1, :cond_2
 
-    .line 305
+    .line 310
     iget-object v1, p0, Lmodmenu/IdBrowser;->all:Ljava/util/List;
 
     invoke-interface {v1, v0}, Ljava/util/List;->get(I)Ljava/lang/Object;
@@ -943,7 +943,7 @@
 
     check-cast v1, Lmodmenu/IdScan$Entry;
 
-    .line 306
+    .line 311
     iget-object v2, p0, Lmodmenu/IdBrowser;->cat:Ljava/lang/String;
 
     invoke-virtual {v2}, Ljava/lang/String;->length()I
@@ -962,10 +962,10 @@
 
     if-nez v2, :cond_0
 
-    .line 307
+    .line 312
     goto :goto_1
 
-    .line 309
+    .line 314
     :cond_0
     iget-object v2, p0, Lmodmenu/IdBrowser;->query:Ljava/lang/String;
 
@@ -977,7 +977,7 @@
 
     iget-object v2, v1, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
 
-    .line 310
+    .line 315
     invoke-virtual {v2}, Ljava/lang/String;->toLowerCase()Ljava/lang/String;
 
     move-result-object v2
@@ -992,7 +992,7 @@
 
     iget-object v2, v1, Lmodmenu/IdScan$Entry;->name:Ljava/lang/String;
 
-    .line 311
+    .line 316
     invoke-virtual {v2}, Ljava/lang/String;->toLowerCase()Ljava/lang/String;
 
     move-result-object v2
@@ -1005,58 +1005,58 @@
 
     if-nez v2, :cond_1
 
-    .line 312
+    .line 317
     goto :goto_1
 
-    .line 314
+    .line 319
     :cond_1
     iget-object v2, p0, Lmodmenu/IdBrowser;->shown:Ljava/util/List;
 
     invoke-interface {v2, v1}, Ljava/util/List;->add(Ljava/lang/Object;)Z
 
-    .line 304
+    .line 309
     :goto_1
     add-int/lit8 v0, v0, 0x1
 
     goto :goto_0
 
-    .line 316
+    .line 321
     :cond_2
     iget-object v0, p0, Lmodmenu/IdBrowser;->adapter:Lmodmenu/IdBrowser$Adapter;
 
     invoke-virtual {v0}, Lmodmenu/IdBrowser$Adapter;->notifyDataSetChanged()V
 
-    .line 317
+    .line 322
     invoke-direct {p0}, Lmodmenu/IdBrowser;->renderStatus()V
 
-    .line 318
+    .line 323
     return-void
 .end method
 
 .method private chip(Ljava/lang/String;Ljava/lang/String;)Landroid/view/View;
     .locals 4
 
-    .line 266
+    .line 271
     new-instance v0, Landroid/widget/TextView;
 
     iget-object v1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
 
     invoke-direct {v0, v1}, Landroid/widget/TextView;-><init>(Landroid/content/Context;)V
 
-    .line 267
+    .line 272
     invoke-virtual {v0, p2}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 268
+    .line 273
     const/high16 p2, 0x41500000    # 13.0f
 
     invoke-virtual {v0, p2}, Landroid/widget/TextView;->setTextSize(F)V
 
-    .line 269
+    .line 274
     const/16 p2, 0x11
 
     invoke-virtual {v0, p2}, Landroid/widget/TextView;->setGravity(I)V
 
-    .line 270
+    .line 275
     const/16 p2, 0xe
 
     invoke-direct {p0, p2}, Lmodmenu/IdBrowser;->dp(I)I
@@ -1079,14 +1079,14 @@
 
     invoke-virtual {v0, v1, v3, p2, v2}, Landroid/widget/TextView;->setPadding(IIII)V
 
-    .line 271
+    .line 276
     new-instance p2, Landroid/widget/LinearLayout$LayoutParams;
 
     const/4 v1, -0x2
 
     invoke-direct {p2, v1, v1}, Landroid/widget/LinearLayout$LayoutParams;-><init>(II)V
 
-    .line 274
+    .line 279
     const/16 v1, 0x8
 
     invoke-direct {p0, v1}, Lmodmenu/IdBrowser;->dp(I)I
@@ -1095,10 +1095,10 @@
 
     iput v1, p2, Landroid/widget/LinearLayout$LayoutParams;->rightMargin:I
 
-    .line 275
+    .line 280
     invoke-virtual {v0, p2}, Landroid/widget/TextView;->setLayoutParams(Landroid/view/ViewGroup$LayoutParams;)V
 
-    .line 276
+    .line 281
     iget-object p2, p0, Lmodmenu/IdBrowser;->cat:Ljava/lang/String;
 
     invoke-virtual {p1, p2}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
@@ -1107,21 +1107,24 @@
 
     invoke-direct {p0, v0, p2}, Lmodmenu/IdBrowser;->styleChip(Landroid/widget/TextView;Z)V
 
-    .line 277
+    .line 282
     new-instance p2, Lmodmenu/IdBrowser$7;
 
     invoke-direct {p2, p0, p1}, Lmodmenu/IdBrowser$7;-><init>(Lmodmenu/IdBrowser;Ljava/lang/String;)V
 
     invoke-virtual {v0, p2}, Landroid/widget/TextView;->setOnClickListener(Landroid/view/View$OnClickListener;)V
 
-    .line 285
+    .line 290
     return-object v0
 .end method
 
 .method private copy(Ljava/lang/String;)V
     .locals 3
 
-    .line 349
+    .line 353
+    nop
+
+    .line 355
     const/4 v0, 0x0
 
     :try_start_0
@@ -1129,23 +1132,23 @@
 
     const-string v2, "clipboard"
 
-    .line 350
+    .line 356
     invoke-virtual {v1, v2}, Lmodmenu/ModMenuActivity;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;
 
     move-result-object v1
 
     check-cast v1, Landroid/content/ClipboardManager;
 
-    .line 351
+    .line 357
     if-eqz v1, :cond_0
 
     invoke-virtual {p1}, Ljava/lang/String;->length()I
 
     move-result v2
 
-    if-eqz v2, :cond_0
+    if-lez v2, :cond_0
 
-    .line 354
+    .line 358
     const-string v2, "miniworld-id"
 
     invoke-static {v2, p1}, Landroid/content/ClipData;->newPlainText(Ljava/lang/CharSequence;Ljava/lang/CharSequence;)Landroid/content/ClipData;
@@ -1153,71 +1156,62 @@
     move-result-object p1
 
     invoke-virtual {v1, p1}, Landroid/content/ClipboardManager;->setPrimaryClip(Landroid/content/ClipData;)V
-
-    .line 355
-    iget-object p1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
-
-    iget-object v1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
-
-    const-string v2, "id_copied"
-
-    invoke-static {v1, v2}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
-
-    move-result-object v1
-
-    invoke-static {p1, v1, v0}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;
-
-    move-result-object p1
-
-    .line 356
-    invoke-virtual {p1}, Landroid/widget/Toast;->show()V
-
-    .line 360
-    goto :goto_0
-
-    .line 352
-    :cond_0
-    new-instance p1, Ljava/lang/IllegalStateException;
-
-    const-string v1, "no clipboard"
-
-    invoke-direct {p1, v1}, Ljava/lang/IllegalStateException;-><init>(Ljava/lang/String;)V
-
-    throw p1
     :try_end_0
     .catch Ljava/lang/RuntimeException; {:try_start_0 .. :try_end_0} :catch_0
 
-    .line 357
+    .line 359
+    const/4 p1, 0x1
+
+    goto :goto_0
+
+    .line 364
+    :cond_0
+    const/4 p1, 0x0
+
+    :goto_0
+    goto :goto_1
+
+    .line 361
     :catch_0
     move-exception p1
 
-    .line 358
-    iget-object p1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
+    const/4 p1, 0x0
 
+    .line 365
+    :goto_1
     iget-object v1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
 
-    const-string v2, "mod_crash_failed"
+    iget-object v2, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
 
-    invoke-static {v1, v2}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
+    if-eqz p1, :cond_1
 
-    move-result-object v1
+    const-string p1, "id_copied"
 
-    invoke-static {p1, v1, v0}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;
+    goto :goto_2
+
+    :cond_1
+    const-string p1, "mod_crash_failed"
+
+    :goto_2
+    invoke-static {v2, p1}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object p1
 
-    .line 359
+    invoke-static {v1, p1, v0}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;
+
+    move-result-object p1
+
+    .line 366
     invoke-virtual {p1}, Landroid/widget/Toast;->show()V
 
-    .line 361
-    :goto_0
+    .line 367
     return-void
 .end method
 
 .method private dp(I)I
     .locals 1
 
-    .line 407
+    .line 413
     iget-object v0, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
 
     invoke-virtual {v0, p1}, Lmodmenu/ModMenuActivity;->dp(I)I
@@ -1230,12 +1224,12 @@
 .method private field()Landroid/graphics/drawable/GradientDrawable;
     .locals 4
 
-    .line 380
+    .line 386
     new-instance v0, Landroid/graphics/drawable/GradientDrawable;
 
     invoke-direct {v0}, Landroid/graphics/drawable/GradientDrawable;-><init>()V
 
-    .line 381
+    .line 387
     iget-object v1, p0, Lmodmenu/IdBrowser;->p:Lmodmenu/Palette;
 
     iget v1, v1, Lmodmenu/Palette;->onSurface:I
@@ -1250,7 +1244,7 @@
 
     invoke-virtual {v0, v1}, Landroid/graphics/drawable/GradientDrawable;->setColor(I)V
 
-    .line 382
+    .line 388
     const/4 v1, 0x1
 
     invoke-direct {p0, v1}, Lmodmenu/IdBrowser;->dp(I)I
@@ -1269,7 +1263,7 @@
 
     invoke-virtual {v0, v1, v2}, Landroid/graphics/drawable/GradientDrawable;->setStroke(II)V
 
-    .line 383
+    .line 389
     const/16 v1, 0xe
 
     invoke-direct {p0, v1}, Lmodmenu/IdBrowser;->dp(I)I
@@ -1280,14 +1274,14 @@
 
     invoke-virtual {v0, v1}, Landroid/graphics/drawable/GradientDrawable;->setCornerRadius(F)V
 
-    .line 384
+    .line 390
     return-object v0
 .end method
 
 .method private static matchWrap()Landroid/widget/LinearLayout$LayoutParams;
     .locals 3
 
-    .line 402
+    .line 408
     new-instance v0, Landroid/widget/LinearLayout$LayoutParams;
 
     const/4 v1, -0x1
@@ -1302,41 +1296,41 @@
 .method private pill(Ljava/lang/String;III)Landroid/widget/Button;
     .locals 3
 
-    .line 364
+    .line 370
     new-instance v0, Landroid/widget/Button;
 
     iget-object v1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
 
     invoke-direct {v0, v1}, Landroid/widget/Button;-><init>(Landroid/content/Context;)V
 
-    .line 365
+    .line 371
     invoke-virtual {v0, p1}, Landroid/widget/Button;->setText(Ljava/lang/CharSequence;)V
 
-    .line 366
+    .line 372
     const/4 p1, 0x0
 
     invoke-virtual {v0, p1}, Landroid/widget/Button;->setAllCaps(Z)V
 
-    .line 367
+    .line 373
     const/high16 v1, 0x41600000    # 14.0f
 
     invoke-virtual {v0, v1}, Landroid/widget/Button;->setTextSize(F)V
 
-    .line 368
+    .line 374
     invoke-virtual {v0, p3}, Landroid/widget/Button;->setTextColor(I)V
 
-    .line 369
+    .line 375
     const/16 p3, 0x11
 
     invoke-virtual {v0, p3}, Landroid/widget/Button;->setGravity(I)V
 
-    .line 370
+    .line 376
     invoke-virtual {v0, p1}, Landroid/widget/Button;->setMinHeight(I)V
 
-    .line 371
+    .line 377
     invoke-virtual {v0, p1}, Landroid/widget/Button;->setMinWidth(I)V
 
-    .line 372
+    .line 378
     const/16 p3, 0x14
 
     invoke-direct {p0, p3}, Lmodmenu/IdBrowser;->dp(I)I
@@ -1349,7 +1343,7 @@
 
     invoke-virtual {v0, v1, p1, v2, p1}, Landroid/widget/Button;->setPadding(IIII)V
 
-    .line 373
+    .line 379
     invoke-direct {p0, p3}, Lmodmenu/IdBrowser;->dp(I)I
 
     move-result p1
@@ -1358,14 +1352,14 @@
 
     move-result-object p1
 
-    .line 374
+    .line 380
     new-instance p2, Landroid/graphics/drawable/RippleDrawable;
 
     invoke-static {p4}, Landroid/content/res/ColorStateList;->valueOf(I)Landroid/content/res/ColorStateList;
 
     move-result-object p4
 
-    .line 375
+    .line 381
     invoke-direct {p0, p3}, Lmodmenu/IdBrowser;->dp(I)I
 
     move-result p3
@@ -1378,15 +1372,15 @@
 
     invoke-direct {p2, p4, p1, p3}, Landroid/graphics/drawable/RippleDrawable;-><init>(Landroid/content/res/ColorStateList;Landroid/graphics/drawable/Drawable;Landroid/graphics/drawable/Drawable;)V
 
-    .line 374
+    .line 380
     invoke-virtual {v0, p2}, Landroid/widget/Button;->setBackground(Landroid/graphics/drawable/Drawable;)V
 
-    .line 376
+    .line 382
     return-object v0
 .end method
 
 .method private rebuildChips()V
-    .locals 5
+    .locals 6
 
     .line 243
     new-instance v0, Ljava/util/LinkedHashSet;
@@ -1469,53 +1463,74 @@
     :cond_2
     invoke-interface {v0}, Ljava/util/Set;->iterator()Ljava/util/Iterator;
 
-    move-result-object v0
-
-    :goto_2
-    invoke-interface {v0}, Ljava/util/Iterator;->hasNext()Z
-
-    move-result v3
-
-    if-eqz v3, :cond_4
-
-    invoke-interface {v0}, Ljava/util/Iterator;->next()Ljava/lang/Object;
-
     move-result-object v3
 
-    check-cast v3, Ljava/lang/String;
-
-    .line 254
-    invoke-interface {v2, v3}, Ljava/util/List;->contains(Ljava/lang/Object;)Z
+    :goto_2
+    invoke-interface {v3}, Ljava/util/Iterator;->hasNext()Z
 
     move-result v4
 
-    if-nez v4, :cond_3
+    if-eqz v4, :cond_4
+
+    invoke-interface {v3}, Ljava/util/Iterator;->next()Ljava/lang/Object;
+
+    move-result-object v4
+
+    check-cast v4, Ljava/lang/String;
+
+    .line 254
+    invoke-interface {v2, v4}, Ljava/util/List;->contains(Ljava/lang/Object;)Z
+
+    move-result v5
+
+    if-nez v5, :cond_3
 
     .line 255
-    invoke-interface {v2, v3}, Ljava/util/List;->add(Ljava/lang/Object;)Z
+    invoke-interface {v2, v4}, Ljava/util/List;->add(Ljava/lang/Object;)Z
 
     .line 257
     :cond_3
     goto :goto_2
 
-    .line 258
+    .line 260
     :cond_4
+    iget-object v3, p0, Lmodmenu/IdBrowser;->cat:Ljava/lang/String;
+
+    invoke-virtual {v3}, Ljava/lang/String;->length()I
+
+    move-result v3
+
+    const-string v4, ""
+
+    if-lez v3, :cond_5
+
+    iget-object v3, p0, Lmodmenu/IdBrowser;->cat:Ljava/lang/String;
+
+    invoke-interface {v0, v3}, Ljava/util/Set;->contains(Ljava/lang/Object;)Z
+
+    move-result v0
+
+    if-nez v0, :cond_5
+
+    .line 261
+    iput-object v4, p0, Lmodmenu/IdBrowser;->cat:Ljava/lang/String;
+
+    .line 263
+    :cond_5
     iget-object v0, p0, Lmodmenu/IdBrowser;->chips:Landroid/widget/LinearLayout;
 
     invoke-virtual {v0}, Landroid/widget/LinearLayout;->removeAllViews()V
 
-    .line 259
+    .line 264
     iget-object v0, p0, Lmodmenu/IdBrowser;->chips:Landroid/widget/LinearLayout;
 
     iget-object v3, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
 
-    const-string v4, "id_all"
+    const-string v5, "id_all"
 
-    invoke-static {v3, v4}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
+    invoke-static {v3, v5}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v3
-
-    const-string v4, ""
 
     invoke-direct {p0, v4, v3}, Lmodmenu/IdBrowser;->chip(Ljava/lang/String;Ljava/lang/String;)Landroid/view/View;
 
@@ -1523,7 +1538,7 @@
 
     invoke-virtual {v0, v3}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;)V
 
-    .line 260
+    .line 265
     nop
 
     :goto_3
@@ -1531,9 +1546,9 @@
 
     move-result v0
 
-    if-ge v1, v0, :cond_5
+    if-ge v1, v0, :cond_6
 
-    .line 261
+    .line 266
     iget-object v0, p0, Lmodmenu/IdBrowser;->chips:Landroid/widget/LinearLayout;
 
     invoke-interface {v2, v1}, Ljava/util/List;->get(I)Ljava/lang/Object;
@@ -1554,25 +1569,25 @@
 
     invoke-virtual {v0, v3}, Landroid/widget/LinearLayout;->addView(Landroid/view/View;)V
 
-    .line 260
+    .line 265
     add-int/lit8 v1, v1, 0x1
 
     goto :goto_3
 
-    .line 263
-    :cond_5
+    .line 268
+    :cond_6
     return-void
 .end method
 
 .method private renderStatus()V
     .locals 3
 
-    .line 321
+    .line 326
     iget-boolean v0, p0, Lmodmenu/IdBrowser;->scanning:Z
 
     if-eqz v0, :cond_0
 
-    .line 322
+    .line 327
     iget-object v0, p0, Lmodmenu/IdBrowser;->status:Landroid/widget/TextView;
 
     iget-object v1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
@@ -1585,10 +1600,10 @@
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 323
+    .line 328
     return-void
 
-    .line 325
+    .line 330
     :cond_0
     iget-object v0, p0, Lmodmenu/IdBrowser;->last:Lmodmenu/IdScan$Result;
 
@@ -1600,7 +1615,7 @@
 
     if-eqz v0, :cond_1
 
-    .line 326
+    .line 331
     iget-object v0, p0, Lmodmenu/IdBrowser;->status:Landroid/widget/TextView;
 
     iget-object v1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
@@ -1613,10 +1628,10 @@
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 327
+    .line 332
     return-void
 
-    .line 329
+    .line 334
     :cond_1
     iget-object v0, p0, Lmodmenu/IdBrowser;->all:Ljava/util/List;
 
@@ -1626,7 +1641,7 @@
 
     if-eqz v0, :cond_2
 
-    .line 330
+    .line 335
     iget-object v0, p0, Lmodmenu/IdBrowser;->status:Landroid/widget/TextView;
 
     iget-object v1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
@@ -1639,10 +1654,10 @@
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 331
+    .line 336
     return-void
 
-    .line 333
+    .line 338
     :cond_2
     iget-object v0, p0, Lmodmenu/IdBrowser;->shown:Ljava/util/List;
 
@@ -1652,7 +1667,7 @@
 
     if-eqz v0, :cond_3
 
-    .line 334
+    .line 339
     iget-object v0, p0, Lmodmenu/IdBrowser;->status:Landroid/widget/TextView;
 
     iget-object v1, p0, Lmodmenu/IdBrowser;->activity:Lmodmenu/ModMenuActivity;
@@ -1665,10 +1680,10 @@
 
     invoke-virtual {v0, v1}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 335
+    .line 340
     return-void
 
-    .line 337
+    .line 342
     :cond_3
     iget-object v0, p0, Lmodmenu/IdBrowser;->shown:Ljava/util/List;
 
@@ -1684,7 +1699,7 @@
 
     if-ne v0, v1, :cond_4
 
-    .line 338
+    .line 343
     iget-object v0, p0, Lmodmenu/IdBrowser;->all:Ljava/util/List;
 
     invoke-interface {v0}, Ljava/util/List;->size()I
@@ -1697,7 +1712,7 @@
 
     goto :goto_0
 
-    .line 339
+    .line 344
     :cond_4
     new-instance v0, Ljava/lang/StringBuilder;
 
@@ -1733,7 +1748,7 @@
 
     move-result-object v0
 
-    .line 340
+    .line 345
     :goto_0
     new-instance v1, Ljava/lang/StringBuilder;
 
@@ -1765,7 +1780,7 @@
 
     move-result-object v0
 
-    .line 341
+    .line 346
     iget-object v1, p0, Lmodmenu/IdBrowser;->last:Lmodmenu/IdScan$Result;
 
     if-eqz v1, :cond_5
@@ -1776,7 +1791,7 @@
 
     if-nez v1, :cond_5
 
-    .line 342
+    .line 347
     new-instance v1, Ljava/lang/StringBuilder;
 
     invoke-direct {v1}, Ljava/lang/StringBuilder;-><init>()V
@@ -1807,48 +1822,48 @@
 
     move-result-object v0
 
-    .line 344
+    .line 349
     :cond_5
     iget-object v1, p0, Lmodmenu/IdBrowser;->status:Landroid/widget/TextView;
 
     invoke-virtual {v1, v0}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
 
-    .line 345
+    .line 350
     return-void
 .end method
 
 .method private round(II)Landroid/graphics/drawable/GradientDrawable;
     .locals 1
 
-    .line 395
+    .line 401
     new-instance v0, Landroid/graphics/drawable/GradientDrawable;
 
     invoke-direct {v0}, Landroid/graphics/drawable/GradientDrawable;-><init>()V
 
-    .line 396
+    .line 402
     invoke-virtual {v0, p2}, Landroid/graphics/drawable/GradientDrawable;->setColor(I)V
 
-    .line 397
+    .line 403
     int-to-float p1, p1
 
     invoke-virtual {v0, p1}, Landroid/graphics/drawable/GradientDrawable;->setCornerRadius(F)V
 
-    .line 398
+    .line 404
     return-object v0
 .end method
 
 .method private roundTop(IF)Landroid/graphics/drawable/GradientDrawable;
     .locals 2
 
-    .line 388
+    .line 394
     new-instance v0, Landroid/graphics/drawable/GradientDrawable;
 
     invoke-direct {v0}, Landroid/graphics/drawable/GradientDrawable;-><init>()V
 
-    .line 389
+    .line 395
     invoke-virtual {v0, p1}, Landroid/graphics/drawable/GradientDrawable;->setColor(I)V
 
-    .line 390
+    .line 396
     const/16 p1, 0x8
 
     new-array p1, p1, [F
@@ -1889,7 +1904,7 @@
 
     invoke-virtual {v0, p1}, Landroid/graphics/drawable/GradientDrawable;->setCornerRadii([F)V
 
-    .line 391
+    .line 397
     return-object v0
 .end method
 
@@ -1946,26 +1961,26 @@
 .method private styleChip(Landroid/widget/TextView;Z)V
     .locals 3
 
-    .line 289
+    .line 294
     new-instance v0, Landroid/graphics/drawable/GradientDrawable;
 
     invoke-direct {v0}, Landroid/graphics/drawable/GradientDrawable;-><init>()V
 
-    .line 290
+    .line 295
     nop
 
-    .line 294
+    .line 299
     iget-object v1, p0, Lmodmenu/IdBrowser;->p:Lmodmenu/Palette;
 
-    .line 290
+    .line 295
     if-eqz p2, :cond_0
 
-    .line 291
+    .line 296
     iget p2, v1, Lmodmenu/Palette;->primary:I
 
     invoke-virtual {v0, p2}, Landroid/graphics/drawable/GradientDrawable;->setColor(I)V
 
-    .line 292
+    .line 297
     iget-object p2, p0, Lmodmenu/IdBrowser;->p:Lmodmenu/Palette;
 
     iget p2, p2, Lmodmenu/Palette;->onPrimary:I
@@ -1974,7 +1989,7 @@
 
     goto :goto_0
 
-    .line 294
+    .line 299
     :cond_0
     iget p2, v1, Lmodmenu/Palette;->onSurface:I
 
@@ -1988,7 +2003,7 @@
 
     invoke-virtual {v0, p2}, Landroid/graphics/drawable/GradientDrawable;->setColor(I)V
 
-    .line 295
+    .line 300
     const/4 p2, 0x1
 
     invoke-direct {p0, p2}, Lmodmenu/IdBrowser;->dp(I)I
@@ -2007,14 +2022,14 @@
 
     invoke-virtual {v0, p2, v1}, Landroid/graphics/drawable/GradientDrawable;->setStroke(II)V
 
-    .line 296
+    .line 301
     iget-object p2, p0, Lmodmenu/IdBrowser;->p:Lmodmenu/Palette;
 
     iget p2, p2, Lmodmenu/Palette;->onSurfaceVariant:I
 
     invoke-virtual {p1, p2}, Landroid/widget/TextView;->setTextColor(I)V
 
-    .line 298
+    .line 303
     :goto_0
     const/16 p2, 0x10
 
@@ -2026,10 +2041,10 @@
 
     invoke-virtual {v0, p2}, Landroid/graphics/drawable/GradientDrawable;->setCornerRadius(F)V
 
-    .line 299
+    .line 304
     invoke-virtual {p1, v0}, Landroid/widget/TextView;->setBackground(Landroid/graphics/drawable/Drawable;)V
 
-    .line 300
+    .line 305
     return-void
 .end method
 

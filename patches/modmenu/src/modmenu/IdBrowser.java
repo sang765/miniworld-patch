@@ -255,6 +255,11 @@ final class IdBrowser {
                 cats.add(c);
             }
         }
+        // a category that vanished with the last scan would otherwise keep
+        // filtering into an empty set with no chip left to show it
+        if (cat.length() > 0 && !found.contains(cat)) {
+            cat = "";
+        }
         chips.removeAllViews();
         chips.addView(chip("", I18n.t(activity, "id_all")));
         for (int i = 0; i < cats.size(); i++) {
@@ -345,19 +350,20 @@ final class IdBrowser {
     }
 
     private void copy(String text) {
+        boolean ok = false;
         try {
             ClipboardManager cm = (ClipboardManager)
                     activity.getSystemService(Context.CLIPBOARD_SERVICE);
-            if (cm == null || text.length() == 0) {
-                throw new IllegalStateException("no clipboard");
+            if (cm != null && text.length() > 0) {
+                cm.setPrimaryClip(ClipData.newPlainText("miniworld-id", text));
+                ok = true;
             }
-            cm.setPrimaryClip(ClipData.newPlainText("miniworld-id", text));
-            Toast.makeText(activity, I18n.t(activity, "id_copied"),
-                    Toast.LENGTH_SHORT).show();
         } catch (RuntimeException e) {
-            Toast.makeText(activity, I18n.t(activity, "mod_crash_failed"),
-                    Toast.LENGTH_SHORT).show();
+            // the clipboard can be pinned by a device policy - report it
+            // instead of pretending the id was copied
         }
+        Toast.makeText(activity, I18n.t(activity, ok ? "id_copied" : "mod_crash_failed"),
+                Toast.LENGTH_SHORT).show();
     }
 
     private Button pill(String text, int bg, int fg, int ripple) {
