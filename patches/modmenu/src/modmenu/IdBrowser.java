@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
@@ -17,6 +18,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -42,7 +44,9 @@ import java.util.Set;
  *
  * Each row shows the id over its display name: the localized text the game
  * keeps in its own catalogs (IdNames) when this language has one, the
- * scanned label otherwise - and the filter matches all of them.
+ * scanned label otherwise - the filter matches all of them - with the
+ * game's own icon on the left (IdIcons), or the cross glyph when it ships
+ * none for that id.
  *
  * Categories are the raw keys the scan produced (item, buff, skin, ...): they
  * are the ids' own vocabulary, not menu chrome, so they stay untranslated
@@ -511,6 +515,10 @@ final class IdBrowser {
     private static final class Holder {
         TextView id;
         TextView name;
+        /** The row's icon, with the cross glyph underneath it while the game
+         *  ships no icon for the id. */
+        ImageView pic;
+        TextView none;
         Button copy;
     }
 
@@ -556,6 +564,27 @@ final class IdBrowser {
                 h.name.setTextColor(p.onSurfaceVariant);
                 h.name.setSingleLine(true);
                 h.name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                h.none = new TextView(activity);
+                h.none.setText("✗");
+                h.none.setTextSize(14);
+                h.none.setTextColor(p.onSurfaceVariant);
+                h.none.setGravity(Gravity.CENTER);
+                h.none.setVisibility(View.VISIBLE);
+                h.pic = new ImageView(activity);
+                h.pic.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                h.pic.setVisibility(View.GONE);
+                FrameLayout iconWrap = new FrameLayout(activity);
+                iconWrap.addView(h.pic, new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT));
+                iconWrap.addView(h.none, new FrameLayout.LayoutParams(
+                        FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT));
+                LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(
+                        dp(26), dp(26));
+                iLp.rightMargin = dp(10);
+                iLp.gravity = Gravity.CENTER_VERTICAL;
+                row.addView(iconWrap, iLp);
                 LinearLayout col = new LinearLayout(activity);
                 col.setOrientation(LinearLayout.VERTICAL);
                 col.addView(h.id);
@@ -575,6 +604,16 @@ final class IdBrowser {
             }
             h.id.setText(e.id);
             h.name.setText(display(e));
+            Bitmap bmp = IdIcons.get(e.cat, e.id);
+            if (bmp != null) {
+                h.pic.setImageBitmap(bmp);
+                h.pic.setVisibility(View.VISIBLE);
+                h.none.setVisibility(View.GONE);
+            } else {
+                h.pic.setImageDrawable(null);
+                h.pic.setVisibility(View.GONE);
+                h.none.setVisibility(View.VISIBLE);
+            }
             h.copy.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

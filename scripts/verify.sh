@@ -213,7 +213,8 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'scan shipped at menu close' \
            'mw_ids.json' 'get(%a+)Num$' 'constants=' \
            'scan step ' '{"started":1,"s":0}' \
-           'IDNAMES1' 'Đá Flamas'; do
+           'IDNAMES1' 'Đá Flamas' \
+           'Lmodmenu/IdIcons;' 'IDICONS1' 'iVBORw0KGgo'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else

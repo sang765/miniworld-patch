@@ -18,6 +18,7 @@ Container layout, verified against every shipped pkg (index md5s match
 Stdlib only: the LZ4 block format is decoded here directly so the name and
 icon generators need no extra packages.
 """
+import os
 import struct
 import zipfile
 
@@ -63,8 +64,7 @@ def lz4_block(src, expected_size=None):
     return bytes(out)
 
 
-def _payload(data, x, y, z):
-    raw = data[x:x + y]
+def _payload(raw, z):
     if not (z & 1):
         return raw
     if len(raw) < 4:
@@ -100,16 +100,19 @@ def _walk_paths(buf, start, count):
 
 
 class Pkg:
-    def __init__(self, data):
-        if len(data) < HEADER_SIZE:
+    """A parsed pkg; records are read through `_slice`, so a pkg backed by a
+    seekable file (from_file) never has to sit in memory as one blob."""
+
+    def __init__(self, head, index, slice_fn, size):
+        if len(head) < HEADER_SIZE:
             raise ValueError("not a pkg: too short")
-        ver, sub, index_off, index_size = struct.unpack_from("<IIII", data)
+        ver, sub, index_off, index_size = struct.unpack_from("<IIII", head)
         if ver != MAGIC or sub != 17:
             raise ValueError("not a pkg: header %08x/%d" % (ver, sub))
-        if index_off + index_size != len(data):
+        if index_off + index_size != size:
             raise ValueError("index does not end at EOF")
-        self.data = data
-        self._records(data[index_off:index_off + index_size])
+        self._slice = slice_fn
+        self._records(index)
         self._paths()
 
     def _records(self, index):
@@ -148,7 +151,7 @@ class Pkg:
             x, y, z, _ = self.records[self.paths[path]]
         except KeyError:
             raise KeyError(path)
-        return _payload(self.data, x, y, z)
+        return _payload(self._slice(x, x + y), z)
 
     def names(self):
         return sorted(self.paths)
@@ -156,4 +159,24 @@ class Pkg:
 
 def from_apk(apk_path, member):
     with zipfile.ZipFile(apk_path) as z:
-        return Pkg(z.read(member))
+        blob = z.read(member)
+    index_off, index_size = struct.unpack_from("<II", blob, 8)
+    return Pkg(blob[:HEADER_SIZE], blob[index_off:index_off + index_size],
+               lambda a, b: blob[a:b], len(blob))
+
+
+def from_file(path):
+    """Open a pkg that sits on disk (the 667 MB common_res); only the header
+    and index are read into memory, records are sought on demand."""
+    f = open(path, "rb")
+    head = f.read(HEADER_SIZE)
+    index_off, index_size = struct.unpack_from("<II", head, 8)
+    size = os.fstat(f.fileno()).st_size
+    f.seek(index_off)
+    index = f.read(index_size)
+
+    def slice_fn(a, b):
+        f.seek(a)
+        return f.read(b - a)
+
+    return Pkg(head, index, slice_fn, size)
