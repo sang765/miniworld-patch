@@ -38,6 +38,7 @@ mkdir -p "$build/classes" "$build/dex"
 # and GmsCompat call them: compile stubs into their own directory so javac
 # resolves them but no stub class ever reaches d8 or the shipped smali.
 mkdir -p "$build/stubsrc/org/appplay/lib" "$build/stubsrc/org/appplay/lib/sdk" \
+         "$build/stubsrc/org/appplay/lib/utils" \
          "$build/stubsrc/com/minitech/player" \
          "$build/stubsrc/com/google/android/gms/auth/api/signin/internal" "$build/stubcls"
 cat > "$build/stubsrc/org/appplay/lib/CommonNatives.java" <<'EOF'
@@ -58,6 +59,23 @@ import com.minitech.player.AppPlayer;
 
 public class GameBaseActivity extends android.app.Activity {
     public AppPlayer m_AppPlayer;
+}
+EOF
+# IdNames reads the in-game language through this class; the real one lives
+# in the game's dexes, and the stub only has to satisfy javac.
+cat > "$build/stubsrc/org/appplay/lib/utils/LanguageUtils.java" <<'EOF'
+package org.appplay.lib.utils;
+
+import android.content.Context;
+
+public class LanguageUtils {
+    public static int getMobileLang(Context context) {
+        return -1;
+    }
+
+    public static String getLanuageByGame(int lang) {
+        return "";
+    }
 }
 EOF
 cat > "$build/stubsrc/com/minitech/player/AppPlayer.java" <<'EOF'

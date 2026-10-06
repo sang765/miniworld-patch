@@ -40,6 +40,10 @@ import java.util.Set;
  * and Scan again both close the window: the scan ships on the way out and
  * the result comes back as a notification that reopens this panel.
  *
+ * Each row shows the id over its display name: the localized text the game
+ * keeps in its own catalogs (IdNames) when this language has one, the
+ * scanned label otherwise - and the filter matches all of them.
+ *
  * Categories are the raw keys the scan produced (item, buff, skin, ...): they
  * are the ids' own vocabulary, not menu chrome, so they stay untranslated
  * while the surrounding UI follows I18n.
@@ -240,6 +244,8 @@ final class IdBrowser {
     }
 
     void open() {
+        // the player may have switched the game's language since last time
+        IdNames.reset();
         IdScan.Result c = IdScan.current(activity);
         if (c == null) {
             // nothing scanned in this run yet, and this window is the one
@@ -351,6 +357,12 @@ final class IdBrowser {
         t.setBackground(d);
     }
 
+    /** The row's name: the game's own text for it, else its scanned label. */
+    private String display(IdScan.Entry e) {
+        String name = IdNames.get(activity, e.cat, e.id);
+        return name != null ? name : (e.name.length() > 0 ? e.name : e.src);
+    }
+
     private void applyFilter() {
         shown.clear();
         for (int i = 0; i < all.size(); i++) {
@@ -360,7 +372,8 @@ final class IdBrowser {
             }
             if (query.length() > 0
                     && !e.id.toLowerCase().contains(query)
-                    && !e.name.toLowerCase().contains(query)) {
+                    && !e.name.toLowerCase().contains(query)
+                    && !display(e).toLowerCase().contains(query)) {
                 continue;
             }
             shown.add(e);
@@ -561,7 +574,7 @@ final class IdBrowser {
                 row.setTag(h);
             }
             h.id.setText(e.id);
-            h.name.setText(e.name.length() > 0 ? e.name : e.src);
+            h.name.setText(display(e));
             h.copy.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

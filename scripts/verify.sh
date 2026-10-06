@@ -209,10 +209,11 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'mod_crash_title' 'mod_crash_notif_title' \
            'spoofValue' \
            'legacySignIn' 'GmsCompat' \
-           'Lmodmenu/IdScan;' 'Lmodmenu/IdBrowser;' \
+           'Lmodmenu/IdScan;' 'Lmodmenu/IdBrowser;' 'Lmodmenu/IdNames;' \
            'scan shipped at menu close' \
            'mw_ids.json' 'get(%a+)Num$' 'constants=' \
-           'scan step ' '{"started":1,"s":0}'; do
+           'scan step ' '{"started":1,"s":0}' \
+           'IDNAMES1' 'Đá Flamas'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else

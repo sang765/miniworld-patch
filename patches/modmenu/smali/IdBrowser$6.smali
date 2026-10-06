@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 204
+    .line 208
     iput-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,18 +46,18 @@
 .method public onScroll(Landroid/widget/AbsListView;III)V
     .locals 0
 
-    .line 208
+    .line 212
     iget-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;)V
 
-    .line 209
+    .line 213
     return-void
 .end method
 
 .method public onScrollStateChanged(Landroid/widget/AbsListView;I)V
     .locals 0
 
-    .line 212
+    .line 216
     return-void
 .end method

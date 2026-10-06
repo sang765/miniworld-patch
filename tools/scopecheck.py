@@ -65,9 +65,12 @@ MODMENU_FILES = {
     "smali_classes8/modmenu/CrashActivity.smali",
     # The ID browser: the menu button constructs IdBrowser, which runs the
     # Lua scan through IdScan - a missing one is a ClassNotFoundException on
-    # the first tap.
+    # the first tap. IdNames is the generated name table IdBrowser reads on
+    # every row bind: 3 MB of string constants, exactly what a copy step
+    # that silently copied nothing would take away.
     "smali_classes8/modmenu/IdScan.smali",
     "smali_classes8/modmenu/IdBrowser.smali",
+    "smali_classes8/modmenu/IdNames.smali",
 }
 
 # fixdollar.py runs two logical passes: prefix an 'x' when the name started
