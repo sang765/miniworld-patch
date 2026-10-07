@@ -3,6 +3,7 @@ package modmenu;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.Typeface;
@@ -24,6 +25,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -33,12 +35,12 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The ID browser: search, filter and copy every id the game defines.
+ * The ID browser: search, sort, filter and copy every id the game defines.
  *
  * A full-height panel over the sheet, built in code like the rest of the menu
  * - the pipeline still allows no layout resource. IdIndex supplies every id
  * the catalogs define, IdScan whatever a run of the VM adds on top; this
- * class merges the two, sorts by id and renders, and it says what it knows:
+ * class merges the two into rows and renders them, and it says what it knows:
  * a scan that surfaced nothing new means the registry had not loaded yet
  * (status says so), and a scan taken outside a map carries the plugin-items
  * hint instead of hiding them. A scan
@@ -47,11 +49,24 @@ import java.util.Set;
  * and Scan again both close the window: the scan ships on the way out and
  * the result comes back as a notification that reopens this panel.
  *
+ * The merge resolves every display name and folds it for search and sort -
+ * a few hundred ms over ~27k rows, and none of it depends on anything but
+ * the scan result and the game's language, so the merged rows are cached
+ * statically against exactly those two keys: reopening the menu, or an
+ * activity recreated underneath it, starts from the cache instead of
+ * redoing the merge.
+ *
  * Each row shows the id over its display name: the localized text the game
  * keeps in its own catalogs (IdNames) when this language has one, the
- * scanned label otherwise - the filter matches all of them - with the
- * game's own icon on the left (IdIcons), or the cross glyph when it ships
- * none for that id.
+ * scanned label otherwise - with the game's own icon on the left (IdIcons),
+ * or the cross glyph when it ships none for that id. Four sort orders are
+ * offered - id ascending (the default), id descending, name A-Z and Z-A on
+ * the folded name - and the choice is persisted with the panel's other view
+ * state.
+ *
+ * Search takes whitespace-separated terms and all of them must match: a
+ * plain term against the folded id, name and category ("kiem" and "Kiếm"
+ * are one query), "cat:x" against the category, "#x" against the exact id.
  *
  * Categories are the raw keys the scan produced (item, buff, skin, ...): they
  * are the ids' own vocabulary, not menu chrome, so they stay untranslated
@@ -71,12 +86,18 @@ final class IdBrowser {
             "home", "shop", "mall", "trade", "npc", "activity", "award",
             "bag", "emoji", "festival", "title", "tower", "other"};
 
+    /**
+     * Sort modes in cycle order, with the labels the button wears: symbols
+     * every locale reads the same way, so they carry no translation.
+     */
+    private static final String[] SORT_LABELS = {"ID ↑", "ID ↓", "A-Z", "Z-A"};
+
     /** Numeric id order; ids that are not numbers follow, alphabetically. */
-    private static final Comparator<IdScan.Entry> BY_ID =
-            new Comparator<IdScan.Entry>() {
+    private static final Comparator<Row> BY_ID =
+            new Comparator<Row>() {
                 @Override
-                public int compare(IdScan.Entry a, IdScan.Entry b) {
-                    long x = num(a.id), y = num(b.id);
+                public int compare(Row a, Row b) {
+                    long x = num(a.e.id), y = num(b.e.id);
                     if (x >= 0 && y >= 0) {
                         return x < y ? -1 : (x == y ? 0 : 1);
                     }
@@ -86,7 +107,18 @@ final class IdBrowser {
                     if (y >= 0) {
                         return 1;
                     }
-                    return a.id.compareTo(b.id);
+                    return a.e.id.compareTo(b.e.id);
+                }
+            };
+
+    /** Name order on the folded name - the alphabetical the search sees;
+     *  equal names settle by id. */
+    private static final Comparator<Row> BY_NAME =
+            new Comparator<Row>() {
+                @Override
+                public int compare(Row a, Row b) {
+                    int c = a.nf.compareTo(b.nf);
+                    return c != 0 ? c : BY_ID.compare(a, b);
                 }
             };
 
@@ -97,6 +129,56 @@ final class IdBrowser {
         } catch (NumberFormatException e) {
             return -1;
         }
+    }
+
+    /**
+     * A merged row: the entry with its display name resolved once, plus the
+     * folded strings search and the name sort read. Resolving at merge time
+     * is what makes the cache worth having - binds and filters touch fields.
+     */
+    private static final class Row {
+        final IdScan.Entry e;
+        /** The name as the player reads it: IdNames, else label, else id. */
+        final String name;
+        /** The name folded: lowercase, diacritics stripped. */
+        final String nf;
+        /** Everything a plain search term may match, folded: name, cat, id. */
+        final String key;
+
+        Row(IdScan.Entry e, String name) {
+            this.e = e;
+            this.name = name;
+            this.nf = fold(name);
+            this.key = nf + " " + fold(e.cat) + " " + fold(e.id);
+        }
+    }
+
+    /**
+     * Lowercase with the diacritics peeled off, so search and the A-Z sort
+     * work without them: "kiem nang luong" finds "Kiếm năng lượng". NFD
+     * separates the marks (dropped below) from the letter; đ has no
+     * decomposition, so its stroke is folded by hand.
+     */
+    private static String fold(String s) {
+        if (s.length() == 0) {
+            return "";
+        }
+        String n = Normalizer.normalize(s, Normalizer.Form.NFD);
+        StringBuilder b = new StringBuilder(n.length());
+        for (int i = 0; i < n.length(); i++) {
+            char c = n.charAt(i);
+            if (c >= '\u0300' && c <= '\u036f') {
+                continue;
+            }
+            if (c == 'đ') {
+                b.append('d');
+            } else if (c == 'Đ') {
+                b.append('D');
+            } else {
+                b.append(c);
+            }
+        }
+        return b.toString().toLowerCase();
     }
 
     private final ModMenuActivity activity;
@@ -110,14 +192,32 @@ final class IdBrowser {
     private final FrameLayout listWrap;
     private final View thumb;
     private final Button rescan;
+    private final Button sortBtn;
 
-    private final List<IdScan.Entry> all = new ArrayList<IdScan.Entry>();
-    private final List<IdScan.Entry> shown = new ArrayList<IdScan.Entry>();
+    private static final String PREFS = "idbrowser";
+
+    /**
+     * The merged rows, cached across opens: the merge resolves every display
+     * name and folds it for search and sort, and neither depends on anything
+     * but the scan result and the game's language - an activity recreated
+     * under the panel would otherwise redo the whole merge on every open.
+     */
+    private static List<Row> rows;
+    private static IdScan.Result rowsFor;
+    private static String rowsLang;
+    /** The order the rows are in; -1 whenever they still need a sort. */
+    private static int rowsSort = -1;
+
+    /** The cached rows this instance renders, and the filter's output. */
+    private List<Row> all = new ArrayList<Row>();
+    private final List<Row> shown = new ArrayList<Row>();
     private final Adapter adapter = new Adapter();
 
     private String cat = "";
     private String query = "";
+    private String[] terms;
     private IdScan.Result last;
+    private int sort;
 
     private final IdScan.Listener listener = new IdScan.Listener() {
         @Override
@@ -137,6 +237,13 @@ final class IdBrowser {
     IdBrowser(ModMenuActivity activity, Palette p, FrameLayout parent) {
         this.activity = activity;
         this.p = p;
+
+        SharedPreferences sp = activity.getSharedPreferences(
+                PREFS, Context.MODE_PRIVATE);
+        sort = sp.getInt("sort", 0);
+        if (sort < 0 || sort >= SORT_LABELS.length) {
+            sort = 0;
+        }
 
         panel = new LinearLayout(activity);
         panel.setOrientation(LinearLayout.VERTICAL);
@@ -200,7 +307,7 @@ final class IdBrowser {
 
             @Override
             public void afterTextChanged(Editable s) {
-                query = s.toString().trim().toLowerCase();
+                query = s.toString();
                 applyFilter();
             }
         });
@@ -230,7 +337,7 @@ final class IdBrowser {
             @Override
             public void onItemClick(android.widget.AdapterView<?> parent, View view,
                                     int position, long id) {
-                copy(shown.get(position).id);
+                copy(shown.get(position).e.id);
             }
         });
         listWrap = new FrameLayout(activity);
@@ -266,6 +373,23 @@ final class IdBrowser {
         panel.addView(listWrap, lLp);
 
         LinearLayout foot = new LinearLayout(activity);
+        sortBtn = pill("⇅ " + SORT_LABELS[sort], 0, p.primary,
+                (p.primary & 0x00FFFFFF) | 0x14000000);
+        sortBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sort = (sort + 1) % SORT_LABELS.length;
+                sortBtn.setText("⇅ " + SORT_LABELS[sort]);
+                activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                        .edit().putInt("sort", sort).apply();
+                applySort();
+                applyFilter();
+            }
+        });
+        LinearLayout.LayoutParams srtLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40));
+        srtLp.rightMargin = dp(8);
+        foot.addView(sortBtn, srtLp);
         rescan = pill(I18n.t(activity, "id_rescan"), 0, p.primary,
                 (p.primary & 0x00FFFFFF) | 0x14000000);
         rescan.setOnClickListener(new View.OnClickListener() {
@@ -289,8 +413,9 @@ final class IdBrowser {
     }
 
     void open() {
-        // the player may have switched the game's language since last time
-        IdNames.reset();
+        // the player may have switched the game's language since last time;
+        // reset() keeps the parsed names when it did not change
+        IdNames.reset(activity);
         IdScan.Result c = IdScan.current(activity);
         if (c == null) {
             // nothing scanned in this run yet, and this window is the one
@@ -302,9 +427,9 @@ final class IdBrowser {
         }
         panel.setVisibility(View.VISIBLE);
         IdScan.setListener(listener);
-        if (c != last) {
-            load(c);
-        }
+        // always load: a cache hit costs a few field reads, and the load is
+        // where a language switch since the last open reaches the rows
+        load(c);
         if (c.error != null) {
             // the status keeps the error visible; the retry itself is armed
             // for the next menu close
@@ -329,49 +454,83 @@ final class IdBrowser {
 
     private void load(IdScan.Result r) {
         last = r;
-        all.clear();
-        // The catalogs first: every id they define, already categorized,
-        // listed even when no scan ever ran - that is where the coverage
-        // used to fall short. The scan only adds what the catalogs have
-        // never heard of: a plugin id, a runtime record.
-        String[] keys = IdIndex.keys();
-        Set<String> index = new HashSet<String>(keys.length * 2);
-        for (int i = 0; i < keys.length; i++) {
-            index.add(keys[i]);
-            int hash = keys[i].indexOf('#');
-            all.add(new IdScan.Entry(keys[i].substring(hash + 1), "",
-                    keys[i].substring(0, hash), ""));
-        }
-        if (r.error == null) {
-            for (int i = 0; i < r.entries.size(); i++) {
-                IdScan.Entry e = r.entries.get(i);
-                // recipe and craft address crafting's ids (gen_idnames
-                // maps both catalogs there): one row, one chip
-                String c = e.cat.equals("recipe") ? "craft" : e.cat;
-                if (IdIndex.itemCat(c)) {
-                    // the catalogs own this id space - their category
-                    // outranks a constant-name guess like WEAPON_* -> 0
-                    if (IdIndex.inItemSpace(e.id)) {
+        String lang = IdNames.lang(activity);
+        if (r == rowsFor && rows != null && lang.equals(rowsLang)) {
+            all = rows;
+        } else {
+            // The catalogs first: every id they define, already categorized,
+            // listed even when no scan ever ran - that is where the coverage
+            // used to fall short. The scan only adds what the catalogs have
+            // never heard of: a plugin id, a runtime record.
+            List<Row> built = new ArrayList<Row>(30000);
+            String[] keys = IdIndex.keys();
+            Set<String> index = new HashSet<String>(keys.length * 2);
+            for (int i = 0; i < keys.length; i++) {
+                index.add(keys[i]);
+                int hash = keys[i].indexOf('#');
+                IdScan.Entry e = new IdScan.Entry(keys[i].substring(hash + 1),
+                        "", keys[i].substring(0, hash), "");
+                built.add(new Row(e, display(e)));
+            }
+            if (r.error == null) {
+                for (int i = 0; i < r.entries.size(); i++) {
+                    IdScan.Entry e = r.entries.get(i);
+                    // recipe and craft address crafting's ids (gen_idnames
+                    // maps both catalogs there): one row, one chip
+                    String c = e.cat.equals("recipe") ? "craft" : e.cat;
+                    if (IdIndex.itemCat(c)) {
+                        // the catalogs own this id space - their category
+                        // outranks a constant-name guess like WEAPON_* -> 0
+                        if (IdIndex.inItemSpace(e.id)) {
+                            continue;
+                        }
+                    } else if (index.contains(c + "#" + e.id)) {
                         continue;
                     }
-                } else if (index.contains(c + "#" + e.id)) {
-                    continue;
+                    if (!c.equals(e.cat)) {
+                        e = new IdScan.Entry(e.id, e.name, c, e.src);
+                    }
+                    built.add(new Row(e, display(e)));
                 }
-                all.add(c.equals(e.cat) ? e
-                        : new IdScan.Entry(e.id, e.name, c, e.src));
             }
+            rows = built;
+            rowsFor = r;
+            rowsLang = lang;
+            rowsSort = -1;
+            all = rows;
         }
-        // scan order is discovery order; readers look for ids, so sort by
-        // id - the non-numeric ones, plugin-style, follow
-        Collections.sort(all, BY_ID);
+        applySort();
         rebuildChips();
         applyFilter();
+    }
+
+    /**
+     * Keep the cached rows in the order the button shows. The sort runs once
+     * per mode change on the shared list - the filter walks it in order, so
+     * nothing sorts while the player types.
+     */
+    private void applySort() {
+        if (rowsSort == sort) {
+            return;
+        }
+        Comparator<Row> c;
+        if (sort == 1) {
+            c = Collections.reverseOrder(BY_ID);
+        } else if (sort == 2) {
+            c = BY_NAME;
+        } else if (sort == 3) {
+            c = Collections.reverseOrder(BY_NAME);
+        } else {
+            c = BY_ID;
+        }
+        Collections.sort(all, c);
+        rowsSort = sort;
     }
 
     private void rebuildChips() {
         Set<String> found = new LinkedHashSet<String>();
         for (int i = 0; i < all.size(); i++) {
-            found.add(all.get(i).cat);
+            found.add(all.get(i).e.cat);
         }
         List<String> cats = new ArrayList<String>();
         for (int i = 0; i < CAT_ORDER.length; i++) {
@@ -450,19 +609,17 @@ final class IdBrowser {
     }
 
     private void applyFilter() {
+        terms = parseTerms(query);
         shown.clear();
         for (int i = 0; i < all.size(); i++) {
-            IdScan.Entry e = all.get(i);
-            if (cat.length() > 0 && !e.cat.equals(cat)) {
+            Row r = all.get(i);
+            if (cat.length() > 0 && !r.e.cat.equals(cat)) {
                 continue;
             }
-            if (query.length() > 0
-                    && !e.id.toLowerCase().contains(query)
-                    && !e.name.toLowerCase().contains(query)
-                    && !display(e).toLowerCase().contains(query)) {
+            if (!match(r)) {
                 continue;
             }
-            shown.add(e);
+            shown.add(r);
         }
         adapter.notifyDataSetChanged();
         list.post(new Runnable() {
@@ -472,6 +629,52 @@ final class IdBrowser {
             }
         });
         renderStatus();
+    }
+
+    /**
+     * The query as folded AND-terms: every term has to match, or the row is
+     * out. An empty query is no terms - everything matches.
+     */
+    private static String[] parseTerms(String q) {
+        q = q.trim();
+        if (q.length() == 0) {
+            return null;
+        }
+        String[] raw = q.split("\\s+");
+        List<String> out = new ArrayList<String>(raw.length);
+        for (int i = 0; i < raw.length; i++) {
+            String t = fold(raw[i]);
+            if ((t.startsWith("cat:") && t.length() == 4)
+                    || (t.startsWith("#") && t.length() == 1)) {
+                // an operator with no value: drop it so the terms beside it
+                // still apply instead of matching nothing
+                continue;
+            }
+            out.add(t);
+        }
+        return out.isEmpty() ? null : out.toArray(new String[out.size()]);
+    }
+
+    /** One term against one row; see the class note for the syntax. */
+    private boolean match(Row r) {
+        if (terms == null) {
+            return true;
+        }
+        for (int i = 0; i < terms.length; i++) {
+            String t = terms[i];
+            if (t.startsWith("cat:")) {
+                if (!r.e.cat.contains(t.substring(4))) {
+                    return false;
+                }
+            } else if (t.startsWith("#")) {
+                if (!r.e.id.equalsIgnoreCase(t.substring(1))) {
+                    return false;
+                }
+            } else if (!r.key.contains(t)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -611,7 +814,7 @@ final class IdBrowser {
         }
 
         @Override
-        public IdScan.Entry getItem(int position) {
+        public Row getItem(int position) {
             return shown.get(position);
         }
 
@@ -622,7 +825,7 @@ final class IdBrowser {
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            final IdScan.Entry e = shown.get(position);
+            final Row r = shown.get(position);
             LinearLayout row;
             Holder h;
             if (convertView instanceof LinearLayout
@@ -684,9 +887,9 @@ final class IdBrowser {
                         LinearLayout.LayoutParams.WRAP_CONTENT, dp(32)));
                 row.setTag(h);
             }
-            h.id.setText(e.id);
-            h.name.setText(display(e));
-            Bitmap bmp = IdIcons.get(e.cat, e.id);
+            h.id.setText(r.e.id);
+            h.name.setText(r.name);
+            Bitmap bmp = IdIcons.get(r.e.cat, r.e.id);
             if (bmp != null) {
                 h.pic.setImageBitmap(bmp);
                 h.pic.setVisibility(View.VISIBLE);
@@ -699,7 +902,7 @@ final class IdBrowser {
             h.copy.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    copy(e.id);
+                    copy(r.e.id);
                 }
             });
             return row;

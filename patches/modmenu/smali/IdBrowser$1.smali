@@ -20,7 +20,7 @@
     value = {
         "Ljava/lang/Object;",
         "Ljava/util/Comparator<",
-        "Lmodmenu/IdScan$Entry;",
+        "Lmodmenu/IdBrowser$Row;",
         ">;"
     }
 .end annotation
@@ -30,7 +30,7 @@
 .method constructor <init>()V
     .locals 0
 
-    .line 76
+    .line 97
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -51,35 +51,39 @@
         }
     .end annotation
 
-    .line 76
-    check-cast p1, Lmodmenu/IdScan$Entry;
+    .line 97
+    check-cast p1, Lmodmenu/IdBrowser$Row;
 
-    check-cast p2, Lmodmenu/IdScan$Entry;
+    check-cast p2, Lmodmenu/IdBrowser$Row;
 
-    invoke-virtual {p0, p1, p2}, Lmodmenu/IdBrowser$1;->compare(Lmodmenu/IdScan$Entry;Lmodmenu/IdScan$Entry;)I
+    invoke-virtual {p0, p1, p2}, Lmodmenu/IdBrowser$1;->compare(Lmodmenu/IdBrowser$Row;Lmodmenu/IdBrowser$Row;)I
 
     move-result p1
 
     return p1
 .end method
 
-.method public compare(Lmodmenu/IdScan$Entry;Lmodmenu/IdScan$Entry;)I
+.method public compare(Lmodmenu/IdBrowser$Row;Lmodmenu/IdBrowser$Row;)I
     .locals 9
 
-    .line 79
-    iget-object v0, p1, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
+    .line 100
+    iget-object v0, p1, Lmodmenu/IdBrowser$Row;->e:Lmodmenu/IdScan$Entry;
+
+    iget-object v0, v0, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
 
     invoke-static {v0}, Lmodmenu/IdBrowser;->access$000(Ljava/lang/String;)J
 
     move-result-wide v0
 
-    iget-object v2, p2, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
+    iget-object v2, p2, Lmodmenu/IdBrowser$Row;->e:Lmodmenu/IdScan$Entry;
+
+    iget-object v2, v2, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
 
     invoke-static {v2}, Lmodmenu/IdBrowser;->access$000(Ljava/lang/String;)J
 
     move-result-wide v2
 
-    .line 80
+    .line 101
     const/4 v4, 0x1
 
     const/4 v5, -0x1
@@ -94,7 +98,7 @@
 
     if-ltz v8, :cond_2
 
-    .line 81
+    .line 102
     cmp-long p1, v0, v2
 
     if-gez p1, :cond_0
@@ -114,27 +118,31 @@
     :goto_0
     return v4
 
-    .line 83
+    .line 104
     :cond_2
     cmp-long v8, v0, v6
 
     if-ltz v8, :cond_3
 
-    .line 84
+    .line 105
     return v5
 
-    .line 86
+    .line 107
     :cond_3
     cmp-long v0, v2, v6
 
     if-ltz v0, :cond_4
 
-    .line 87
+    .line 108
     return v4
 
-    .line 89
+    .line 110
     :cond_4
+    iget-object p1, p1, Lmodmenu/IdBrowser$Row;->e:Lmodmenu/IdScan$Entry;
+
     iget-object p1, p1, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
+
+    iget-object p2, p2, Lmodmenu/IdBrowser$Row;->e:Lmodmenu/IdScan$Entry;
 
     iget-object p2, p2, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
 

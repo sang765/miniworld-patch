@@ -1,14 +1,14 @@
-.class Lmodmenu/IdBrowser$3;
+.class Lmodmenu/IdBrowser$12;
 .super Ljava/lang/Object;
 .source "IdBrowser.java"
 
 # interfaces
-.implements Lmodmenu/IdScan$Listener;
+.implements Ljava/lang/Runnable;
 
 
 # annotations
-.annotation system Ldalvik/annotation/EnclosingClass;
-    value = Lmodmenu/IdBrowser;
+.annotation system Ldalvik/annotation/EnclosingMethod;
+    value = Lmodmenu/IdBrowser;->applyFilter()V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,8 +33,8 @@
         }
     .end annotation
 
-    .line 222
-    iput-object p1, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
+    .line 625
+    iput-object p1, p0, Lmodmenu/IdBrowser$12;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -43,14 +43,14 @@
 
 
 # virtual methods
-.method public onDone(Lmodmenu/IdScan$Result;)V
+.method public run()V
     .locals 1
 
-    .line 225
-    iget-object v0, p0, Lmodmenu/IdBrowser$3;->this$0:Lmodmenu/IdBrowser;
+    .line 628
+    iget-object v0, p0, Lmodmenu/IdBrowser$12;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$400(Lmodmenu/IdBrowser;Lmodmenu/IdScan$Result;)V
+    invoke-static {v0}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;)V
 
-    .line 226
+    .line 629
     return-void
 .end method

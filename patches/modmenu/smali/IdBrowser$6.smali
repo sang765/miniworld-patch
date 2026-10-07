@@ -3,7 +3,7 @@
 .source "IdBrowser.java"
 
 # interfaces
-.implements Landroid/widget/AdapterView$OnItemClickListener;
+.implements Landroid/text/TextWatcher;
 
 
 # annotations
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 229
+    .line 301
     iput-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,37 +43,37 @@
 
 
 # virtual methods
-.method public onItemClick(Landroid/widget/AdapterView;Landroid/view/View;IJ)V
-    .locals 0
-    .annotation system Ldalvik/annotation/Signature;
-        value = {
-            "(",
-            "Landroid/widget/AdapterView<",
-            "*>;",
-            "Landroid/view/View;",
-            "IJ)V"
-        }
-    .end annotation
+.method public afterTextChanged(Landroid/text/Editable;)V
+    .locals 1
 
-    .line 233
+    .line 310
+    iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+
+    invoke-virtual {p1}, Ljava/lang/Object;->toString()Ljava/lang/String;
+
+    move-result-object p1
+
+    invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$602(Lmodmenu/IdBrowser;Ljava/lang/String;)Ljava/lang/String;
+
+    .line 311
     iget-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
-    iget-object p2, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
+    invoke-static {p1}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;)V
 
-    invoke-static {p2}, Lmodmenu/IdBrowser;->access$600(Lmodmenu/IdBrowser;)Ljava/util/List;
+    .line 312
+    return-void
+.end method
 
-    move-result-object p2
+.method public beforeTextChanged(Ljava/lang/CharSequence;III)V
+    .locals 0
 
-    invoke-interface {p2, p3}, Ljava/util/List;->get(I)Ljava/lang/Object;
+    .line 303
+    return-void
+.end method
 
-    move-result-object p2
+.method public onTextChanged(Ljava/lang/CharSequence;III)V
+    .locals 0
 
-    check-cast p2, Lmodmenu/IdScan$Entry;
-
-    iget-object p2, p2, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
-
-    invoke-static {p1, p2}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;Ljava/lang/String;)V
-
-    .line 234
+    .line 306
     return-void
 .end method

@@ -3,7 +3,7 @@
 .source "IdBrowser.java"
 
 # interfaces
-.implements Landroid/text/TextWatcher;
+.implements Landroid/view/View$OnClickListener;
 
 
 # annotations
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 194
+    .line 267
     iput-object p1, p0, Lmodmenu/IdBrowser$5;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,45 +43,14 @@
 
 
 # virtual methods
-.method public afterTextChanged(Landroid/text/Editable;)V
-    .locals 1
+.method public onClick(Landroid/view/View;)V
+    .locals 0
 
-    .line 203
-    iget-object v0, p0, Lmodmenu/IdBrowser$5;->this$0:Lmodmenu/IdBrowser;
-
-    invoke-virtual {p1}, Ljava/lang/Object;->toString()Ljava/lang/String;
-
-    move-result-object p1
-
-    invoke-virtual {p1}, Ljava/lang/String;->trim()Ljava/lang/String;
-
-    move-result-object p1
-
-    invoke-virtual {p1}, Ljava/lang/String;->toLowerCase()Ljava/lang/String;
-
-    move-result-object p1
-
-    invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$402(Lmodmenu/IdBrowser;Ljava/lang/String;)Ljava/lang/String;
-
-    .line 204
+    .line 270
     iget-object p1, p0, Lmodmenu/IdBrowser$5;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {p1}, Lmodmenu/IdBrowser;->access$500(Lmodmenu/IdBrowser;)V
+    invoke-virtual {p1}, Lmodmenu/IdBrowser;->close()V
 
-    .line 205
-    return-void
-.end method
-
-.method public beforeTextChanged(Ljava/lang/CharSequence;III)V
-    .locals 0
-
-    .line 196
-    return-void
-.end method
-
-.method public onTextChanged(Ljava/lang/CharSequence;III)V
-    .locals 0
-
-    .line 199
+    .line 271
     return-void
 .end method

@@ -246,10 +246,10 @@
 .method private static assemble()Ljava/lang/String;
     .locals 4
 
-    .line 173
+    .line 188
     nop
 
-    .line 174
+    .line 189
     const/4 v0, 0x0
 
     const/4 v1, 0x0
@@ -261,7 +261,7 @@
 
     if-ge v1, v2, :cond_1
 
-    .line 175
+    .line 190
     sget-object v2, Lmodmenu/IdNames;->LANGS:[Ljava/lang/String;
 
     aget-object v2, v2, v1
@@ -274,13 +274,13 @@
 
     if-eqz v2, :cond_0
 
-    .line 176
+    .line 191
     nop
 
-    .line 177
+    .line 192
     goto :goto_1
 
-    .line 174
+    .line 189
     :cond_0
     add-int/lit8 v1, v1, 0x1
 
@@ -289,18 +289,18 @@
     :cond_1
     const/4 v1, 0x0
 
-    .line 180
+    .line 195
     :goto_1
     sget-object v2, Lmodmenu/IdNames;->DATA:[[Ljava/lang/String;
 
     aget-object v1, v2, v1
 
-    .line 181
+    .line 196
     new-instance v2, Ljava/lang/StringBuilder;
 
     invoke-direct {v2}, Ljava/lang/StringBuilder;-><init>()V
 
-    .line 182
+    .line 197
     nop
 
     :goto_2
@@ -308,17 +308,17 @@
 
     if-ge v0, v3, :cond_2
 
-    .line 183
+    .line 198
     aget-object v3, v1, v0
 
     invoke-virtual {v2, v3}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
 
-    .line 182
+    .line 197
     add-int/lit8 v0, v0, 0x1
 
     goto :goto_2
 
-    .line 185
+    .line 200
     :cond_2
     invoke-virtual {v2}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
 
@@ -330,30 +330,30 @@
 .method public static get(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
     .locals 2
 
-    .line 120
+    .line 135
     sget-object v0, Lmodmenu/IdNames;->lang:Ljava/lang/String;
 
     if-nez v0, :cond_0
 
-    .line 121
+    .line 136
     invoke-static {p0}, Lmodmenu/IdNames;->pick(Landroid/content/Context;)Ljava/lang/String;
 
     move-result-object p0
 
     sput-object p0, Lmodmenu/IdNames;->lang:Ljava/lang/String;
 
-    .line 122
+    .line 137
     const/4 p0, 0x0
 
     sput-object p0, Lmodmenu/IdNames;->map:Ljava/util/HashMap;
 
-    .line 124
+    .line 139
     :cond_0
     sget-object p0, Lmodmenu/IdNames;->map:Ljava/util/HashMap;
 
     if-nez p0, :cond_1
 
-    .line 125
+    .line 140
     invoke-static {}, Lmodmenu/IdNames;->assemble()Ljava/lang/String;
 
     move-result-object p0
@@ -364,7 +364,7 @@
 
     sput-object p0, Lmodmenu/IdNames;->map:Ljava/util/HashMap;
 
-    .line 127
+    .line 142
     :cond_1
     sget-object p0, Lmodmenu/IdNames;->map:Ljava/util/HashMap;
 
@@ -396,7 +396,7 @@
 
     check-cast p0, Ljava/lang/String;
 
-    .line 128
+    .line 143
     if-nez p0, :cond_2
 
     invoke-static {p1}, Lmodmenu/IdNames;->isItemCat(Ljava/lang/String;)Z
@@ -405,7 +405,7 @@
 
     if-eqz p1, :cond_2
 
-    .line 129
+    .line 144
     sget-object p0, Lmodmenu/IdNames;->map:Ljava/util/HashMap;
 
     new-instance p1, Ljava/lang/StringBuilder;
@@ -432,7 +432,7 @@
 
     check-cast p0, Ljava/lang/String;
 
-    .line 131
+    .line 146
     :cond_2
     return-object p0
 .end method
@@ -440,7 +440,7 @@
 .method private static isItemCat(Ljava/lang/String;)Z
     .locals 3
 
-    .line 135
+    .line 150
     const/4 v0, 0x0
 
     const/4 v1, 0x0
@@ -452,7 +452,7 @@
 
     if-ge v1, v2, :cond_1
 
-    .line 136
+    .line 151
     sget-object v2, Lmodmenu/IdNames;->ITEM_CATS:[Ljava/lang/String;
 
     aget-object v2, v2, v1
@@ -463,20 +463,38 @@
 
     if-eqz v2, :cond_0
 
-    .line 137
+    .line 152
     const/4 p0, 0x1
 
     return p0
 
-    .line 135
+    .line 150
     :cond_0
     add-int/lit8 v1, v1, 0x1
 
     goto :goto_0
 
-    .line 140
+    .line 155
     :cond_1
     return v0
+.end method
+
+.method public static lang(Landroid/content/Context;)Ljava/lang/String;
+    .locals 1
+
+    .line 127
+    sget-object v0, Lmodmenu/IdNames;->lang:Ljava/lang/String;
+
+    if-nez v0, :cond_0
+
+    .line 128
+    invoke-static {p0}, Lmodmenu/IdNames;->reset(Landroid/content/Context;)V
+
+    .line 130
+    :cond_0
+    sget-object p0, Lmodmenu/IdNames;->lang:Ljava/lang/String;
+
+    return-object p0
 .end method
 
 .method private static parse(Ljava/lang/String;)Ljava/util/HashMap;
@@ -493,41 +511,41 @@
         }
     .end annotation
 
-    .line 190
+    .line 205
     new-instance v0, Ljava/util/HashMap;
 
     const v1, 0x8000
 
     invoke-direct {v0, v1}, Ljava/util/HashMap;-><init>(I)V
 
-    .line 191
+    .line 206
     nop
 
-    .line 192
+    .line 207
     invoke-virtual {p0}, Ljava/lang/String;->length()I
 
     move-result v1
 
     const/4 v2, 0x0
 
-    .line 193
+    .line 208
     :goto_0
     if-ge v2, v1, :cond_2
 
-    .line 194
+    .line 209
     const/16 v3, 0xa
 
     invoke-virtual {p0, v3, v2}, Ljava/lang/String;->indexOf(II)I
 
     move-result v3
 
-    .line 195
+    .line 210
     if-gez v3, :cond_0
 
-    .line 196
+    .line 211
     move v3, v1
 
-    .line 198
+    .line 213
     :cond_0
     const/16 v4, 0x9
 
@@ -535,12 +553,12 @@
 
     move-result v4
 
-    .line 199
+    .line 214
     if-le v4, v2, :cond_1
 
     if-ge v4, v3, :cond_1
 
-    .line 200
+    .line 215
     invoke-virtual {p0, v2, v4}, Ljava/lang/String;->substring(II)Ljava/lang/String;
 
     move-result-object v2
@@ -553,14 +571,14 @@
 
     invoke-virtual {v0, v2, v4}, Ljava/util/HashMap;->put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 
-    .line 202
+    .line 217
     :cond_1
     add-int/lit8 v2, v3, 0x1
 
-    .line 203
+    .line 218
     goto :goto_0
 
-    .line 204
+    .line 219
     :cond_2
     return-object v0
 .end method
@@ -568,35 +586,35 @@
 .method private static pick(Landroid/content/Context;)Ljava/lang/String;
     .locals 3
 
-    .line 144
+    .line 159
     nop
 
-    .line 146
+    .line 161
     nop
 
-    .line 147
+    .line 162
     :try_start_0
     invoke-static {p0}, Lorg/appplay/lib/utils/LanguageUtils;->getMobileLang(Landroid/content/Context;)I
 
     move-result p0
 
-    .line 146
+    .line 161
     invoke-static {p0}, Lorg/appplay/lib/utils/LanguageUtils;->getLanuageByGame(I)Ljava/lang/String;
 
     move-result-object p0
     :try_end_0
     .catch Ljava/lang/RuntimeException; {:try_start_0 .. :try_end_0} :catch_0
 
-    .line 150
+    .line 165
     goto :goto_0
 
-    .line 148
+    .line 163
     :catch_0
     move-exception p0
 
     const-string p0, ""
 
-    .line 151
+    .line 166
     :goto_0
     const-string v0, "en"
 
@@ -608,13 +626,13 @@
 
     if-nez v1, :cond_5
 
-    .line 153
+    .line 168
     :cond_0
     invoke-static {}, Ljava/util/Locale;->getDefault()Ljava/util/Locale;
 
     move-result-object p0
 
-    .line 154
+    .line 169
     const-string v1, "vi"
 
     invoke-virtual {p0}, Ljava/util/Locale;->getLanguage()Ljava/lang/String;
@@ -627,12 +645,12 @@
 
     if-eqz v1, :cond_1
 
-    .line 155
+    .line 170
     const-string p0, "vie"
 
     goto :goto_3
 
-    .line 156
+    .line 171
     :cond_1
     const-string v1, "zh"
 
@@ -646,12 +664,12 @@
 
     if-eqz v1, :cond_4
 
-    .line 157
+    .line 172
     invoke-virtual {p0}, Ljava/util/Locale;->getCountry()Ljava/lang/String;
 
     move-result-object p0
 
-    .line 158
+    .line 173
     const-string v1, "TW"
 
     invoke-virtual {v1, p0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
@@ -678,7 +696,7 @@
 
     goto :goto_1
 
-    .line 159
+    .line 174
     :cond_2
     const-string p0, "cn"
 
@@ -688,15 +706,15 @@
     :goto_1
     const-string p0, "tw"
 
-    .line 160
+    .line 175
     :goto_2
     goto :goto_3
 
-    .line 161
+    .line 176
     :cond_4
     move-object p0, v0
 
-    .line 164
+    .line 179
     :cond_5
     :goto_3
     const/4 v1, 0x0
@@ -708,7 +726,7 @@
 
     if-ge v1, v2, :cond_7
 
-    .line 165
+    .line 180
     sget-object v2, Lmodmenu/IdNames;->LANGS:[Ljava/lang/String;
 
     aget-object v2, v2, v1
@@ -719,31 +737,51 @@
 
     if-eqz v2, :cond_6
 
-    .line 166
+    .line 181
     return-object p0
 
-    .line 164
+    .line 179
     :cond_6
     add-int/lit8 v1, v1, 0x1
 
     goto :goto_4
 
-    .line 169
+    .line 184
     :cond_7
     return-object v0
 .end method
 
-.method public static reset()V
+.method public static reset(Landroid/content/Context;)V
     .locals 1
 
-    .line 114
-    const/4 v0, 0x0
+    .line 118
+    invoke-static {p0}, Lmodmenu/IdNames;->pick(Landroid/content/Context;)Ljava/lang/String;
 
-    sput-object v0, Lmodmenu/IdNames;->lang:Ljava/lang/String;
+    move-result-object p0
 
-    .line 115
-    sput-object v0, Lmodmenu/IdNames;->map:Ljava/util/HashMap;
+    .line 119
+    sget-object v0, Lmodmenu/IdNames;->lang:Ljava/lang/String;
 
-    .line 116
+    if-eqz v0, :cond_0
+
+    sget-object v0, Lmodmenu/IdNames;->lang:Ljava/lang/String;
+
+    invoke-virtual {v0, p0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+
+    move-result v0
+
+    if-nez v0, :cond_1
+
+    .line 120
+    :cond_0
+    sput-object p0, Lmodmenu/IdNames;->lang:Ljava/lang/String;
+
+    .line 121
+    const/4 p0, 0x0
+
+    sput-object p0, Lmodmenu/IdNames;->map:Ljava/util/HashMap;
+
+    .line 123
+    :cond_1
     return-void
 .end method

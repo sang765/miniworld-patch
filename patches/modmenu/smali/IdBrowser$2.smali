@@ -3,7 +3,7 @@
 .source "IdBrowser.java"
 
 # interfaces
-.implements Lmodmenu/IdScan$Listener;
+.implements Ljava/util/Comparator;
 
 
 # annotations
@@ -16,26 +16,21 @@
     name = null
 .end annotation
 
-
-# instance fields
-.field final synthetic this$0:Lmodmenu/IdBrowser;
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Ljava/lang/Object;",
+        "Ljava/util/Comparator<",
+        "Lmodmenu/IdBrowser$Row;",
+        ">;"
+    }
+.end annotation
 
 
 # direct methods
-.method constructor <init>(Lmodmenu/IdBrowser;)V
+.method constructor <init>()V
     .locals 0
-    .annotation system Ldalvik/annotation/MethodParameters;
-        accessFlags = {
-            0x8010
-        }
-        names = {
-            null
-        }
-    .end annotation
 
-    .line 122
-    iput-object p1, p0, Lmodmenu/IdBrowser$2;->this$0:Lmodmenu/IdBrowser;
-
+    .line 117
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -43,14 +38,57 @@
 
 
 # virtual methods
-.method public onDone(Lmodmenu/IdScan$Result;)V
-    .locals 1
+.method public bridge synthetic compare(Ljava/lang/Object;Ljava/lang/Object;)I
+    .locals 0
+    .annotation system Ldalvik/annotation/MethodParameters;
+        accessFlags = {
+            0x1000,
+            0x1000
+        }
+        names = {
+            null,
+            null
+        }
+    .end annotation
 
-    .line 125
-    iget-object v0, p0, Lmodmenu/IdBrowser$2;->this$0:Lmodmenu/IdBrowser;
+    .line 117
+    check-cast p1, Lmodmenu/IdBrowser$Row;
 
-    invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$200(Lmodmenu/IdBrowser;Lmodmenu/IdScan$Result;)V
+    check-cast p2, Lmodmenu/IdBrowser$Row;
 
-    .line 126
-    return-void
+    invoke-virtual {p0, p1, p2}, Lmodmenu/IdBrowser$2;->compare(Lmodmenu/IdBrowser$Row;Lmodmenu/IdBrowser$Row;)I
+
+    move-result p1
+
+    return p1
+.end method
+
+.method public compare(Lmodmenu/IdBrowser$Row;Lmodmenu/IdBrowser$Row;)I
+    .locals 2
+
+    .line 120
+    iget-object v0, p1, Lmodmenu/IdBrowser$Row;->nf:Ljava/lang/String;
+
+    iget-object v1, p2, Lmodmenu/IdBrowser$Row;->nf:Ljava/lang/String;
+
+    invoke-virtual {v0, v1}, Ljava/lang/String;->compareTo(Ljava/lang/String;)I
+
+    move-result v0
+
+    .line 121
+    if-eqz v0, :cond_0
+
+    goto :goto_0
+
+    :cond_0
+    invoke-static {}, Lmodmenu/IdBrowser;->access$100()Ljava/util/Comparator;
+
+    move-result-object v0
+
+    invoke-interface {v0, p1, p2}, Ljava/util/Comparator;->compare(Ljava/lang/Object;Ljava/lang/Object;)I
+
+    move-result v0
+
+    :goto_0
+    return v0
 .end method

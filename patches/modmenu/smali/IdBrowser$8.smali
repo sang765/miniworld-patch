@@ -3,7 +3,7 @@
 .source "IdBrowser.java"
 
 # interfaces
-.implements Landroid/view/View$OnClickListener;
+.implements Landroid/widget/AbsListView$OnScrollListener;
 
 
 # annotations
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 271
+    .line 360
     iput-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,14 +43,21 @@
 
 
 # virtual methods
-.method public onClick(Landroid/view/View;)V
+.method public onScroll(Landroid/widget/AbsListView;III)V
     .locals 0
 
-    .line 274
+    .line 364
     iget-object p1, p0, Lmodmenu/IdBrowser$8;->this$0:Lmodmenu/IdBrowser;
 
-    invoke-static {p1}, Lmodmenu/IdBrowser;->access$900(Lmodmenu/IdBrowser;)V
+    invoke-static {p1}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;)V
 
-    .line 275
+    .line 365
+    return-void
+.end method
+
+.method public onScrollStateChanged(Landroid/widget/AbsListView;I)V
+    .locals 0
+
+    .line 368
     return-void
 .end method

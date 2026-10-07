@@ -109,10 +109,25 @@ public final class IdNames {
 
     private IdNames() {}
 
-    /** Forget the cached language so the next read sees a language change. */
-    public static void reset() {
-        lang = null;
-        map = null;
+    /**
+     * Re-check the game's language. The parsed table is dropped only when
+     * the language actually changed - parsing it costs a few hundred ms,
+     * and the id browser re-checks on every open.
+     */
+    public static void reset(Context ctx) {
+        String now = pick(ctx);
+        if (lang == null || !lang.equals(now)) {
+            lang = now;
+            map = null;
+        }
+    }
+
+    /** The language the names are loaded for, picking it if not yet. */
+    public static String lang(Context ctx) {
+        if (lang == null) {
+            reset(ctx);
+        }
+        return lang;
     }
 
     /** The display name for cat#id, or null when the language has none. */
