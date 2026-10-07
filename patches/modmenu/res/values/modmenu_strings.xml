@@ -9,6 +9,12 @@
     <string name="mod_hwid_desc">Emulate the device identity - or rotate to a new ID</string>
     <string name="mod_reward_label">Skip rewarded ads</string>
     <string name="mod_reward_desc">Bypass ads - reward credited right after you tap</string>
+    <string name="mod_unsafe_label">Unsafe features</string>
+    <string name="mod_unsafe_desc">High-risk features - your account could get banned</string>
+    <string name="mod_unsafe_dialog_title">Enable unsafe features?</string>
+    <string name="mod_unsafe_dialog_body">These features hook deep into the game and may get your account banned. Enable them anyway?</string>
+    <string name="mod_unsafe_confirm">Enable anyway</string>
+    <string name="mod_unsafe_cancel">Cancel</string>
     <string name="mod_rotate">Change spoofed HWID</string>
     <string name="mod_close">Close</string>
     <string name="mod_rotate_toast">HWID changed - applies on next game launch</string>

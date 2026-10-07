@@ -43,7 +43,7 @@
         }
     .end annotation
 
-    .line 222
+    .line 236
     iput-object p1, p0, Lmodmenu/ModMenuActivity$2;->this$0:Lmodmenu/ModMenuActivity;
 
     iput-object p2, p0, Lmodmenu/ModMenuActivity$2;->val$sw:Landroid/widget/Switch;
@@ -58,11 +58,11 @@
 .method public onClick(Landroid/view/View;)V
     .locals 0
 
-    .line 225
+    .line 239
     iget-object p1, p0, Lmodmenu/ModMenuActivity$2;->val$sw:Landroid/widget/Switch;
 
     invoke-virtual {p1}, Landroid/widget/Switch;->performClick()Z
 
-    .line 226
+    .line 240
     return-void
 .end method

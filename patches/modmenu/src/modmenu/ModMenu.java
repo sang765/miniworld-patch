@@ -31,6 +31,7 @@ public final class ModMenu {
     private static final String KEY_HWID = "hwid";
     private static final String KEY_REWARD = "reward";
     private static final String KEY_GEN = "hwid_gen";
+    private static final String KEY_UNSAFE = "unsafe";
 
     private static final int NOTIF_ID = 1071;
     private static final long[] RETRY_MS = {2000, 5000, 10000, 20000, 40000, 80000, 160000};
@@ -40,6 +41,8 @@ public final class ModMenu {
     private static volatile boolean webBlocked = true;
     private static volatile boolean hwidSpoof = true;
     private static volatile boolean rewardBypass = true;
+
+    private static volatile boolean unsafe;
 
     private static volatile Context appCtx;
     private static boolean loaded;
@@ -85,6 +88,14 @@ public final class ModMenu {
         return rewardBypass;
     }
 
+    /**
+     * The gate for the high-ban-risk features: off until the player has
+     * confirmed the warning dialog in the menu.
+     */
+    public static boolean isUnsafe() {
+        return unsafe;
+    }
+
     public static void setWebBlocked(Context ctx, boolean value) {
         prefs(ctx).edit().putBoolean(KEY_WEB, value).apply();
         webBlocked = value;
@@ -98,6 +109,11 @@ public final class ModMenu {
     public static void setRewardBypass(Context ctx, boolean value) {
         prefs(ctx).edit().putBoolean(KEY_REWARD, value).apply();
         rewardBypass = value;
+    }
+
+    public static void setUnsafe(Context ctx, boolean value) {
+        prefs(ctx).edit().putBoolean(KEY_UNSAFE, value).apply();
+        unsafe = value;
     }
 
     /**
@@ -128,6 +144,7 @@ public final class ModMenu {
         webBlocked = sp.getBoolean(KEY_WEB, true);
         hwidSpoof = sp.getBoolean(KEY_HWID, true);
         rewardBypass = sp.getBoolean(KEY_REWARD, true);
+        unsafe = sp.getBoolean(KEY_UNSAFE, false);
         loaded = true;
     }
 

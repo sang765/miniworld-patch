@@ -54,10 +54,15 @@ public class ModMenuActivity extends Activity
     private Switch webSwitch;
     private Switch hwidSwitch;
     private Switch rewardSwitch;
+    private Switch unsafeSwitch;
     private Button rotateBtn;
+    private Button unsafeCancelBtn;
+    private Button unsafeConfirmBtn;
     private LinearLayout sheet;
     private FrameLayout root;
     private IdBrowser browser;
+    /** The confirm card's full-screen scrim; null while the dialog is closed. */
+    private View unsafeVeil;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,6 +157,15 @@ public class ModMenuActivity extends Activity
                 I18n.t(this, "mod_hwid_desc"), hwidSwitch));
         sheet.addView(settingRow(p, I18n.t(this, "mod_reward_label"),
                 I18n.t(this, "mod_reward_desc"), rewardSwitch));
+
+        unsafeSwitch = makeSwitch(p);
+        unsafeSwitch.setChecked(ModMenu.isUnsafe());
+        LinearLayout.LayoutParams uLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        uLp.topMargin = dp(10);
+        sheet.addView(settingRow(p, I18n.t(this, "mod_unsafe_label"),
+                I18n.t(this, "mod_unsafe_desc"), unsafeSwitch), uLp);
 
         rotateBtn = makeButton(I18n.t(this, "mod_rotate"), p.primary, p.onPrimary,
                 (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
@@ -299,12 +313,99 @@ public class ModMenuActivity extends Activity
             ModMenu.setHwidSpoof(this, isChecked);
         } else if (buttonView == rewardSwitch) {
             ModMenu.setRewardBypass(this, isChecked);
+        } else if (buttonView == unsafeSwitch) {
+            if (isChecked) {
+                // the pref only follows a confirmed warning, so cancelling
+                // leaves it off - turning it off needs no dialog
+                showUnsafeConfirm();
+            } else {
+                ModMenu.setUnsafe(this, false);
+            }
         }
+    }
+
+    /** Confirm card over the sheet: the switch sticks only through "anyway". */
+    private void showUnsafeConfirm() {
+        if (unsafeVeil != null) {
+            return;
+        }
+        Palette p = Palette.of(this);
+
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setClickable(true); // consume taps so only the veil outside cancels
+        card.setBackground(round(dp(24), p.surface));
+        card.setPadding(dp(24), dp(20), dp(24), dp(8));
+
+        TextView title = new TextView(this);
+        title.setText(I18n.t(this, "mod_unsafe_dialog_title"));
+        title.setTextSize(18);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(p.onSurface);
+        card.addView(title);
+
+        TextView body = new TextView(this);
+        body.setText(I18n.t(this, "mod_unsafe_dialog_body"));
+        body.setTextSize(14);
+        body.setTextColor(p.onSurfaceVariant);
+        LinearLayout.LayoutParams bLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        bLp.topMargin = dp(10);
+        card.addView(body, bLp);
+
+        // one listener for all three: makeButton wires every pill to onClick
+        unsafeCancelBtn = makeButton(I18n.t(this, "mod_unsafe_cancel"),
+                0, p.onSurfaceVariant, (p.onSurface & 0x00FFFFFF) | 0x14000000);
+        unsafeConfirmBtn = makeButton(I18n.t(this, "mod_unsafe_confirm"),
+                p.primary, p.onPrimary, (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
+        LinearLayout buttons = new LinearLayout(this);
+        buttons.setGravity(Gravity.RIGHT);
+        LinearLayout.LayoutParams kLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40));
+        kLp.rightMargin = dp(4);
+        buttons.addView(unsafeCancelBtn, kLp);
+        buttons.addView(unsafeConfirmBtn, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)));
+        LinearLayout.LayoutParams gLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        gLp.topMargin = dp(16);
+        card.addView(buttons, gLp);
+
+        FrameLayout veil = new FrameLayout(this);
+        veil.setBackground(new ColorDrawable(p.scrim));
+        veil.setClickable(true);
+        veil.setOnClickListener(this); // tap outside = cancel
+        FrameLayout.LayoutParams vLp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER);
+        vLp.leftMargin = vLp.rightMargin = dp(28);
+        veil.addView(card, vLp);
+        unsafeVeil = veil;
+        root.addView(veil);
+    }
+
+    /** Back to off: flipping the switch re-enters onCheckedChanged with false. */
+    private void cancelUnsafe() {
+        dismissUnsafe();
+        unsafeSwitch.setChecked(false);
+    }
+
+    private void dismissUnsafe() {
+        root.removeView(unsafeVeil);
+        unsafeVeil = null;
     }
 
     @Override
     public void onClick(View v) {
-        if (v == rotateBtn) {
+        if (v == unsafeVeil || v == unsafeCancelBtn) {
+            cancelUnsafe();
+        } else if (v == unsafeConfirmBtn) {
+            ModMenu.setUnsafe(this, true);
+            dismissUnsafe();
+        } else if (v == rotateBtn) {
             ModMenu.rotateHwid(this);
             hwidSwitch.setChecked(true); // rotation only matters while spoofing is on
             v.performHapticFeedback(Build.VERSION.SDK_INT >= 23
@@ -332,6 +433,12 @@ public class ModMenuActivity extends Activity
 
     @Override
     public void onBackPressed() {
+        // the confirm card sits over everything: back cancels it first,
+        // before the browser panel or the menu itself
+        if (unsafeVeil != null) {
+            cancelUnsafe();
+            return;
+        }
         // the browser is a panel of this activity, not an activity of its
         // own: back has to close it before it closes the menu
         if (browser != null && browser.isShowing()) {

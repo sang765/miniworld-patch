@@ -9,6 +9,12 @@
     <string name="mod_hwid_desc">模拟设备标识——或轮换为新 ID</string>
     <string name="mod_reward_label">跳过激励广告</string>
     <string name="mod_reward_desc">跳过广告——点击即可立即获得奖励</string>
+    <string name="mod_unsafe_label">不安全功能</string>
+    <string name="mod_unsafe_desc">风险高——账号可能被封禁</string>
+    <string name="mod_unsafe_dialog_title">开启不安全功能？</string>
+    <string name="mod_unsafe_dialog_body">这些功能深度修改游戏，可能导致账号被封禁。仍要开启吗？</string>
+    <string name="mod_unsafe_confirm">仍要开启</string>
+    <string name="mod_unsafe_cancel">取消</string>
     <string name="mod_rotate">更换伪造的 HWID</string>
     <string name="mod_close">关闭</string>
     <string name="mod_rotate_toast">HWID 已更换——下次启动游戏时生效</string>
