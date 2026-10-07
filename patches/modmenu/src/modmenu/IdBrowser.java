@@ -1,5 +1,6 @@
 package modmenu;
 
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -182,7 +183,9 @@ final class IdBrowser {
         return b.toString().toLowerCase();
     }
 
-    private final ModMenuActivity activity;
+    private final Activity activity;
+    /** Closes the whole menu: whichever window is hosting the sheet. */
+    private final Runnable closer;
     private final Palette p;
     private final LinearLayout panel;
     private final LinearLayout chips;
@@ -239,9 +242,10 @@ final class IdBrowser {
         }
     };
 
-    IdBrowser(ModMenuActivity activity, Palette p, FrameLayout parent) {
+    IdBrowser(Activity activity, Palette p, FrameLayout parent, Runnable closer) {
         this.activity = activity;
         this.p = p;
+        this.closer = closer;
 
         SharedPreferences sp = activity.getSharedPreferences(
                 PREFS, Context.MODE_PRIVATE);
@@ -480,11 +484,11 @@ final class IdBrowser {
         IdNames.reset(activity);
         IdScan.Result c = IdScan.current(activity);
         if (c == null) {
-            // nothing scanned in this run yet, and this window is the one
-            // place the script cannot run: leave so the scan ships on the
-            // way out, and come back through the completion notification
+            // nothing scanned in this run yet: ask for one and leave, the
+            // scan ships on the way out of the menu, and the completion
+            // notification comes back straight into this list
             IdScan.request();
-            activity.finish();
+            closer.run();
             return;
         }
         panel.setVisibility(View.VISIBLE);
@@ -508,10 +512,10 @@ final class IdBrowser {
     }
 
     private void scan() {
-        // the script ships when this window goes away, so ask for the scan
-        // by leaving; the result returns as a notification
+        // the scan ships when the menu goes away, so ask for it by leaving;
+        // the result returns as a notification
         IdScan.request();
-        activity.finish();
+        closer.run();
     }
 
     private void load(IdScan.Result r) {
@@ -876,7 +880,7 @@ final class IdBrowser {
     }
 
     private int dp(int value) {
-        return activity.dp(value);
+        return (int) (value * activity.getResources().getDisplayMetrics().density + 0.5f);
     }
 
     private static final class Holder {

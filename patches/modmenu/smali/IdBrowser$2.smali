@@ -30,7 +30,7 @@
 .method constructor <init>()V
     .locals 0
 
-    .line 118
+    .line 119
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -51,7 +51,7 @@
         }
     .end annotation
 
-    .line 118
+    .line 119
     check-cast p1, Lmodmenu/IdBrowser$Row;
 
     check-cast p2, Lmodmenu/IdBrowser$Row;
@@ -66,7 +66,7 @@
 .method public compare(Lmodmenu/IdBrowser$Row;Lmodmenu/IdBrowser$Row;)I
     .locals 2
 
-    .line 121
+    .line 122
     iget-object v0, p1, Lmodmenu/IdBrowser$Row;->nf:Ljava/lang/String;
 
     iget-object v1, p2, Lmodmenu/IdBrowser$Row;->nf:Ljava/lang/String;
@@ -75,7 +75,7 @@
 
     move-result v0
 
-    .line 122
+    .line 123
     if-eqz v0, :cond_0
 
     goto :goto_0

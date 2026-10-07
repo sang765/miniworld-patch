@@ -30,7 +30,7 @@
 .method constructor <init>()V
     .locals 0
 
-    .line 98
+    .line 99
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -51,7 +51,7 @@
         }
     .end annotation
 
-    .line 98
+    .line 99
     check-cast p1, Lmodmenu/IdBrowser$Row;
 
     check-cast p2, Lmodmenu/IdBrowser$Row;
@@ -66,7 +66,7 @@
 .method public compare(Lmodmenu/IdBrowser$Row;Lmodmenu/IdBrowser$Row;)I
     .locals 9
 
-    .line 101
+    .line 102
     iget-object v0, p1, Lmodmenu/IdBrowser$Row;->e:Lmodmenu/IdScan$Entry;
 
     iget-object v0, v0, Lmodmenu/IdScan$Entry;->id:Ljava/lang/String;
@@ -83,7 +83,7 @@
 
     move-result-wide v2
 
-    .line 102
+    .line 103
     const/4 v4, 0x1
 
     const/4 v5, -0x1
@@ -98,7 +98,7 @@
 
     if-ltz v8, :cond_2
 
-    .line 103
+    .line 104
     cmp-long p1, v0, v2
 
     if-gez p1, :cond_0
@@ -118,25 +118,25 @@
     :goto_0
     return v4
 
-    .line 105
+    .line 106
     :cond_2
     cmp-long v8, v0, v6
 
     if-ltz v8, :cond_3
 
-    .line 106
+    .line 107
     return v5
 
-    .line 108
+    .line 109
     :cond_3
     cmp-long v0, v2, v6
 
     if-ltz v0, :cond_4
 
-    .line 109
+    .line 110
     return v4
 
-    .line 111
+    .line 112
     :cond_4
     iget-object p1, p1, Lmodmenu/IdBrowser$Row;->e:Lmodmenu/IdScan$Entry;
 

@@ -115,16 +115,16 @@ python3 - "$T/mf.txt" <<'PY' || fail=1
 import re, sys
 lines = open(sys.argv[1], encoding="utf-8", errors="replace").read().splitlines()
 
-def activity_attrs(name):
-    """Attribute lines of the <activity> element owning `name`."""
+def element_attrs(name, tag):
+    """Attribute lines of the <tag> element owning `name`."""
     idx = next((i for i, l in enumerate(lines) if name in l), None)
     if idx is None:
         raise SystemExit(f"{name} not found in manifest")
     start = idx
-    while start > 0 and not re.match(r"\s*E: activity\b", lines[start]):
+    while start > 0 and not re.match(rf"\s*E: {tag}\b", lines[start]):
         start -= 1
-    if not re.match(r"\s*E: activity\b", lines[start]):
-        raise SystemExit(f"could not locate the owning <activity> element for {name}")
+    if not re.match(rf"\s*E: {tag}\b", lines[start]):
+        raise SystemExit(f"could not locate the owning <{tag}> element for {name}")
     indent = len(lines[start]) - len(lines[start].lstrip())
     out = []
     for l in lines[start + 1:]:
@@ -134,9 +134,9 @@ def activity_attrs(name):
         out.append(l)
     return out
 
-def exported_of(name):
+def exported_of(name, tag="activity"):
     value = None
-    for l in activity_attrs(name):
+    for l in element_attrs(name, tag):
         m = re.search(r":exported\(0x01010010\)=(\S+)", l)
         if m:
             value = m.group(1)
@@ -162,16 +162,26 @@ for name, label in (("org.appplay.lib.browser.BrowserActivity", "BLOCKED"),
     print(f"{name.split('.')[-1]} exported = {v} -> {label if ok else 'STILL EXPORTED'}")
     failed = failed or not ok
 
-# The menu has to sit on a translucent-fullscreen window: the game activity
-# behind it then stays visible and is only paused, which is what keeps
-# battery-aware ROMs (MIUI) from recycling it. An opaque menu activity stops
-# the game behind it, and a stopped activity is what a battery saver reclaims -
-# the player sees that as the game dying. 0x01030011 is
+# The notification tap reaches the sheet through this receiver, so it must
+# be declared (a manifest patch that dropped it strands every tap) and stay
+# unexported - a public receiver would let any app open the menu.
+v = exported_of("modmenu.ModMenuReceiver", "receiver")
+ok = is_false(v)
+print(f"ModMenuReceiver exported = {v} -> {'TAP ROUTED' if ok else 'OPEN TO OTHER APPS'}")
+failed = failed or not ok
+
+# The fallback menu activity has to sit on a translucent-fullscreen window:
+# the game activity behind it then stays visible and is only paused, which is
+# what keeps battery-aware ROMs (MIUI) from recycling it. An opaque menu
+# activity stops the game behind it, and a stopped activity is what a battery
+# saver reclaims - the player sees that as the game dying. The normal entry
+# is the dialog sheet on the live game window (never a pause at all), so this
+# only covers the no-live-window path. 0x01030011 is
 # android.R.style.Theme_Translucent_NoTitleBar_Fullscreen, the id the SDK
 # resolved the manifest reference to; android.jar and the platform's own
 # framework-res agree on it.
 theme = None
-for l in activity_attrs("modmenu.ModMenuActivity"):
+for l in element_attrs("modmenu.ModMenuActivity", "activity"):
     m = re.search(r":theme\(0x01010000\)=(\S+)", l)
     if m:
         theme = m.group(1)
@@ -202,6 +212,7 @@ done
 # reference: dex keeps a method's type and its name in separate pools, so
 # "IdScan;->menuClosed" is never one contiguous string to grep for.
 for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
+           'Lmodmenu/ModMenuSheet;' 'Lmodmenu/ModMenuReceiver;' \
            'Lmodmenu/Api26;' 'Lmodmenu/Api33;' \
            'Lmodmenu/Hwid;' 'Lmodmenu/Palette;' 'Lmodmenu/AdReward;' \
            'Lmodmenu/CrashHandler;' 'Lmodmenu/CrashReport;' \

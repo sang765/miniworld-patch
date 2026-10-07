@@ -4,7 +4,6 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
@@ -83,7 +82,7 @@ public final class IdScan {
      *  late landing of our own script, never a leftover of an old run. */
     private static volatile boolean sent;
     private static volatile Result cached;
-    /** The browser, main thread only; ModMenuActivity clears it in onDestroy. */
+    /** The browser, main thread only; cleared whenever the menu closes. */
     private static Listener listener;
 
     private IdScan() {}
@@ -249,11 +248,7 @@ public final class IdScan {
             if (nm == null) {
                 return;
             }
-            Intent intent = new Intent(c, ModMenuActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    .putExtra(ModMenuActivity.EXTRA_OPEN_IDS, true);
-            PendingIntent pi = PendingIntent.getActivity(c, 2, intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            PendingIntent pi = ModMenu.menuIntent(c, 2, true);
             String title = I18n.t(c, "id_notif_title");
             String text = I18n.t(c, "id_notif_text");
             Notification n = Build.VERSION.SDK_INT >= 26

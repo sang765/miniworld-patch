@@ -1,6 +1,6 @@
-.class Lmodmenu/ModMenuActivity$1;
+.class Lmodmenu/ModMenuSheet$4;
 .super Ljava/lang/Object;
-.source "ModMenuActivity.java"
+.source "ModMenuSheet.java"
 
 # interfaces
 .implements Landroid/view/View$OnClickListener;
@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/ModMenuActivity;->buildMenu()V
+    value = Lmodmenu/ModMenuSheet;->build()V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -18,11 +18,11 @@
 
 
 # instance fields
-.field final synthetic this$0:Lmodmenu/ModMenuActivity;
+.field final synthetic this$0:Lmodmenu/ModMenuSheet;
 
 
 # direct methods
-.method constructor <init>(Lmodmenu/ModMenuActivity;)V
+.method constructor <init>(Lmodmenu/ModMenuSheet;)V
     .locals 0
     .annotation system Ldalvik/annotation/MethodParameters;
         accessFlags = {
@@ -33,8 +33,8 @@
         }
     .end annotation
 
-    .line 181
-    iput-object p1, p0, Lmodmenu/ModMenuActivity$1;->this$0:Lmodmenu/ModMenuActivity;
+    .line 214
+    iput-object p1, p0, Lmodmenu/ModMenuSheet$4;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -46,11 +46,11 @@
 .method public onClick(Landroid/view/View;)V
     .locals 0
 
-    .line 184
-    iget-object p1, p0, Lmodmenu/ModMenuActivity$1;->this$0:Lmodmenu/ModMenuActivity;
+    .line 217
+    iget-object p1, p0, Lmodmenu/ModMenuSheet$4;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {p1}, Lmodmenu/ModMenuActivity;->access$000(Lmodmenu/ModMenuActivity;)V
+    invoke-static {p1}, Lmodmenu/ModMenuSheet;->access$500(Lmodmenu/ModMenuSheet;)V
 
-    .line 185
+    .line 218
     return-void
 .end method

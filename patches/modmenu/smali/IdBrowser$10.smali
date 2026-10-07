@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdBrowser;-><init>(Lmodmenu/ModMenuActivity;Lmodmenu/Palette;Landroid/widget/FrameLayout;)V
+    value = Lmodmenu/IdBrowser;-><init>(Landroid/app/Activity;Lmodmenu/Palette;Landroid/widget/FrameLayout;Ljava/lang/Runnable;)V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -20,11 +20,11 @@
 # instance fields
 .field final synthetic this$0:Lmodmenu/IdBrowser;
 
-.field final synthetic val$activity:Lmodmenu/ModMenuActivity;
+.field final synthetic val$activity:Landroid/app/Activity;
 
 
 # direct methods
-.method constructor <init>(Lmodmenu/IdBrowser;Lmodmenu/ModMenuActivity;)V
+.method constructor <init>(Lmodmenu/IdBrowser;Landroid/app/Activity;)V
     .locals 0
     .annotation system Ldalvik/annotation/MethodParameters;
         accessFlags = {
@@ -43,10 +43,10 @@
         }
     .end annotation
 
-    .line 441
+    .line 445
     iput-object p1, p0, Lmodmenu/IdBrowser$10;->this$0:Lmodmenu/IdBrowser;
 
-    iput-object p2, p0, Lmodmenu/IdBrowser$10;->val$activity:Lmodmenu/ModMenuActivity;
+    iput-object p2, p0, Lmodmenu/IdBrowser$10;->val$activity:Landroid/app/Activity;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -58,7 +58,7 @@
 .method public onClick(Landroid/view/View;)V
     .locals 2
 
-    .line 444
+    .line 448
     iget-object p1, p0, Lmodmenu/IdBrowser$10;->this$0:Lmodmenu/IdBrowser;
 
     iget-object v0, p0, Lmodmenu/IdBrowser$10;->this$0:Lmodmenu/IdBrowser;
@@ -71,18 +71,18 @@
 
     invoke-static {p1, v0}, Lmodmenu/IdBrowser;->access$1502(Lmodmenu/IdBrowser;Z)Z
 
-    .line 445
-    iget-object p1, p0, Lmodmenu/IdBrowser$10;->val$activity:Lmodmenu/ModMenuActivity;
+    .line 449
+    iget-object p1, p0, Lmodmenu/IdBrowser$10;->val$activity:Landroid/app/Activity;
 
     const-string v0, "idbrowser"
 
     const/4 v1, 0x0
 
-    invoke-virtual {p1, v0, v1}, Lmodmenu/ModMenuActivity;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;
+    invoke-virtual {p1, v0, v1}, Landroid/app/Activity;->getSharedPreferences(Ljava/lang/String;I)Landroid/content/SharedPreferences;
 
     move-result-object p1
 
-    .line 446
+    .line 450
     invoke-interface {p1}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;
 
     move-result-object p1
@@ -101,11 +101,11 @@
 
     invoke-interface {p1}, Landroid/content/SharedPreferences$Editor;->apply()V
 
-    .line 447
+    .line 451
     iget-object p1, p0, Lmodmenu/IdBrowser$10;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$1600(Lmodmenu/IdBrowser;)V
 
-    .line 448
+    .line 452
     return-void
 .end method

@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdBrowser;-><init>(Lmodmenu/ModMenuActivity;Lmodmenu/Palette;Landroid/widget/FrameLayout;)V
+    value = Lmodmenu/IdBrowser;-><init>(Landroid/app/Activity;Lmodmenu/Palette;Landroid/widget/FrameLayout;Ljava/lang/Runnable;)V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 273
+    .line 277
     iput-object p1, p0, Lmodmenu/IdBrowser$5;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,11 +46,11 @@
 .method public onClick(Landroid/view/View;)V
     .locals 0
 
-    .line 276
+    .line 280
     iget-object p1, p0, Lmodmenu/IdBrowser$5;->this$0:Lmodmenu/IdBrowser;
 
     invoke-virtual {p1}, Lmodmenu/IdBrowser;->close()V
 
-    .line 277
+    .line 281
     return-void
 .end method

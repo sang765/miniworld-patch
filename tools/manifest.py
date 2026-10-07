@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Set android:exported on an activity and declare the mod-menu activity.
+"""Set android:exported on an activity and declare the menu's components.
 
 apktool emits the whole <activity ...> element as one line, but tolerate a
 multi-line element: anchor on the activity's android:name, walk back to the
 <activity that owns it, then walk forward to the end of that tag.
 
-Three patches run in one pass: the BrowserActivity exported flag, the
+Four patches run in one pass: the BrowserActivity exported flag, the
 mod-menu activity (exported=false - only our PendingIntent starts it, while
 POST_NOTIFICATIONS it needs at runtime is already declared by the source
-manifest), and the crash screen (exported=false plus excludeFromRecents: it
-is started by the crash handler's PendingIntent and by nothing else - an
-exported crash screen would let any app on the device pop it).
+manifest), the crash screen (exported=false plus excludeFromRecents: it is
+started by the crash handler's PendingIntent and by nothing else - an
+exported crash screen would let any app on the device pop it), and the
+menu's broadcast receiver (exported=false - only our own notification
+intent reaches it).
 
 Fails loudly instead of silently doing nothing - a manifest patch that does
 not apply would ship an APK whose BrowserActivity stays reachable from other
@@ -40,10 +42,14 @@ CRASH_NAME = "modmenu.CrashActivity"
 CRASH_ELEMENT = ('<activity android:exported="false" '
                  'android:name="modmenu.CrashActivity" '
                  'android:excludeFromRecents="true"/>')
+RECEIVER_NAME = "modmenu.ModMenuReceiver"
+RECEIVER_ELEMENT = ('<receiver android:exported="false" '
+                    'android:name="modmenu.ModMenuReceiver"/>')
 # (class name, element to insert when it is missing, what to report)
 DECLARED = (
     (MENU_NAME, MENU_ELEMENT, "exported=false, sensorLandscape, translucent theme"),
     (CRASH_NAME, CRASH_ELEMENT, "exported=false, excludeFromRecents"),
+    (RECEIVER_NAME, RECEIVER_ELEMENT, "exported=false, notification-tap entry"),
 )
 
 

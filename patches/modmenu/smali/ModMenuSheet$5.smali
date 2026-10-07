@@ -1,6 +1,6 @@
-.class Lmodmenu/ModMenuActivity$2;
+.class Lmodmenu/ModMenuSheet$5;
 .super Ljava/lang/Object;
-.source "ModMenuActivity.java"
+.source "ModMenuSheet.java"
 
 # interfaces
 .implements Landroid/view/View$OnClickListener;
@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/ModMenuActivity;->settingRow(Lmodmenu/Palette;Ljava/lang/String;Ljava/lang/String;Landroid/widget/Switch;)Landroid/widget/LinearLayout;
+    value = Lmodmenu/ModMenuSheet;->settingRow(Lmodmenu/Palette;Ljava/lang/String;Ljava/lang/String;Landroid/widget/Switch;)Landroid/widget/LinearLayout;
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -18,13 +18,13 @@
 
 
 # instance fields
-.field final synthetic this$0:Lmodmenu/ModMenuActivity;
+.field final synthetic this$0:Lmodmenu/ModMenuSheet;
 
 .field final synthetic val$sw:Landroid/widget/Switch;
 
 
 # direct methods
-.method constructor <init>(Lmodmenu/ModMenuActivity;Landroid/widget/Switch;)V
+.method constructor <init>(Lmodmenu/ModMenuSheet;Landroid/widget/Switch;)V
     .locals 0
     .annotation system Ldalvik/annotation/MethodParameters;
         accessFlags = {
@@ -43,10 +43,10 @@
         }
     .end annotation
 
-    .line 236
-    iput-object p1, p0, Lmodmenu/ModMenuActivity$2;->this$0:Lmodmenu/ModMenuActivity;
+    .line 276
+    iput-object p1, p0, Lmodmenu/ModMenuSheet$5;->this$0:Lmodmenu/ModMenuSheet;
 
-    iput-object p2, p0, Lmodmenu/ModMenuActivity$2;->val$sw:Landroid/widget/Switch;
+    iput-object p2, p0, Lmodmenu/ModMenuSheet$5;->val$sw:Landroid/widget/Switch;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -58,11 +58,11 @@
 .method public onClick(Landroid/view/View;)V
     .locals 0
 
-    .line 239
-    iget-object p1, p0, Lmodmenu/ModMenuActivity$2;->val$sw:Landroid/widget/Switch;
+    .line 279
+    iget-object p1, p0, Lmodmenu/ModMenuSheet$5;->val$sw:Landroid/widget/Switch;
 
     invoke-virtual {p1}, Landroid/widget/Switch;->performClick()Z
 
-    .line 240
+    .line 280
     return-void
 .end method

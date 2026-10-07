@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/IdBrowser;-><init>(Lmodmenu/ModMenuActivity;Lmodmenu/Palette;Landroid/widget/FrameLayout;)V
+    value = Lmodmenu/IdBrowser;-><init>(Landroid/app/Activity;Lmodmenu/Palette;Landroid/widget/FrameLayout;Ljava/lang/Runnable;)V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 307
+    .line 311
     iput-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,7 +46,7 @@
 .method public afterTextChanged(Landroid/text/Editable;)V
     .locals 1
 
-    .line 316
+    .line 320
     iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-virtual {p1}, Ljava/lang/Object;->toString()Ljava/lang/String;
@@ -55,25 +55,25 @@
 
     invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$602(Lmodmenu/IdBrowser;Ljava/lang/String;)Ljava/lang/String;
 
-    .line 317
+    .line 321
     iget-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;)V
 
-    .line 318
+    .line 322
     return-void
 .end method
 
 .method public beforeTextChanged(Ljava/lang/CharSequence;III)V
     .locals 0
 
-    .line 309
+    .line 313
     return-void
 .end method
 
 .method public onTextChanged(Ljava/lang/CharSequence;III)V
     .locals 0
 
-    .line 312
+    .line 316
     return-void
 .end method

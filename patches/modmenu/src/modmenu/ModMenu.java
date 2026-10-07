@@ -11,6 +11,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
+import java.lang.ref.WeakReference;
+
 /**
  * State, startup hooks and notification logic for the mod menu.
  *
@@ -22,8 +24,8 @@ import android.os.Looper;
  * The notification is posted from a Handler task rather than directly inside
  * onCreate so it lands after resume, and on Android 13+ it is retried over a
  * few minutes in case the permission dialog is still on screen. It is not
- * auto-cancelled - it stays as the menu's entry point - and the intent is
- * single-top, so tapping it while the menu is open just returns to it.
+ * auto-cancelled - it stays as the menu's entry point - and the tap opens the
+ * sheet on the live game window through ModMenuReceiver (see menuIntent).
  */
 public final class ModMenu {
     private static final String PREF_NAME = "mw_mod_menu";
@@ -45,6 +47,8 @@ public final class ModMenu {
     private static volatile boolean unsafe;
 
     private static volatile Context appCtx;
+    /** The live game window, where the menu sheet attaches. */
+    private static WeakReference<Activity> game = new WeakReference<Activity>(null);
     private static boolean loaded;
     private static boolean notifyStarted;
     private static boolean posted;
@@ -63,6 +67,9 @@ public final class ModMenu {
     /** Injected at the head of AppPlayBaseActivity.onCreate. */
     public static void onGameStart(final Activity activity) {
         loadPrefs(activity);
+        // refreshed on every recreation, before the notify guard: the sheet
+        // must always land on the window that is actually alive
+        game = new WeakReference<Activity>(activity);
         if (notifyStarted) {
             return;
         }
@@ -73,6 +80,38 @@ public final class ModMenu {
                 beginNotify(activity);
             }
         });
+    }
+
+    /** The live game window, or null once it is finishing or destroyed. */
+    static Activity gameActivity() {
+        Activity a = game.get();
+        if (a == null || a.isFinishing() || a.isDestroyed()) {
+            return null;
+        }
+        return a;
+    }
+
+    /**
+     * The menu's content intent. Normally a broadcast: ModMenuReceiver opens
+     * the sheet as a dialog on the live game window, whose activity is never
+     * paused - the script loop, rendering and voice chat keep running behind
+     * the menu. Bouncing a notification tap into startActivity would also be
+     * blocked as a trampoline on Android 12+. Only when there is no live
+     * window to attach to does the old standalone activity get started, and
+     * directly by the system through getActivity, which that rule allows.
+     */
+    static PendingIntent menuIntent(Context c, int requestCode, boolean openIds) {
+        Intent i;
+        int flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
+        if (gameActivity() != null) {
+            i = new Intent(c, ModMenuReceiver.class)
+                    .putExtra(ModMenuActivity.EXTRA_OPEN_IDS, openIds);
+            return PendingIntent.getBroadcast(c, requestCode, i, flags);
+        }
+        i = new Intent(c, ModMenuActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(ModMenuActivity.EXTRA_OPEN_IDS, openIds);
+        return PendingIntent.getActivity(c, requestCode, i, flags);
     }
 
     /** Toggle checks called by the WebView-block, HWID and ad-reward stubs. */
@@ -167,11 +206,7 @@ public final class ModMenu {
         if (Build.VERSION.SDK_INT >= 33 && !Api33.canPost(appCtx)) {
             return;
         }
-        PendingIntent pi = PendingIntent.getActivity(appCtx, 0,
-                new Intent(appCtx, ModMenuActivity.class)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                                | Intent.FLAG_ACTIVITY_SINGLE_TOP),
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        PendingIntent pi = menuIntent(appCtx, 0, false);
         NotificationManager nm = (NotificationManager)
                 appCtx.getSystemService(Context.NOTIFICATION_SERVICE);
         // resolved here rather than in a static: the class can load before

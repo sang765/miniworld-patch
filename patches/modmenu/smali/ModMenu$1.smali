@@ -30,7 +30,7 @@
         }
     .end annotation
 
-    .line 70
+    .line 77
     iput-object p1, p0, Lmodmenu/ModMenu$1;->val$activity:Landroid/app/Activity;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,11 +43,11 @@
 .method public run()V
     .locals 1
 
-    .line 73
+    .line 80
     iget-object v0, p0, Lmodmenu/ModMenu$1;->val$activity:Landroid/app/Activity;
 
     invoke-static {v0}, Lmodmenu/ModMenu;->access$000(Landroid/app/Activity;)V
 
-    .line 74
+    .line 81
     return-void
 .end method

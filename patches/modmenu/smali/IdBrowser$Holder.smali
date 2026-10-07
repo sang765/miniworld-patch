@@ -34,7 +34,7 @@
 .method private constructor <init>()V
     .locals 0
 
-    .line 882
+    .line 886
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -43,7 +43,7 @@
 .method synthetic constructor <init>(Lmodmenu/IdBrowser$1;)V
     .locals 0
 
-    .line 882
+    .line 886
     invoke-direct {p0}, Lmodmenu/IdBrowser$Holder;-><init>()V
 
     return-void
