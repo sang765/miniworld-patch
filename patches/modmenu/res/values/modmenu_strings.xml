@@ -29,6 +29,11 @@
     <string name="id_all">All</string>
     <string name="id_copy">Copy</string>
     <string name="id_rescan">Scan again</string>
+    <string name="id_sort">Sort</string>
+    <string name="id_view_list">List</string>
+    <string name="id_view_table">Table</string>
+    <string name="id_col_name">Name</string>
+    <string name="id_col_cat">Category</string>
     <string name="id_scanning">Scanning the game scripts...</string>
     <string name="id_empty">No matches</string>
     <string name="id_nodata">No ids yet - tap Scan again</string>

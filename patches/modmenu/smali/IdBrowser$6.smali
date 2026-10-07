@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 301
+    .line 307
     iput-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,7 +46,7 @@
 .method public afterTextChanged(Landroid/text/Editable;)V
     .locals 1
 
-    .line 310
+    .line 316
     iget-object v0, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-virtual {p1}, Ljava/lang/Object;->toString()Ljava/lang/String;
@@ -55,25 +55,25 @@
 
     invoke-static {v0, p1}, Lmodmenu/IdBrowser;->access$602(Lmodmenu/IdBrowser;Ljava/lang/String;)Ljava/lang/String;
 
-    .line 311
+    .line 317
     iget-object p1, p0, Lmodmenu/IdBrowser$6;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;)V
 
-    .line 312
+    .line 318
     return-void
 .end method
 
 .method public beforeTextChanged(Ljava/lang/CharSequence;III)V
     .locals 0
 
-    .line 303
+    .line 309
     return-void
 .end method
 
 .method public onTextChanged(Ljava/lang/CharSequence;III)V
     .locals 0
 
-    .line 306
+    .line 312
     return-void
 .end method

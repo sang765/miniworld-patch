@@ -29,6 +29,11 @@
     <string name="id_all">全部</string>
     <string name="id_copy">複製</string>
     <string name="id_rescan">重新掃描</string>
+    <string name="id_sort">排序</string>
+    <string name="id_view_list">列表</string>
+    <string name="id_view_table">表格</string>
+    <string name="id_col_name">名稱</string>
+    <string name="id_col_cat">分類</string>
     <string name="id_scanning">正在掃描遊戲腳本...</string>
     <string name="id_empty">沒有符合的結果</string>
     <string name="id_nodata">還沒有 ID — 請點重新掃描</string>

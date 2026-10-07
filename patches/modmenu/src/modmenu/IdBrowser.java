@@ -61,8 +61,9 @@ import java.util.Set;
  * scanned label otherwise - with the game's own icon on the left (IdIcons),
  * or the cross glyph when it ships none for that id. Four sort orders are
  * offered - id ascending (the default), id descending, name A-Z and Z-A on
- * the folded name - and the choice is persisted with the panel's other view
- * state.
+ * the folded name - and rows render either as the stacked list (id over
+ * name, copy button per row) or as a denser table: a column header over
+ * single-line rows, tap a row to copy. Both choices are persisted.
  *
  * Search takes whitespace-separated terms and all of them must match: a
  * plain term against the folded id, name and category ("kiem" and "Kiếm"
@@ -193,6 +194,9 @@ final class IdBrowser {
     private final View thumb;
     private final Button rescan;
     private final Button sortBtn;
+    private final Button viewBtn;
+    /** The column header shown above the list in table mode. */
+    private final LinearLayout tableHead;
 
     private static final String PREFS = "idbrowser";
 
@@ -218,6 +222,7 @@ final class IdBrowser {
     private String[] terms;
     private IdScan.Result last;
     private int sort;
+    private boolean table;
 
     private final IdScan.Listener listener = new IdScan.Listener() {
         @Override
@@ -244,6 +249,7 @@ final class IdBrowser {
         if (sort < 0 || sort >= SORT_LABELS.length) {
             sort = 0;
         }
+        table = sp.getBoolean("table", false);
 
         panel = new LinearLayout(activity);
         panel.setOrientation(LinearLayout.VERTICAL);
@@ -323,6 +329,37 @@ final class IdBrowser {
         chLp.topMargin = dp(12);
         panel.addView(scroller, chLp);
 
+        // the table's column header: same paddings and column widths as
+        // buildTable's rows, so the labels sit over their columns
+        tableHead = new LinearLayout(activity);
+        tableHead.setGravity(Gravity.CENTER_VERTICAL);
+        tableHead.setPadding(dp(12), dp(6), dp(4), dp(6));
+        tableHead.addView(new View(activity), new LinearLayout.LayoutParams(
+                dp(30), LinearLayout.LayoutParams.WRAP_CONTENT));
+        TextView hId = new TextView(activity);
+        hId.setText("ID");
+        hId.setTextSize(11);
+        hId.setTypeface(Typeface.MONOSPACE);
+        hId.setTextColor(p.onSurfaceVariant);
+        tableHead.addView(hId, new LinearLayout.LayoutParams(
+                dp(58), LinearLayout.LayoutParams.WRAP_CONTENT));
+        TextView hName = new TextView(activity);
+        hName.setText(I18n.t(activity, "id_col_name"));
+        hName.setTextSize(11);
+        hName.setTextColor(p.onSurfaceVariant);
+        tableHead.addView(hName, new LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView hCat = new TextView(activity);
+        hCat.setText(I18n.t(activity, "id_col_cat"));
+        hCat.setTextSize(11);
+        hCat.setTextColor(p.onSurfaceVariant);
+        tableHead.addView(hCat, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams hdLp = matchWrap();
+        hdLp.topMargin = dp(10);
+        panel.addView(tableHead, hdLp);
+
         list = new ListView(activity);
         list.setDivider(null);
         list.setDividerHeight(0);
@@ -375,11 +412,15 @@ final class IdBrowser {
         LinearLayout foot = new LinearLayout(activity);
         sortBtn = pill("⇅ " + SORT_LABELS[sort], 0, p.primary,
                 (p.primary & 0x00FFFFFF) | 0x14000000);
+        sortBtn.setContentDescription(
+                I18n.t(activity, "id_sort") + " " + SORT_LABELS[sort]);
         sortBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 sort = (sort + 1) % SORT_LABELS.length;
                 sortBtn.setText("⇅ " + SORT_LABELS[sort]);
+                sortBtn.setContentDescription(
+                        I18n.t(activity, "id_sort") + " " + SORT_LABELS[sort]);
                 activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                         .edit().putInt("sort", sort).apply();
                 applySort();
@@ -390,6 +431,22 @@ final class IdBrowser {
                 LinearLayout.LayoutParams.WRAP_CONTENT, dp(40));
         srtLp.rightMargin = dp(8);
         foot.addView(sortBtn, srtLp);
+        viewBtn = pill(table ? I18n.t(activity, "id_view_list")
+                : I18n.t(activity, "id_view_table"), 0, p.primary,
+                (p.primary & 0x00FFFFFF) | 0x14000000);
+        viewBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                table = !table;
+                activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                        .edit().putBoolean("table", table).apply();
+                applyView();
+            }
+        });
+        LinearLayout.LayoutParams vwLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40));
+        vwLp.rightMargin = dp(8);
+        foot.addView(viewBtn, vwLp);
         rescan = pill(I18n.t(activity, "id_rescan"), 0, p.primary,
                 (p.primary & 0x00FFFFFF) | 0x14000000);
         rescan.setOnClickListener(new View.OnClickListener() {
@@ -402,6 +459,7 @@ final class IdBrowser {
         foot.addView(rescan, rsLp);
         panel.addView(foot, matchWrap());
 
+        applyView();
         parent.addView(panel, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
@@ -525,6 +583,26 @@ final class IdBrowser {
         }
         Collections.sort(all, c);
         rowsSort = sort;
+    }
+
+    /**
+     * Apply the list/table state in one place, so the toggle, the persisted
+     * default and a fresh panel all start from the same code. A table gets
+     * column dividers; the list stays bare - its rows draw their own ripple.
+     */
+    private void applyView() {
+        viewBtn.setText(table ? I18n.t(activity, "id_view_list")
+                : I18n.t(activity, "id_view_table"));
+        tableHead.setVisibility(table ? View.VISIBLE : View.GONE);
+        if (table) {
+            list.setDivider(new android.graphics.drawable.ColorDrawable(
+                    (p.onSurfaceVariant & 0x00FFFFFF) | 0x33000000));
+            list.setDividerHeight(dp(1));
+        } else {
+            list.setDivider(null);
+            list.setDividerHeight(0);
+        }
+        adapter.notifyDataSetChanged();
     }
 
     private void rebuildChips() {
@@ -798,12 +876,18 @@ final class IdBrowser {
     }
 
     private static final class Holder {
+        /** The mode this row was built for - a mismatched converter is
+         *  dropped instead of reshaped. */
+        boolean table;
         TextView id;
         TextView name;
+        /** The category column, table rows only. */
+        TextView cat;
         /** The row's icon, with the cross glyph underneath it while the game
          *  ships no icon for the id. */
         ImageView pic;
         TextView none;
+        /** The copy button, list rows only - a table row copies on tap. */
         Button copy;
     }
 
@@ -826,69 +910,38 @@ final class IdBrowser {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             final Row r = shown.get(position);
-            LinearLayout row;
-            Holder h;
+            LinearLayout row = null;
+            Holder h = null;
             if (convertView instanceof LinearLayout
                     && convertView.getTag() instanceof Holder) {
-                row = (LinearLayout) convertView;
-                h = (Holder) row.getTag();
-            } else {
+                Holder old = (Holder) ((LinearLayout) convertView).getTag();
+                // a row built for the other mode has another shape: build a
+                // fresh one instead of reshaping the converter
+                if (old.table == table) {
+                    row = (LinearLayout) convertView;
+                    h = old;
+                }
+            }
+            if (h == null) {
                 row = new LinearLayout(activity);
                 row.setGravity(Gravity.CENTER_VERTICAL);
-                row.setPadding(dp(12), dp(8), dp(4), dp(8));
                 row.setBackground(new RippleDrawable(
                         ColorStateList.valueOf((p.onSurface & 0x00FFFFFF) | 0x14000000),
                         null, round(dp(12), android.graphics.Color.WHITE)));
                 h = new Holder();
-                h.id = new TextView(activity);
-                h.id.setTextSize(14);
-                h.id.setTypeface(Typeface.MONOSPACE);
-                h.id.setTextColor(p.onSurface);
-                h.name = new TextView(activity);
-                h.name.setTextSize(13);
-                h.name.setTextColor(p.onSurfaceVariant);
-                h.name.setSingleLine(true);
-                h.name.setEllipsize(android.text.TextUtils.TruncateAt.END);
-                h.none = new TextView(activity);
-                h.none.setText("✗");
-                h.none.setTextSize(14);
-                h.none.setTextColor(p.onSurfaceVariant);
-                h.none.setGravity(Gravity.CENTER);
-                h.none.setVisibility(View.VISIBLE);
-                h.pic = new ImageView(activity);
-                h.pic.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                h.pic.setVisibility(View.GONE);
-                FrameLayout iconWrap = new FrameLayout(activity);
-                iconWrap.addView(h.pic, new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT));
-                iconWrap.addView(h.none, new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT));
-                LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(
-                        dp(26), dp(26));
-                iLp.rightMargin = dp(10);
-                iLp.gravity = Gravity.CENTER_VERTICAL;
-                row.addView(iconWrap, iLp);
-                LinearLayout col = new LinearLayout(activity);
-                col.setOrientation(LinearLayout.VERTICAL);
-                col.addView(h.id);
-                LinearLayout.LayoutParams nLp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-                nLp.topMargin = dp(1);
-                col.addView(h.name, nLp);
-                row.addView(col, new LinearLayout.LayoutParams(0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-                h.copy = pill(I18n.t(activity, "id_copy"), 0, p.primary,
-                        (p.primary & 0x00FFFFFF) | 0x14000000);
-                h.copy.setTextSize(13);
-                row.addView(h.copy, new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.WRAP_CONTENT, dp(32)));
+                h.table = table;
+                if (table) {
+                    buildTable(row, h);
+                } else {
+                    buildList(row, h);
+                }
                 row.setTag(h);
             }
             h.id.setText(r.e.id);
             h.name.setText(r.name);
+            if (h.cat != null) {
+                h.cat.setText(r.e.cat);
+            }
             Bitmap bmp = IdIcons.get(r.e.cat, r.e.id);
             if (bmp != null) {
                 h.pic.setImageBitmap(bmp);
@@ -899,13 +952,107 @@ final class IdBrowser {
                 h.pic.setVisibility(View.GONE);
                 h.none.setVisibility(View.VISIBLE);
             }
-            h.copy.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    copy(r.e.id);
-                }
-            });
+            if (h.copy != null) {
+                h.copy.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        copy(r.e.id);
+                    }
+                });
+            }
             return row;
+        }
+
+        /** The list row: id over name, copy button, 26 px icon. */
+        private void buildList(LinearLayout row, Holder h) {
+            row.setPadding(dp(12), dp(8), dp(4), dp(8));
+            LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(
+                    dp(26), dp(26));
+            iLp.rightMargin = dp(10);
+            iLp.gravity = Gravity.CENTER_VERTICAL;
+            row.addView(icon(h, 14), iLp);
+            h.id = new TextView(activity);
+            h.id.setTextSize(14);
+            h.id.setTypeface(Typeface.MONOSPACE);
+            h.id.setTextColor(p.onSurface);
+            h.name = new TextView(activity);
+            h.name.setTextSize(13);
+            h.name.setTextColor(p.onSurfaceVariant);
+            h.name.setSingleLine(true);
+            h.name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            LinearLayout col = new LinearLayout(activity);
+            col.setOrientation(LinearLayout.VERTICAL);
+            col.addView(h.id);
+            LinearLayout.LayoutParams nLp = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            nLp.topMargin = dp(1);
+            col.addView(h.name, nLp);
+            row.addView(col, new LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            h.copy = pill(I18n.t(activity, "id_copy"), 0, p.primary,
+                    (p.primary & 0x00FFFFFF) | 0x14000000);
+            h.copy.setTextSize(13);
+            row.addView(h.copy, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, dp(32)));
+        }
+
+        /**
+         * The table row: one line, fixed id column, name filling the rest,
+         * category at the right edge - no copy button, a tap on the row
+         * copies, the list's tap does the same.
+         */
+        private void buildTable(LinearLayout row, Holder h) {
+            row.setPadding(dp(12), dp(6), dp(4), dp(6));
+            LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(
+                    dp(20), dp(20));
+            iLp.rightMargin = dp(10);
+            iLp.gravity = Gravity.CENTER_VERTICAL;
+            row.addView(icon(h, 11), iLp);
+            h.id = new TextView(activity);
+            h.id.setTextSize(12);
+            h.id.setTypeface(Typeface.MONOSPACE);
+            h.id.setTextColor(p.onSurface);
+            h.id.setSingleLine(true);
+            h.id.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            row.addView(h.id, new LinearLayout.LayoutParams(
+                    dp(58), LinearLayout.LayoutParams.WRAP_CONTENT));
+            h.name = new TextView(activity);
+            h.name.setTextSize(13);
+            h.name.setTextColor(p.onSurfaceVariant);
+            h.name.setSingleLine(true);
+            h.name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            row.addView(h.name, new LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            h.cat = new TextView(activity);
+            h.cat.setTextSize(11);
+            h.cat.setTextColor(p.onSurfaceVariant);
+            h.cat.setSingleLine(true);
+            h.cat.setGravity(Gravity.END);
+            row.addView(h.cat, new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+
+        /** The icon, or the cross glyph when the game ships no texture. */
+        private View icon(Holder h, int glyphSp) {
+            h.none = new TextView(activity);
+            h.none.setText("✗");
+            h.none.setTextSize(glyphSp);
+            h.none.setTextColor(p.onSurfaceVariant);
+            h.none.setGravity(Gravity.CENTER);
+            h.none.setVisibility(View.VISIBLE);
+            h.pic = new ImageView(activity);
+            h.pic.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            h.pic.setVisibility(View.GONE);
+            FrameLayout wrap = new FrameLayout(activity);
+            wrap.addView(h.pic, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+            wrap.addView(h.none, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT));
+            return wrap;
         }
     }
 }

@@ -29,6 +29,11 @@
     <string name="id_all">Tất cả</string>
     <string name="id_copy">Copy</string>
     <string name="id_rescan">Quét lại</string>
+    <string name="id_sort">Sắp xếp</string>
+    <string name="id_view_list">Danh sách</string>
+    <string name="id_view_table">Bảng</string>
+    <string name="id_col_name">Tên</string>
+    <string name="id_col_cat">Loại</string>
     <string name="id_scanning">Đang quét script của game...</string>
     <string name="id_empty">Không có kết quả</string>
     <string name="id_nodata">Chưa có ID — bấm Quét lại</string>

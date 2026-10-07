@@ -43,7 +43,7 @@
         }
     .end annotation
 
-    .line 378
+    .line 417
     iput-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     iput-object p2, p0, Lmodmenu/IdBrowser$9;->val$activity:Lmodmenu/ModMenuActivity;
@@ -58,7 +58,7 @@
 .method public onClick(Landroid/view/View;)V
     .locals 3
 
-    .line 381
+    .line 420
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     iget-object v0, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
@@ -79,7 +79,7 @@
 
     invoke-static {p1, v0}, Lmodmenu/IdBrowser;->access$1102(Lmodmenu/IdBrowser;I)I
 
-    .line 382
+    .line 421
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Landroid/widget/Button;
@@ -118,7 +118,60 @@
 
     invoke-virtual {p1, v0}, Landroid/widget/Button;->setText(Ljava/lang/CharSequence;)V
 
-    .line 383
+    .line 422
+    iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
+
+    invoke-static {p1}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Landroid/widget/Button;
+
+    move-result-object p1
+
+    new-instance v0, Ljava/lang/StringBuilder;
+
+    invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
+
+    iget-object v1, p0, Lmodmenu/IdBrowser$9;->val$activity:Lmodmenu/ModMenuActivity;
+
+    .line 423
+    const-string v2, "id_sort"
+
+    invoke-static {v1, v2}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
+
+    move-result-object v1
+
+    invoke-virtual {v0, v1}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    move-result-object v0
+
+    const-string v1, " "
+
+    invoke-virtual {v0, v1}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    move-result-object v0
+
+    invoke-static {}, Lmodmenu/IdBrowser;->access$1200()[Ljava/lang/String;
+
+    move-result-object v1
+
+    iget-object v2, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
+
+    invoke-static {v2}, Lmodmenu/IdBrowser;->access$1100(Lmodmenu/IdBrowser;)I
+
+    move-result v2
+
+    aget-object v1, v1, v2
+
+    invoke-virtual {v0, v1}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+
+    move-result-object v0
+
+    invoke-virtual {v0}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+
+    move-result-object v0
+
+    .line 422
+    invoke-virtual {p1, v0}, Landroid/widget/Button;->setContentDescription(Ljava/lang/CharSequence;)V
+
+    .line 424
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->val$activity:Lmodmenu/ModMenuActivity;
 
     const-string v0, "idbrowser"
@@ -129,7 +182,7 @@
 
     move-result-object p1
 
-    .line 384
+    .line 425
     invoke-interface {p1}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;
 
     move-result-object p1
@@ -148,16 +201,16 @@
 
     invoke-interface {p1}, Landroid/content/SharedPreferences$Editor;->apply()V
 
-    .line 385
+    .line 426
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$1400(Lmodmenu/IdBrowser;)V
 
-    .line 386
+    .line 427
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;)V
 
-    .line 387
+    .line 428
     return-void
 .end method
