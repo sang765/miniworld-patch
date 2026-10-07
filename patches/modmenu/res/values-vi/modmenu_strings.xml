@@ -18,6 +18,11 @@
     <string name="mod_rotate">Đổi HWID giả mạo</string>
     <string name="mod_close">Đóng</string>
     <string name="mod_rotate_toast">Đã đổi HWID — áp dụng ở lần mở game sau</string>
+    <string name="mod_gm_label">Đổi gamemode</string>
+    <string name="mod_gm_ok">Đã đổi gamemode</string>
+    <string name="mod_gm_fail">Không đổi được gamemode</string>
+    <string name="mod_gm_nomap">Hãy vào bản đồ trước</string>
+    <string name="mod_gm_unsupported">Gamemode hiện tại không thể đổi</string>
     <string name="mod_crash_title">Game đã crash</string>
     <string name="mod_crash_hint">Báo cáo này được ghi lại trước khi tiến trình bị tắt</string>
     <string name="mod_crash_copy">Sao chép</string>

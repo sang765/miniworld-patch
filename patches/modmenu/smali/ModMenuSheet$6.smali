@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 332
+    .line 344
     iput-object p1, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,7 +46,7 @@
 .method public run()V
     .locals 5
 
-    .line 337
+    .line 349
     iget-object v0, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$600(Lmodmenu/ModMenuSheet;)Landroid/widget/LinearLayout;
@@ -55,7 +55,7 @@
 
     iget-object v1, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
-    .line 338
+    .line 350
     invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$600(Lmodmenu/ModMenuSheet;)Landroid/widget/LinearLayout;
 
     move-result-object v1
@@ -80,26 +80,26 @@
 
     aput v3, v2, v1
 
-    .line 337
+    .line 349
     const-string v1, "translationY"
 
     invoke-static {v0, v1, v2}, Landroid/animation/ObjectAnimator;->ofFloat(Ljava/lang/Object;Ljava/lang/String;[F)Landroid/animation/ObjectAnimator;
 
     move-result-object v0
 
-    .line 339
+    .line 351
     const-wide/16 v1, 0x12c
 
     invoke-virtual {v0, v1, v2}, Landroid/animation/ObjectAnimator;->setDuration(J)Landroid/animation/ObjectAnimator;
 
-    .line 340
+    .line 352
     sget v1, Landroid/os/Build$VERSION;->SDK_INT:I
 
     const/16 v2, 0x15
 
     if-lt v1, v2, :cond_0
 
-    .line 341
+    .line 353
     new-instance v1, Landroid/view/animation/PathInterpolator;
 
     const v2, 0x3d4ccccd    # 0.05f
@@ -110,10 +110,10 @@
 
     invoke-virtual {v0, v1}, Landroid/animation/ObjectAnimator;->setInterpolator(Landroid/animation/TimeInterpolator;)V
 
-    .line 343
+    .line 355
     :cond_0
     invoke-virtual {v0}, Landroid/animation/ObjectAnimator;->start()V
 
-    .line 344
+    .line 356
     return-void
 .end method

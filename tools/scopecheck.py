@@ -74,6 +74,10 @@ MODMENU_FILES = {
     "smali_classes8/modmenu/IdNames.smali",
     "smali_classes8/modmenu/IdIcons.smali",
     "smali_classes8/modmenu/IdIndex.smali",
+    # The gamemode switch: the menu button dispatches through GameMode on
+    # every tap - a missing one is a ClassNotFoundException on a button that
+    # is on screen for anyone who enabled unsafe features.
+    "smali_classes8/modmenu/GameMode.smali",
 }
 
 # fixdollar.py runs two logical passes: prefix an 'x' when the name started

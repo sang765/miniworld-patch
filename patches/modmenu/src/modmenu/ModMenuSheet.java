@@ -59,6 +59,8 @@ public final class ModMenuSheet implements View.OnClickListener,
     private Switch rewardSwitch;
     private Switch unsafeSwitch;
     private Button rotateBtn;
+    /** Only on screen while the unsafe master switch is on. */
+    private Button gmBtn;
     private Button unsafeCancelBtn;
     private Button unsafeConfirmBtn;
     private LinearLayout sheet;
@@ -206,6 +208,16 @@ public final class ModMenuSheet implements View.OnClickListener,
                 LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
         rLp.topMargin = dp(20);
         sheet.addView(rotateBtn, rLp);
+
+        // an unsafe-only action: on screen only while the master switch is
+        // on, and checked again at dispatch time in case it flipped
+        gmBtn = makeButton(I18n.t(host, "mod_gm_label"), 0, p.primary,
+                (p.primary & 0x00FFFFFF) | 0x14000000);
+        LinearLayout.LayoutParams gLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
+        gLp.topMargin = dp(6);
+        sheet.addView(gmBtn, gLp);
+        gmBtn.setVisibility(ModMenu.isUnsafe() ? View.VISIBLE : View.GONE);
 
         Button idBtn = makeButton(I18n.t(host, "mod_id_label"), 0, p.primary,
                 (p.primary & 0x00FFFFFF) | 0x14000000);
@@ -360,6 +372,7 @@ public final class ModMenuSheet implements View.OnClickListener,
                 showUnsafeConfirm();
             } else {
                 ModMenu.setUnsafe(host, false);
+                gmBtn.setVisibility(View.GONE);
             }
         }
     }
@@ -444,6 +457,7 @@ public final class ModMenuSheet implements View.OnClickListener,
         } else if (v == unsafeConfirmBtn) {
             ModMenu.setUnsafe(host, true);
             dismissUnsafe();
+            gmBtn.setVisibility(View.VISIBLE);
         } else if (v == rotateBtn) {
             ModMenu.rotateHwid(host);
             hwidSwitch.setChecked(true); // rotation only matters while spoofing is on
@@ -452,9 +466,29 @@ public final class ModMenuSheet implements View.OnClickListener,
                     : HapticFeedbackConstants.VIRTUAL_KEY);
             Toast.makeText(host, I18n.t(host, "mod_rotate_toast"),
                     Toast.LENGTH_SHORT).show();
+        } else if (v == gmBtn) {
+            requestGameMode();
         } else {
             dialog.cancel(); // close button or scrim tap
         }
+    }
+
+    /**
+     * Dispatch the gamemode switch and hold the button down for the round
+     * trip; GameMode posts the result toast itself, so it is seen even if
+     * the sheet is dismissed before the script lands.
+     */
+    private void requestGameMode() {
+        if (!ModMenu.isUnsafe()) {
+            return; // the gate, rechecked: the pref can flip while this is up
+        }
+        gmBtn.setEnabled(false);
+        GameMode.request(host, new Runnable() {
+            @Override
+            public void run() {
+                gmBtn.setEnabled(true);
+            }
+        });
     }
 
     /** Menu button: bring the ID browser panel up over the sheet. */

@@ -18,6 +18,11 @@
     <string name="mod_rotate">更换伪造的 HWID</string>
     <string name="mod_close">关闭</string>
     <string name="mod_rotate_toast">HWID 已更换——下次启动游戏时生效</string>
+    <string name="mod_gm_label">切换游戏模式</string>
+    <string name="mod_gm_ok">已切换游戏模式</string>
+    <string name="mod_gm_fail">无法切换游戏模式</string>
+    <string name="mod_gm_nomap">请先进入地图</string>
+    <string name="mod_gm_unsupported">当前游戏模式无法切换</string>
     <string name="mod_crash_title">游戏已崩溃</string>
     <string name="mod_crash_hint">此报告在进程被终止前已采集</string>
     <string name="mod_crash_copy">复制</string>

@@ -18,6 +18,11 @@
     <string name="mod_rotate">Change spoofed HWID</string>
     <string name="mod_close">Close</string>
     <string name="mod_rotate_toast">HWID changed - applies on next game launch</string>
+    <string name="mod_gm_label">Change gamemode</string>
+    <string name="mod_gm_ok">Gamemode changed</string>
+    <string name="mod_gm_fail">Could not change gamemode</string>
+    <string name="mod_gm_nomap">Join a map first</string>
+    <string name="mod_gm_unsupported">This gamemode cannot be switched</string>
     <string name="mod_crash_title">Game crashed</string>
     <string name="mod_crash_hint">This report was captured before the process was killed</string>
     <string name="mod_crash_copy">Copy</string>

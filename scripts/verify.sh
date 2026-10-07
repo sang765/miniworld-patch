@@ -226,7 +226,10 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'scan step ' '{"started":1,"s":0}' \
            'IDNAMES1' 'Đá Flamas' \
            'Lmodmenu/IdIndex;' 'IDINDEX1' \
-           'Lmodmenu/IdIcons;' 'IDICONS1' 'iVBORw0KGgo'; do
+           'Lmodmenu/IdIcons;' 'IDICONS1' 'iVBORw0KGgo' \
+           'Lmodmenu/GameMode;' 'mw_gm.json' \
+           'hostToggleMpGameMode' 'clientToggleMpGameMode' \
+           '{"r":"unsupported"'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else
@@ -257,6 +260,8 @@ needles = [
     "Quét hoàn thành",                     # vi scan-done notification
     "ID 浏览器",                             # zh id browser row
     "ID 瀏覽器",                             # zh-Hant id browser row
+    "Change gamemode",                       # en gamemode button
+    "Đổi gamemode",                         # vi gamemode button
 ]
 failed = False
 for s in needles:
