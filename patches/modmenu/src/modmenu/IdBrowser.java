@@ -334,8 +334,12 @@ final class IdBrowser {
         tableHead = new LinearLayout(activity);
         tableHead.setGravity(Gravity.CENTER_VERTICAL);
         tableHead.setPadding(dp(12), dp(6), dp(4), dp(6));
+        // exact height, not WRAP_CONTENT: a plain View under AT_MOST resolves
+        // to the spec size, so wrapping here would make the spacer as tall as
+        // the whole remaining panel - it would swallow the list's slot, leave
+        // the rows with no height and push the foot off screen
         tableHead.addView(new View(activity), new LinearLayout.LayoutParams(
-                dp(30), LinearLayout.LayoutParams.WRAP_CONTENT));
+                dp(30), 0));
         TextView hId = new TextView(activity);
         hId.setText("ID");
         hId.setTextSize(11);

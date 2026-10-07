@@ -43,7 +43,7 @@
         }
     .end annotation
 
-    .line 417
+    .line 421
     iput-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     iput-object p2, p0, Lmodmenu/IdBrowser$9;->val$activity:Lmodmenu/ModMenuActivity;
@@ -58,7 +58,7 @@
 .method public onClick(Landroid/view/View;)V
     .locals 3
 
-    .line 420
+    .line 424
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     iget-object v0, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
@@ -79,7 +79,7 @@
 
     invoke-static {p1, v0}, Lmodmenu/IdBrowser;->access$1102(Lmodmenu/IdBrowser;I)I
 
-    .line 421
+    .line 425
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Landroid/widget/Button;
@@ -118,7 +118,7 @@
 
     invoke-virtual {p1, v0}, Landroid/widget/Button;->setText(Ljava/lang/CharSequence;)V
 
-    .line 422
+    .line 426
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$1300(Lmodmenu/IdBrowser;)Landroid/widget/Button;
@@ -131,7 +131,7 @@
 
     iget-object v1, p0, Lmodmenu/IdBrowser$9;->val$activity:Lmodmenu/ModMenuActivity;
 
-    .line 423
+    .line 427
     const-string v2, "id_sort"
 
     invoke-static {v1, v2}, Lmodmenu/I18n;->t(Landroid/content/Context;Ljava/lang/String;)Ljava/lang/String;
@@ -168,10 +168,10 @@
 
     move-result-object v0
 
-    .line 422
+    .line 426
     invoke-virtual {p1, v0}, Landroid/widget/Button;->setContentDescription(Ljava/lang/CharSequence;)V
 
-    .line 424
+    .line 428
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->val$activity:Lmodmenu/ModMenuActivity;
 
     const-string v0, "idbrowser"
@@ -182,7 +182,7 @@
 
     move-result-object p1
 
-    .line 425
+    .line 429
     invoke-interface {p1}, Landroid/content/SharedPreferences;->edit()Landroid/content/SharedPreferences$Editor;
 
     move-result-object p1
@@ -201,16 +201,16 @@
 
     invoke-interface {p1}, Landroid/content/SharedPreferences$Editor;->apply()V
 
-    .line 426
+    .line 430
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$1400(Lmodmenu/IdBrowser;)V
 
-    .line 427
+    .line 431
     iget-object p1, p0, Lmodmenu/IdBrowser$9;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {p1}, Lmodmenu/IdBrowser;->access$700(Lmodmenu/IdBrowser;)V
 
-    .line 428
+    .line 432
     return-void
 .end method

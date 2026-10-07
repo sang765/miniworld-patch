@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 703
+    .line 707
     iput-object p1, p0, Lmodmenu/IdBrowser$13;->this$0:Lmodmenu/IdBrowser;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,11 +46,11 @@
 .method public run()V
     .locals 1
 
-    .line 706
+    .line 710
     iget-object v0, p0, Lmodmenu/IdBrowser$13;->this$0:Lmodmenu/IdBrowser;
 
     invoke-static {v0}, Lmodmenu/IdBrowser;->access$1000(Lmodmenu/IdBrowser;)V
 
-    .line 707
+    .line 711
     return-void
 .end method
