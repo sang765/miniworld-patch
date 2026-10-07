@@ -31,12 +31,15 @@ quantized to a 48-colour PNG8 through ImageMagick, cached under
 work/iconcache/, then embedded base64 - dex has no byte-array constants -
 with identical images collapsed into one blob.
 
-Blocks do not ship as the flat tiles the engine keeps them as: the
-inventory draws each block as an isometric cube, so the generator
-composites one per block - blockdef's Texture1 on the top face, Texture2
-(or Texture1) on both flanks, flanks shaded to fake the directional light -
-before the same quantization. A block the face lookup cannot place falls
-back to the flat tile chain, then to the Chinese-name join's item icon.
+Blocks do not ship as the flat tiles the engine keeps them as: where the
+engine's geometry is the full block - blockdef's Type says which those are,
+terrain, ores and building material - the inventory draws an isometric cube,
+so the generator composites one there - blockdef's Texture1 on the top face,
+Texture2 (or Texture1) on both flanks, flanks shaded to fake the directional
+light - before the same quantization. Every other block has its own shape (a
+stair, a sapling, a machine, an altar, a ModelIndex model) and the inventory
+shows its item sprite for it, so it keeps the flat chain: the Chinese-name
+join's icon, then the tile itself, and the cross glyph when neither exists.
 
 Keys are cat#id, the scanner's own dedup form, so IdIcons.get() mirrors
 IdNames.get(): item-backed categories fall back to item#id at runtime instead
@@ -89,13 +92,31 @@ BUFF_PROBES = [
 # blockdef carries no icon column: Texture1/Texture2 are the tiles the
 # engine draws the block from, living under minigame/blocks. The frame
 # suffixes cover the handful of blocks whose base name is only a model
-# frame, not a full tile.
+# frame, not a full tile. This chain is also the normal path for shaped
+# blocks, which the inventory shows as an item sprite, never a cube.
 BLOCK_PROBES = [
     "resources/minigame/blocks/%s.png",
     "resources/minigame/blocks/%s_side.png",
     "resources/minigame/blocks/%s_top.png",
     "resources/minigame/blocks/%s_front.png",
 ]
+# blockdef's Type is the engine's geometry class: only these render as the
+# full block, and only these earn the isometric cube. Stairs, slabs, fences,
+# saplings, furniture, machines, statues, panes, rugs - each has its own
+# shape and reads in the inventory as the flat item sprite. A whitelist, so
+# an unknown future type defaults to the sprite instead of a wrong cube.
+CUBE_TYPES = {
+    # terrain and ground materials
+    "solidsand", "sand", "gravel", "clitter", "snow", "snowdrift", "ice",
+    "grass", "farmland", "soil", "buryland", "fertileland", "plantash",
+    "cosmicburyland", "cobblestone", "plutonicrock", "reef", "pollution",
+    "rockoil", "coagualtion", "sulphurrock", "crystalemitter",
+    # ores
+    "minestone", "minestonerune", "minestonediffmtl",
+    # building material
+    "basic", "log", "glass", "wallbrick", "simpletile", "giantstone",
+    "powerbasic",
+}
 # iconbank Classification -> folder (checked before any basename search)
 CLS_DIRS = {
     1: "resources/minigame/ui/bufficons",
@@ -252,23 +273,33 @@ def build_entries(script, corpus):
             put("%s#%d" % (cat, cid),
                 probe(icon_by_zh.get(row["name"], ""), ITEM_PROBES))
 
-    # Blocks: the inventory draws them as isometric cubes, so every block
-    # the face lookup can place gets one - Texture1 on top, Texture2 (the
-    # engine's flank texture: farmland over dirt, leaves over bark) or the
-    # stem's own _side frame on both flanks. Direct assignment on purpose:
-    # the cube beats the join's icon, which is a flat tile itself.
+    # Blocks: where the engine's geometry is the full block the inventory
+    # draws an isometric cube, so those get one - Texture1 on top, Texture2
+    # (the engine's flank texture: farmland over dirt, leaves over bark) or
+    # the stem's own _side frame on both flanks. Direct assignment on
+    # purpose: the cube beats the join's icon, which is a flat tile itself.
+    # Shaped blocks skip this and keep the sprite beside it.
     for cid, row in by_id(load(script, "blockdef"),
+                          "type", "modelindex",
                           "texture1", "texture2").items():
-        top = block_face(corpus, row["texture1"],
-                         ("", "_top", "_dry", "_side", "_front"))
-        side = block_face(corpus, row["texture2"], ("",)) \
-            or block_face(corpus, row["texture1"],
-                          ("_side", "_side_dry", "_front")) or top
-        if top:
-            key = "block#%d" % cid
-            entries[key] = "cube|%s|%s" % (top, side)
-            cubes[key] = (top, side)
-            continue
+        # a ModelIndex block is drawn from its own model and reads as an
+        # item sprite in the inventory, whatever its Type says
+        if row["type"] in CUBE_TYPES and row["modelindex"] in ("", "0"):
+            top = block_face(corpus, row["texture1"],
+                             ("", "_top", "_dry", "_side", "_front"))
+            side = block_face(corpus, row["texture2"], ("",)) \
+                or block_face(corpus, row["texture1"],
+                              ("_side", "_side_dry", "_front")) or top
+            if not top:
+                # the top tile is the one that can be missing - the ores
+                # name it only on the flank (pingfan -> pingfan1): both
+                # faces take the side then
+                top = side
+            if top:
+                key = "block#%d" % cid
+                entries[key] = "cube|%s|%s" % (top, side)
+                cubes[key] = (top, side)
+                continue
         for value in (row["texture1"], row["texture2"]):
             path = probe(value, BLOCK_PROBES)
             if path:
@@ -489,9 +520,11 @@ import java.util.HashMap;
 
 /**
  * Row icons for the id browser, generated by tools/gen_idicons.py out of the
- * game's own texture packs - item art as shipped, block art composited into
- * the isometric cube the inventory draws from blockdef's tiles. Keys are
- * cat#id, the scanner's dedup form, so a miss falls back to item#id for the
+ * game's own texture packs - item art as shipped, full-block art composited
+ * into the isometric cube the inventory draws from blockdef's tiles;
+ * shaped blocks (a stair, a sapling, a machine) keep the flat item sprite
+ * the inventory shows for them. Keys are cat#id, the scanner's dedup form,
+ * so a miss falls back to item#id for the
  * categories whose ids live in itemdef (ITEM_CATS below). A null return
  * means the game ships no icon for that id; the row draws its placeholder
  * then.

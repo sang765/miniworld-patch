@@ -82,12 +82,15 @@ the language has no word for it. Beside the name sits the id's own art:
 `modmenu.IdIcons` maps the same `cat#id` keys to the exact texture the
 engine draws from (`tools/gen_idicons.py` decodes the CRN/ETC2A item icons
 out of `common_res`/`game_res`, resizes them to 64 px and embeds them
-base64); a block instead draws as the isometric cube the game's own
-inventory shows, composited at generation time out of `blockdef`'s tiles -
-`Texture1` on top, `Texture2` (or the stem's `_side` frame, `grass_top`
-naming and friends included) on both flanks, flanks shaded - and the cross
-glyph remains for what the engine has no face for at all - air, helper
-blocks.
+base64); a block the engine builds as the full cube - `blockdef`'s `Type`
+says which those are, terrain, ores and building material - draws as the
+isometric cube the game's own inventory shows for them, composited at
+generation time out of `blockdef`'s tiles - `Texture1` on top, `Texture2`
+(or the stem's `_side` frame, `grass_top` naming and friends included) on
+both flanks, flanks shaded - while a shaped block (stair, sapling,
+machine, altar) has its own geometry and keeps the flat item sprite the
+inventory shows it with, and the cross glyph remains for what the engine
+has no texture for at all - air, helper blocks.
 Opening the browser with nothing scanned
 yet, or **Scan again**, records the request and closes the menu on the spot:
 `modmenu.IdScan` ships the one `pcall`-wrapped Lua script when the window
