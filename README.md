@@ -11,7 +11,7 @@ against the patched tree so that only the eleven patched smali files, the new
 `smali_classes8/modmenu/` classes, the manifest and the `$`-renamed resources
 may differ; entry, native-library, asset and `resources.arsc` counts are
 compared against the original; the package identity is read back from the
-built APK; and each of the 20 patches is confirmed by content, not merely by
+built APK; and each of the 22 patches is confirmed by content, not merely by
 "this file changed".
 
 ## What the mod does
@@ -19,7 +19,7 @@ built APK; and each of the 20 patches is confirmed by content, not merely by
 | # | Change | Where |
 |---|--------|-------|
 | 1 | In-game browser / WebView opening is blocked | `ClientMethodCommonApi` (5 JNI/Lua entries) and `MiniUniverseHelper` (3 loadUrl convergence points), plus `android:exported="false"` on `BrowserActivity` |
-| 2 | Device identifiers the client generates itself are spoofed | `IdDevice`, `cn/mini1/utils/b`, `ClientMethodCommonApi.GetFlyerUID` |
+| 2 | Device identifiers and descriptors the client reports about itself are spoofed | `IdDevice`, `cn/mini1/utils/b`, `ClientMethodCommonApi.GetFlyerUID`, and `cn/mini1/utils/devices/b` for the model / OS version every report node and the `getMobilePhoneInfo` JSON upload - what third-party UID checkers echo back as Model / OS |
 | 3 | Notification-based mod menu with an on/off switch per mod, plus HWID rotation | `ModMenu` + `ModMenuSheet`, committed smali in `smali_classes8/modmenu/`, started by hooks at the head of `GoogleApplication.onCreate` and `AppPlayBaseActivity.onCreate`; the notification tap is a broadcast into `ModMenuReceiver`, which shows the sheet as a dialog attached to the live game window, so `AppPlayBaseActivity` stays resumed behind it - script loop, rendering and in-game voice chat keep running while the menu is up. `ModMenuActivity` (`Theme.Translucent.NoTitleBar.Fullscreen`) remains only as the fallback entry when there is no live window to attach to |
 | 4 | Rewarded-ad reward without watching the ad | head of `ClientMethodUniverseSubject.reqSdkAD`: the stub fires `onWatchAD(1001)` + the `DeliverAdEvent` Lua event through `AdReward`, the same pair a real rewarded video ends in |
 | 5 | Google login under MicroG/GmsCore | forces `GooglePlayServicesUtilLight.isGooglePlayServicesAvailable` past the certificate/version gate and retries One-Tap failures through the legacy `GoogleSignInApi` (`legacySignIn`/`onResult` in `modmenu.GmsCompat`) |
@@ -200,7 +200,7 @@ getters are redirected.
 
 ```
 patches/patch.py        inserts toggle-gated stubs, menu hooks and fallback
-                        branches at the head of 20 smali methods
+                        branches at the head of 22 smali methods
 patches/modmenu/        mod-menu sources: Java under src/, regen.sh rebuilds the
                         smali under smali/ (javac -> d8 -> apktool); CI copies
                         that smali as-is, no JDK needed there

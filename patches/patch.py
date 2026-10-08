@@ -59,6 +59,21 @@ def spoof_stub(value):
     ]
 
 
+def desc_stub(value):
+    """Return a spoofed device descriptor verbatim, without rotation.
+
+    A model or an OS version has to stay a plausible model or OS version -
+    Hwid.rotate would rewrite its digits into nonsense ("14" -> "07") - and
+    unlike an id it carries no uniqueness to preserve: the same string is
+    shared by millions of real devices, so a fixed fake leaks nothing while
+    the real value would be uploaded by every report node.
+    """
+    return [
+        f'const-string v0, "{value}"',
+        "return-object v0",
+    ]
+
+
 # The game signs in through Identity One-Tap, whose service MicroG/GmsCore does
 # not provide. F2/F3 hand a failed One-Tap over to modmenu.GmsCompat, which
 # retries through the legacy GoogleSignInApi: same web client id, so the id
@@ -69,7 +84,7 @@ def spoof_stub(value):
 
 # (id, relative file, method name+proto, registers used by inserted code,
 #  inserted lines)
-def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
+def build_patches(GAID, DTOKEN, UNIQUE, FLYER, MODEL, OS):
     return [
         # --- A: block WebView / browser opening (toggle: webBlocked) ---
         ("A1", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
@@ -96,7 +111,7 @@ def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
         ("A7", "smali_classes8/org/appplay/lib/browser/MiniUniverseHelper.smali",
          "handleLoadUrl(Ljava/lang/String;)V", 1,
          gated("isWebBlocked", ["return-void"])),
-        # --- B: spoof HWID (toggle: hwidSpoof) ---
+        # --- B: spoof HWID and device descriptors (toggle: hwidSpoof) ---
         ("B1", "smali/org/appplay/lib/utils/IdDevice.smali",
          "getAdvertisingId(Landroid/content/Context;)Ljava/lang/String;", 1,
          gated("isSpoofOn", spoof_stub(DTOKEN))),
@@ -112,6 +127,17 @@ def build_patches(GAID, DTOKEN, UNIQUE, FLYER):
         ("B5", "smali/org/appplay/lib/ClientMethodCommonApi.smali",
          "GetFlyerUID()Ljava/lang/String;", 1,
          gated("isSpoofOn", spoof_stub(FLYER))),
+        # One chokepoint per descriptor: every live game-side reader of
+        # Build.MODEL / Build$VERSION.RELEASE (the TechReportNode and
+        # ReportTrackingUtil report nodes, the getMobilePhoneInfo JSON Lua
+        # queries) funnels through these two, and the third-party UID
+        # checkers echo Model / OS back from exactly those reports.
+        ("B6", "smali/cn/mini1/utils/devices/b.smali",
+         "d()Ljava/lang/String;", 1,
+         gated("isSpoofOn", desc_stub(MODEL))),
+        ("B7", "smali/cn/mini1/utils/devices/b.smali",
+         "o()Ljava/lang/String;", 1,
+         gated("isSpoofOn", desc_stub(OS))),
         # --- C: keep SDK init alive after re-sign (forced, no toggle) ---
         ("C1", "smali/org/appplay/lib/CommonNatives.smali",
          "verifyPackage(Landroid/content/Context;)Z", 1,
@@ -252,7 +278,8 @@ def main():
         line.split("=", 1) for line in args.spoof.read_text().splitlines() if "=" in line
     )
     patches = build_patches(spoof["GAID"], spoof["DTOKEN"],
-                            spoof["UNIQUE"], spoof["FLYER"])
+                            spoof["UNIQUE"], spoof["FLYER"],
+                            spoof["MODEL"], spoof["OS"])
 
     dec = args.decoded
     if not dec.is_dir():

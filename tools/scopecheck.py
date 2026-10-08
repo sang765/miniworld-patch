@@ -3,8 +3,9 @@
 is meant to touch it.
 
 Allowed:
-  * the 11 smali files that carry the WebView/HWID/verifyPackage/ad-reward/
-    MicroG-login patches and the two mod-menu startup hooks
+  * the 12 smali files that carry the WebView/HWID/device-descriptor/
+    verifyPackage/ad-reward/MicroG-login patches and the two mod-menu
+    startup hooks
   * AndroidManifest.xml (BrowserActivity exported=false + menu activity)
   * smali_classes8/modmenu/ - the mod-menu classes, new files that have no
     pristine counterpart; the entry classes must all be there
@@ -32,6 +33,7 @@ PATCHED_SMALI = {
     "smali_classes8/org/appplay/lib/browser/MiniUniverseHelper.smali",
     "smali/org/appplay/lib/utils/IdDevice.smali",
     "smali/cn/mini1/utils/b.smali",
+    "smali/cn/mini1/utils/devices/b.smali",
     "smali/org/appplay/lib/CommonNatives.smali",
     "smali/cn/mini1/google/GoogleApplication.smali",
     "smali/org/appplay/lib/AppPlayBaseActivity.smali",
