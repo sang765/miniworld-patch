@@ -239,14 +239,28 @@ def locate(lines, proto):
 def insert_idx(lines, locals_idx):
     """Offset the stub is written at: right after `.locals`, except when a
     `.param`/`.annotation` prologue sits there - instructions may not be
-    spliced into the prologue, so the offset moves past it."""
+    spliced into the prologue, so the offset moves past it.
+
+    The prologue's body counts too: an `.annotation` block spans several
+    lines of `value = {...}` that match none of the directives below, and
+    stopping there would split the annotation in half and leave a method
+    that no longer assembles.
+    """
     j = locals_idx + 1
     if j >= len(lines):
         return j
     if not lines[j].strip().startswith((".param", ".annotation")):
         return j
+    depth = 0
     while j < len(lines):
         s = lines[j].strip()
+        if s.startswith(".annotation"):
+            depth += 1
+        elif s.startswith(".end annotation"):
+            depth -= 1
+        if depth > 0:
+            j += 1
+            continue
         if s.startswith((".param", ".annotation", ".end annotation",
                          ".end param")) or not s:
             j += 1
