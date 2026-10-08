@@ -1,4 +1,4 @@
-.class Lmodmenu/ModMenuSheet$7;
+.class Lmodmenu/ModMenuSheet$9;
 .super Ljava/lang/Object;
 .source "ModMenuSheet.java"
 
@@ -8,7 +8,7 @@
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/ModMenuSheet;->requestGameMode()V
+    value = Lmodmenu/ModMenuSheet;->requestGive()V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,8 +33,8 @@
         }
     .end annotation
 
-    .line 522
-    iput-object p1, p0, Lmodmenu/ModMenuSheet$7;->this$0:Lmodmenu/ModMenuSheet;
+    .line 666
+    iput-object p1, p0, Lmodmenu/ModMenuSheet$9;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -46,10 +46,19 @@
 .method public run()V
     .locals 2
 
-    .line 525
-    iget-object v0, p0, Lmodmenu/ModMenuSheet$7;->this$0:Lmodmenu/ModMenuSheet;
+    .line 669
+    iget-object v0, p0, Lmodmenu/ModMenuSheet$9;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$900(Lmodmenu/ModMenuSheet;)Landroid/widget/Button;
+    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$1100(Lmodmenu/ModMenuSheet;)Landroid/widget/Button;
+
+    move-result-object v0
+
+    if-eqz v0, :cond_0
+
+    .line 670
+    iget-object v0, p0, Lmodmenu/ModMenuSheet$9;->this$0:Lmodmenu/ModMenuSheet;
+
+    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$1100(Lmodmenu/ModMenuSheet;)Landroid/widget/Button;
 
     move-result-object v0
 
@@ -57,6 +66,7 @@
 
     invoke-virtual {v0, v1}, Landroid/widget/Button;->setEnabled(Z)V
 
-    .line 526
+    .line 672
+    :cond_0
     return-void
 .end method

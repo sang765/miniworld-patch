@@ -43,7 +43,7 @@
         }
     .end annotation
 
-    .line 120
+    .line 139
     iput-object p1, p0, Lmodmenu/ModMenuSheet$2;->this$0:Lmodmenu/ModMenuSheet;
 
     iput-object p2, p0, Lmodmenu/ModMenuSheet$2;->val$host:Landroid/app/Activity;
@@ -58,32 +58,32 @@
 .method public onDismiss(Landroid/content/DialogInterface;)V
     .locals 1
 
-    .line 126
+    .line 145
     const/4 p1, 0x0
 
     invoke-static {p1}, Lmodmenu/IdScan;->setListener(Lmodmenu/IdScan$Listener;)V
 
-    .line 127
+    .line 146
     iget-object v0, p0, Lmodmenu/ModMenuSheet$2;->val$host:Landroid/app/Activity;
 
     invoke-static {v0}, Lmodmenu/IdScan;->menuClosed(Landroid/content/Context;)V
 
-    .line 128
-    invoke-static {p1}, Lmodmenu/ModMenuSheet;->access$302(Lmodmenu/ModMenuSheet;)Lmodmenu/ModMenuSheet;
+    .line 147
+    invoke-static {p1}, Lmodmenu/ModMenuSheet;->access$502(Lmodmenu/ModMenuSheet;)Lmodmenu/ModMenuSheet;
 
-    .line 129
+    .line 148
     iget-object p1, p0, Lmodmenu/ModMenuSheet$2;->val$host:Landroid/app/Activity;
 
     instance-of p1, p1, Lmodmenu/ModMenuActivity;
 
     if-eqz p1, :cond_0
 
-    .line 130
+    .line 149
     iget-object p1, p0, Lmodmenu/ModMenuSheet$2;->val$host:Landroid/app/Activity;
 
     invoke-virtual {p1}, Landroid/app/Activity;->finish()V
 
-    .line 132
+    .line 151
     :cond_0
     return-void
 .end method

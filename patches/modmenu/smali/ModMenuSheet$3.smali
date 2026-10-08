@@ -32,7 +32,7 @@
         }
     .end annotation
 
-    .line 146
+    .line 165
     iput-object p1, p0, Lmodmenu/ModMenuSheet$3;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0, p2}, Landroid/widget/FrameLayout;-><init>(Landroid/content/Context;)V
@@ -45,18 +45,18 @@
 .method protected onDetachedFromWindow()V
     .locals 1
 
-    .line 149
+    .line 168
     invoke-super {p0}, Landroid/widget/FrameLayout;->onDetachedFromWindow()V
 
-    .line 154
+    .line 173
     iget-object v0, p0, Lmodmenu/ModMenuSheet$3;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$400(Lmodmenu/ModMenuSheet;)Landroid/app/Dialog;
+    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$600(Lmodmenu/ModMenuSheet;)Landroid/app/Dialog;
 
     move-result-object v0
 
     invoke-virtual {v0}, Landroid/app/Dialog;->cancel()V
 
-    .line 155
+    .line 174
     return-void
 .end method

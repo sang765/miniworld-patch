@@ -23,6 +23,19 @@
     <string name="mod_gm_fail">Could not change gamemode</string>
     <string name="mod_gm_nomap">Join a map first</string>
     <string name="mod_gm_unsupported">This gamemode cannot be switched</string>
+    <string name="mod_give_label">Give item</string>
+    <string name="mod_give_title">Give item</string>
+    <string name="mod_give_item">Item ID</string>
+    <string name="mod_give_count">Count</string>
+    <string name="mod_give_uid">Player UID (0 = yourself)</string>
+    <string name="mod_give_go">Give</string>
+    <string name="mod_give_ok">Item given</string>
+    <string name="mod_give_nomap">Join a map first</string>
+    <string name="mod_give_notarget">No player with that UID</string>
+    <string name="mod_give_noclient">Only the host can give another player an item</string>
+    <string name="mod_give_fail">Could not give the item</string>
+    <string name="mod_give_bad">Check the item ID and count</string>
+    <string name="mod_give_full">Your backpack is full</string>
     <string name="mod_crash_title">Game crashed</string>
     <string name="mod_crash_hint">This report was captured before the process was killed</string>
     <string name="mod_crash_copy">Copy</string>

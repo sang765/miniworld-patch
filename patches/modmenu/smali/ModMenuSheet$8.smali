@@ -3,12 +3,12 @@
 .source "ModMenuSheet.java"
 
 # interfaces
-.implements Ljava/lang/Runnable;
+.implements Landroid/text/TextWatcher;
 
 
 # annotations
 .annotation system Ldalvik/annotation/EnclosingMethod;
-    value = Lmodmenu/ModMenuSheet;->openBrowser()V
+    value = Lmodmenu/ModMenuSheet;->showGive()V
 .end annotation
 
 .annotation system Ldalvik/annotation/InnerClass;
@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 498
+    .line 561
     iput-object p1, p0, Lmodmenu/ModMenuSheet$8;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -43,18 +43,28 @@
 
 
 # virtual methods
-.method public run()V
-    .locals 1
+.method public afterTextChanged(Landroid/text/Editable;)V
+    .locals 0
 
-    .line 503
-    iget-object v0, p0, Lmodmenu/ModMenuSheet$8;->this$0:Lmodmenu/ModMenuSheet;
+    .line 572
+    iget-object p1, p0, Lmodmenu/ModMenuSheet$8;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$400(Lmodmenu/ModMenuSheet;)Landroid/app/Dialog;
+    invoke-static {p1}, Lmodmenu/ModMenuSheet;->access$1000(Lmodmenu/ModMenuSheet;)V
 
-    move-result-object v0
+    .line 573
+    return-void
+.end method
 
-    invoke-virtual {v0}, Landroid/app/Dialog;->cancel()V
+.method public beforeTextChanged(Ljava/lang/CharSequence;III)V
+    .locals 0
 
-    .line 504
+    .line 564
+    return-void
+.end method
+
+.method public onTextChanged(Ljava/lang/CharSequence;III)V
+    .locals 0
+
+    .line 568
     return-void
 .end method

@@ -16,6 +16,9 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -24,6 +27,7 @@ import android.view.WindowManager;
 import android.view.animation.PathInterpolator;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.Switch;
@@ -61,6 +65,8 @@ public final class ModMenuSheet implements View.OnClickListener,
     private Button rotateBtn;
     /** Only on screen while the unsafe master switch is on. */
     private Button gmBtn;
+    /** Only on screen while the unsafe master switch is on. */
+    private Button giveBtn;
     private Button unsafeCancelBtn;
     private Button unsafeConfirmBtn;
     private LinearLayout sheet;
@@ -68,6 +74,14 @@ public final class ModMenuSheet implements View.OnClickListener,
     private IdBrowser browser;
     /** The confirm card's full-screen scrim; null while the dialog is closed. */
     private View unsafeVeil;
+    /** The give card's full-screen scrim; null while it is closed. */
+    private View giveVeil;
+    private EditText giveItemEt;
+    private EditText giveCountEt;
+    private EditText giveUidEt;
+    private TextView givePreview;
+    private Button giveCancelBtn;
+    private Button giveGoBtn;
 
     /** Show the menu on `host`; a second tap reuses the open sheet. */
     static ModMenuSheet show(Activity host, boolean openIds) {
@@ -103,9 +117,14 @@ public final class ModMenuSheet implements View.OnClickListener,
         dialog = new Dialog(host, android.R.style.Theme_Translucent_NoTitleBar) {
             @Override
             public void onBackPressed() {
-                // strictest layer first: the confirm card, then the browser
-                // panel, then the menu itself - never whatever the game does
-                // with back, which stays untouched below this window
+                // strictest layer first: the give card, the confirm card,
+                // then the browser panel, then the menu itself - never
+                // whatever the game does with back, which stays untouched
+                // below this window
+                if (giveVeil != null) {
+                    dismissGive();
+                    return;
+                }
                 if (unsafeVeil != null) {
                     cancelUnsafe(); // reverts the switch, the pref never took
                     return;
@@ -218,6 +237,15 @@ public final class ModMenuSheet implements View.OnClickListener,
         gLp.topMargin = dp(6);
         sheet.addView(gmBtn, gLp);
         gmBtn.setVisibility(ModMenu.isUnsafe() ? View.VISIBLE : View.GONE);
+
+        // an unsafe-only action, same gate and same recheck as the switch
+        giveBtn = makeButton(I18n.t(host, "mod_give_label"), 0, p.primary,
+                (p.primary & 0x00FFFFFF) | 0x14000000);
+        LinearLayout.LayoutParams giLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(40));
+        giLp.topMargin = dp(6);
+        sheet.addView(giveBtn, giLp);
+        giveBtn.setVisibility(ModMenu.isUnsafe() ? View.VISIBLE : View.GONE);
 
         Button idBtn = makeButton(I18n.t(host, "mod_id_label"), 0, p.primary,
                 (p.primary & 0x00FFFFFF) | 0x14000000);
@@ -373,6 +401,7 @@ public final class ModMenuSheet implements View.OnClickListener,
             } else {
                 ModMenu.setUnsafe(host, false);
                 gmBtn.setVisibility(View.GONE);
+                giveBtn.setVisibility(View.GONE);
             }
         }
     }
@@ -458,6 +487,11 @@ public final class ModMenuSheet implements View.OnClickListener,
             ModMenu.setUnsafe(host, true);
             dismissUnsafe();
             gmBtn.setVisibility(View.VISIBLE);
+            giveBtn.setVisibility(View.VISIBLE);
+        } else if (v == giveVeil || v == giveCancelBtn) {
+            dismissGive();
+        } else if (v == giveGoBtn) {
+            requestGive();
         } else if (v == rotateBtn) {
             ModMenu.rotateHwid(host);
             hwidSwitch.setChecked(true); // rotation only matters while spoofing is on
@@ -468,6 +502,8 @@ public final class ModMenuSheet implements View.OnClickListener,
                     Toast.LENGTH_SHORT).show();
         } else if (v == gmBtn) {
             requestGameMode();
+        } else if (v == giveBtn) {
+            showGive();
         } else {
             dialog.cancel(); // close button or scrim tap
         }
@@ -489,6 +525,210 @@ public final class ModMenuSheet implements View.OnClickListener,
                 gmBtn.setEnabled(true);
             }
         });
+    }
+
+    /** Give card over the sheet: item id, count and the recipient's UID. */
+    private void showGive() {
+        if (giveVeil != null) {
+            return;
+        }
+
+        LinearLayout card = new LinearLayout(host);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setClickable(true); // consume taps so only the veil outside dismisses
+        card.setBackground(round(dp(24), p.surface));
+        card.setPadding(dp(24), dp(20), dp(24), dp(8));
+
+        TextView title = new TextView(host);
+        title.setText(I18n.t(host, "mod_give_title"));
+        title.setTextSize(18);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(p.onSurface);
+        card.addView(title);
+
+        giveItemEt = input();
+        card.addView(field(I18n.t(host, "mod_give_item"), giveItemEt));
+        // the id alone means nothing at a glance: look the name up as it is
+        // typed, the same table the ID browser lists
+        givePreview = new TextView(host);
+        givePreview.setTextSize(13);
+        givePreview.setTextColor(p.onSurfaceVariant);
+        LinearLayout.LayoutParams pLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        pLp.topMargin = dp(4);
+        card.addView(givePreview, pLp);
+        giveItemEt.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                refreshPreview();
+            }
+        });
+
+        giveCountEt = input();
+        giveCountEt.setText("1");
+        card.addView(field(I18n.t(host, "mod_give_count"), giveCountEt));
+
+        giveUidEt = input();
+        giveUidEt.setText("0");
+        card.addView(field(I18n.t(host, "mod_give_uid"), giveUidEt));
+
+        giveCancelBtn = makeButton(I18n.t(host, "mod_close"),
+                0, p.onSurfaceVariant, (p.onSurface & 0x00FFFFFF) | 0x14000000);
+        giveGoBtn = makeButton(I18n.t(host, "mod_give_go"),
+                p.primary, p.onPrimary, (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
+        LinearLayout buttons = new LinearLayout(host);
+        buttons.setGravity(Gravity.RIGHT);
+        LinearLayout.LayoutParams kLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40));
+        kLp.rightMargin = dp(4);
+        buttons.addView(giveCancelBtn, kLp);
+        buttons.addView(giveGoBtn, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)));
+        LinearLayout.LayoutParams gLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        gLp.topMargin = dp(16);
+        card.addView(buttons, gLp);
+
+        FrameLayout veil = new FrameLayout(host);
+        veil.setBackground(new ColorDrawable(p.scrim));
+        veil.setClickable(true);
+        veil.setOnClickListener(this); // tap outside = dismiss this card only
+        FrameLayout.LayoutParams vLp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER);
+        vLp.leftMargin = vLp.rightMargin = dp(28);
+        veil.addView(card, vLp);
+        giveVeil = veil;
+        root.addView(veil);
+        refreshPreview();
+    }
+
+    private void dismissGive() {
+        if (giveVeil == null) {
+            return;
+        }
+        root.removeView(giveVeil);
+        giveVeil = null;
+        giveItemEt = null;
+        giveCountEt = null;
+        giveUidEt = null;
+        givePreview = null;
+        giveCancelBtn = null;
+        giveGoBtn = null;
+    }
+
+    /**
+     * Read the form, then hand off to GiveItem, which posts its own toast
+     * so the result is seen even if the sheet is dismissed first. Bad input
+     * stays on this thread: there is nothing to wait for.
+     */
+    private void requestGive() {
+        if (!ModMenu.isUnsafe()) {
+            dismissGive();
+            return; // the gate, rechecked: the pref can flip while this is up
+        }
+        final int item;
+        final int count;
+        final long uid;
+        try {
+            item = Integer.parseInt(giveItemEt.getText().toString().trim());
+            count = Integer.parseInt(giveCountEt.getText().toString().trim());
+            String u = giveUidEt.getText().toString().trim();
+            uid = u.length() == 0 ? 0L : Long.parseLong(u);
+        } catch (NumberFormatException e) {
+            Toast.makeText(host, I18n.t(host, "mod_give_bad"),
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // item 0 and below do not exist, count 0 is not a give, and the
+        // script carries the uin as a Lua number - past 2^53 a double stops
+        // naming one exactly, so refuse instead of shipping a rounded
+        // recipient
+        if (item <= 0 || count <= 0 || count > 9999 || uid < 0
+                || uid > 999999999999999L) {
+            Toast.makeText(host, I18n.t(host, "mod_give_bad"),
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        dismissGive();
+        giveBtn.setEnabled(false);
+        GiveItem.request(host, item, count, uid, new Runnable() {
+            @Override
+            public void run() {
+                if (giveBtn != null) {
+                    giveBtn.setEnabled(true);
+                }
+            }
+        });
+    }
+
+    /** Label above an input; the input takes the full card width. */
+    private LinearLayout field(String label, EditText input) {
+        LinearLayout col = new LinearLayout(host);
+        col.setOrientation(LinearLayout.VERTICAL);
+        TextView l = new TextView(host);
+        l.setText(label);
+        l.setTextSize(13);
+        l.setTextColor(p.onSurfaceVariant);
+        col.addView(l);
+        LinearLayout.LayoutParams iLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        iLp.topMargin = dp(4);
+        col.addView(input, iLp);
+        LinearLayout.LayoutParams cLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        cLp.topMargin = dp(12);
+        col.setLayoutParams(cLp);
+        return col;
+    }
+
+    /** Outlined number field, matching the sheet's cards. */
+    private EditText input() {
+        EditText e = new EditText(host);
+        e.setInputType(InputType.TYPE_CLASS_NUMBER);
+        e.setSingleLine(true);
+        e.setTextSize(15);
+        e.setTextColor(p.onSurface);
+        e.setHintTextColor((p.onSurfaceVariant & 0x00FFFFFF) | 0x99000000);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor((p.onSurface & 0x00FFFFFF) | 0x0A000000);
+        bg.setStroke(dp(1), (p.onSurfaceVariant & 0x00FFFFFF) | 0x33000000);
+        bg.setCornerRadius(dp(12));
+        e.setBackground(bg); // before the padding: setBackground resets it
+        e.setPadding(dp(12), dp(10), dp(12), dp(10));
+        return e;
+    }
+
+    private void refreshPreview() {
+        if (givePreview == null || giveItemEt == null) {
+            return;
+        }
+        String id = giveItemEt.getText().toString().trim();
+        if (id.length() == 0) {
+            givePreview.setText("");
+            return;
+        }
+        String name = null;
+        try {
+            name = IdNames.get(host, "item", id);
+        } catch (RuntimeException e) {
+            Log.d("ModMenu", "item name lookup failed: " + e);
+        }
+        givePreview.setText(name == null || name.length() == 0
+                ? "#" + id : "#" + id + "  " + name);
     }
 
     /** Menu button: bring the ID browser panel up over the sheet. */

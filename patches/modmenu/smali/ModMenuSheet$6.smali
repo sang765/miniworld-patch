@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 344
+    .line 372
     iput-object p1, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,17 +46,17 @@
 .method public run()V
     .locals 5
 
-    .line 349
+    .line 377
     iget-object v0, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$600(Lmodmenu/ModMenuSheet;)Landroid/widget/LinearLayout;
+    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$800(Lmodmenu/ModMenuSheet;)Landroid/widget/LinearLayout;
 
     move-result-object v0
 
     iget-object v1, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
-    .line 350
-    invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$600(Lmodmenu/ModMenuSheet;)Landroid/widget/LinearLayout;
+    .line 378
+    invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$800(Lmodmenu/ModMenuSheet;)Landroid/widget/LinearLayout;
 
     move-result-object v1
 
@@ -80,26 +80,26 @@
 
     aput v3, v2, v1
 
-    .line 349
+    .line 377
     const-string v1, "translationY"
 
     invoke-static {v0, v1, v2}, Landroid/animation/ObjectAnimator;->ofFloat(Ljava/lang/Object;Ljava/lang/String;[F)Landroid/animation/ObjectAnimator;
 
     move-result-object v0
 
-    .line 351
+    .line 379
     const-wide/16 v1, 0x12c
 
     invoke-virtual {v0, v1, v2}, Landroid/animation/ObjectAnimator;->setDuration(J)Landroid/animation/ObjectAnimator;
 
-    .line 352
+    .line 380
     sget v1, Landroid/os/Build$VERSION;->SDK_INT:I
 
     const/16 v2, 0x15
 
     if-lt v1, v2, :cond_0
 
-    .line 353
+    .line 381
     new-instance v1, Landroid/view/animation/PathInterpolator;
 
     const v2, 0x3d4ccccd    # 0.05f
@@ -110,10 +110,10 @@
 
     invoke-virtual {v0, v1}, Landroid/animation/ObjectAnimator;->setInterpolator(Landroid/animation/TimeInterpolator;)V
 
-    .line 355
+    .line 383
     :cond_0
     invoke-virtual {v0}, Landroid/animation/ObjectAnimator;->start()V
 
-    .line 356
+    .line 384
     return-void
 .end method

@@ -78,6 +78,11 @@ MODMENU_FILES = {
     # every tap - a missing one is a ClassNotFoundException on a button that
     # is on screen for anyone who enabled unsafe features.
     "smali_classes8/modmenu/GameMode.smali",
+    # The give: the menu button dispatches through GiveItem on every tap and
+    # the check script it re-dispatches lives in the same class - a missing
+    # one is a ClassNotFoundException on a button that is on screen for
+    # anyone who enabled unsafe features.
+    "smali_classes8/modmenu/GiveItem.smali",
 }
 
 # fixdollar.py runs two logical passes: prefix an 'x' when the name started

@@ -23,6 +23,19 @@
     <string name="mod_gm_fail">Không đổi được gamemode</string>
     <string name="mod_gm_nomap">Hãy vào bản đồ trước</string>
     <string name="mod_gm_unsupported">Gamemode hiện tại không thể đổi</string>
+    <string name="mod_give_label">Trao vật phẩm</string>
+    <string name="mod_give_title">Trao vật phẩm</string>
+    <string name="mod_give_item">ID vật phẩm</string>
+    <string name="mod_give_count">Số lượng</string>
+    <string name="mod_give_uid">UID người chơi (0 = bản thân)</string>
+    <string name="mod_give_go">Trao</string>
+    <string name="mod_give_ok">Đã trao vật phẩm</string>
+    <string name="mod_give_nomap">Hãy vào bản đồ trước</string>
+    <string name="mod_give_notarget">Không tìm thấy người chơi UID này</string>
+    <string name="mod_give_noclient">Chỉ chủ phòng mới trao item cho người khác được</string>
+    <string name="mod_give_fail">Không thể trao vật phẩm</string>
+    <string name="mod_give_bad">Kiểm tra lại ID và số lượng</string>
+    <string name="mod_give_full">Túi đồ đã đầy</string>
     <string name="mod_crash_title">Game đã crash</string>
     <string name="mod_crash_hint">Báo cáo này được ghi lại trước khi tiến trình bị tắt</string>
     <string name="mod_crash_copy">Sao chép</string>

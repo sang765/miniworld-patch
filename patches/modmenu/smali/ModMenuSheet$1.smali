@@ -34,7 +34,7 @@
         }
     .end annotation
 
-    .line 103
+    .line 117
     iput-object p1, p0, Lmodmenu/ModMenuSheet$1;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0, p2, p3}, Landroid/app/Dialog;-><init>(Landroid/content/Context;I)V
@@ -47,36 +47,54 @@
 .method public onBackPressed()V
     .locals 2
 
-    .line 109
+    .line 124
     iget-object v0, p0, Lmodmenu/ModMenuSheet$1;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$000(Lmodmenu/ModMenuSheet;)Landroid/view/View;
 
     move-result-object v0
 
-    .line 113
+    .line 128
     iget-object v1, p0, Lmodmenu/ModMenuSheet$1;->this$0:Lmodmenu/ModMenuSheet;
 
-    .line 109
+    .line 124
     if-eqz v0, :cond_0
 
-    .line 110
+    .line 125
     invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$100(Lmodmenu/ModMenuSheet;)V
 
-    .line 111
+    .line 126
     return-void
 
-    .line 113
+    .line 128
     :cond_0
-    invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$200(Lmodmenu/ModMenuSheet;)Lmodmenu/IdBrowser;
+    invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$200(Lmodmenu/ModMenuSheet;)Landroid/view/View;
 
     move-result-object v0
 
+    .line 132
+    iget-object v1, p0, Lmodmenu/ModMenuSheet$1;->this$0:Lmodmenu/ModMenuSheet;
+
+    .line 128
     if-eqz v0, :cond_1
+
+    .line 129
+    invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$300(Lmodmenu/ModMenuSheet;)V
+
+    .line 130
+    return-void
+
+    .line 132
+    :cond_1
+    invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$400(Lmodmenu/ModMenuSheet;)Lmodmenu/IdBrowser;
+
+    move-result-object v0
+
+    if-eqz v0, :cond_2
 
     iget-object v0, p0, Lmodmenu/ModMenuSheet$1;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$200(Lmodmenu/ModMenuSheet;)Lmodmenu/IdBrowser;
+    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$400(Lmodmenu/ModMenuSheet;)Lmodmenu/IdBrowser;
 
     move-result-object v0
 
@@ -84,24 +102,24 @@
 
     move-result v0
 
-    if-eqz v0, :cond_1
+    if-eqz v0, :cond_2
 
-    .line 114
+    .line 133
     iget-object v0, p0, Lmodmenu/ModMenuSheet$1;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$200(Lmodmenu/ModMenuSheet;)Lmodmenu/IdBrowser;
+    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$400(Lmodmenu/ModMenuSheet;)Lmodmenu/IdBrowser;
 
     move-result-object v0
 
     invoke-virtual {v0}, Lmodmenu/IdBrowser;->close()V
 
-    .line 115
+    .line 134
     return-void
 
-    .line 117
-    :cond_1
+    .line 136
+    :cond_2
     invoke-virtual {p0}, Lmodmenu/ModMenuSheet$1;->cancel()V
 
-    .line 118
+    .line 137
     return-void
 .end method

@@ -229,7 +229,9 @@ for pat in 'Lmodmenu/ModMenu;' 'Lmodmenu/ModMenuActivity;' \
            'Lmodmenu/IdIcons;' 'IDICONS1' 'iVBORw0KGgo' \
            'Lmodmenu/GameMode;' 'mw_gm.json' \
            'hostToggleMpGameMode' 'clientToggleMpGameMode' \
-           '{"r":"unsupported"'; do
+           '{"r":"unsupported"' \
+           'Lmodmenu/GiveItem;' 'mw_give.json' \
+           '{"r":"wait","want":' 'mod_give_noclient' 'mod_give_full'; do
   if grep -aqF -- "$pat" "$WORK/dexcheck"/*.dex 2>/dev/null; then
     echo "  present: $pat"
   else
@@ -262,6 +264,10 @@ needles = [
     "ID 瀏覽器",                             # zh-Hant id browser row
     "Change gamemode",                       # en gamemode button
     "Đổi gamemode",                         # vi gamemode button
+    "Give item",                            # en give button
+    "Trao vật phẩm",                        # vi give button
+    "给予物品",                              # zh give button
+    "給予物品",                              # zh-Hant give button
 ]
 failed = False
 for s in needles:
