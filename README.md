@@ -1,4 +1,4 @@
-# miniworld-patch
+# MW: C Patch
 
 Reproducible build for a modified **Mini World: CREATA 1.7.15**
 (`com.playmini.miniworld`, versionCode 67343) as an installable split-APK
