@@ -9,6 +9,8 @@
     <string name="mod_hwid_desc">Giả lập định danh thiết bị — hoặc xoay sang ID mới</string>
     <string name="mod_reward_label">Nhận thưởng không xem quảng cáo</string>
     <string name="mod_reward_desc">Bỏ qua quảng cáo — cộng thưởng ngay khi bấm</string>
+    <string name="mod_antitrack_label">Chặn theo dõi</string>
+    <string name="mod_antitrack_desc">Chặn tải lên telemetry — báo cáo thiết bị, sự kiện, biệt danh</string>
     <string name="mod_unsafe_label">Tính năng không an toàn</string>
     <string name="mod_unsafe_desc">Nguy cơ cao — tài khoản có thể bị khóa</string>
     <string name="mod_unsafe_dialog_title">Bật tính năng không an toàn?</string>

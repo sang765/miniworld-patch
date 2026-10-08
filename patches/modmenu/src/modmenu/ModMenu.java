@@ -32,6 +32,7 @@ public final class ModMenu {
     private static final String KEY_WEB = "webview";
     private static final String KEY_HWID = "hwid";
     private static final String KEY_REWARD = "reward";
+    private static final String KEY_ANTITRACK = "antitrack";
     private static final String KEY_GEN = "hwid_gen";
     private static final String KEY_UNSAFE = "unsafe";
 
@@ -43,6 +44,7 @@ public final class ModMenu {
     private static volatile boolean webBlocked = true;
     private static volatile boolean hwidSpoof = true;
     private static volatile boolean rewardBypass = true;
+    private static volatile boolean antiTrack = true;
 
     private static volatile boolean unsafe;
 
@@ -114,7 +116,7 @@ public final class ModMenu {
         return PendingIntent.getActivity(c, requestCode, i, flags);
     }
 
-    /** Toggle checks called by the WebView-block, HWID and ad-reward stubs. */
+    /** Toggle checks called by the WebView-block, HWID, ad-reward and anti-track stubs. */
     public static boolean isWebBlocked() {
         return webBlocked;
     }
@@ -125,6 +127,10 @@ public final class ModMenu {
 
     public static boolean isRewardBypass() {
         return rewardBypass;
+    }
+
+    public static boolean isAntiTrack() {
+        return antiTrack;
     }
 
     /**
@@ -148,6 +154,11 @@ public final class ModMenu {
     public static void setRewardBypass(Context ctx, boolean value) {
         prefs(ctx).edit().putBoolean(KEY_REWARD, value).apply();
         rewardBypass = value;
+    }
+
+    public static void setAntiTrack(Context ctx, boolean value) {
+        prefs(ctx).edit().putBoolean(KEY_ANTITRACK, value).apply();
+        antiTrack = value;
     }
 
     public static void setUnsafe(Context ctx, boolean value) {
@@ -183,6 +194,7 @@ public final class ModMenu {
         webBlocked = sp.getBoolean(KEY_WEB, true);
         hwidSpoof = sp.getBoolean(KEY_HWID, true);
         rewardBypass = sp.getBoolean(KEY_REWARD, true);
+        antiTrack = sp.getBoolean(KEY_ANTITRACK, true);
         unsafe = sp.getBoolean(KEY_UNSAFE, false);
         loaded = true;
     }

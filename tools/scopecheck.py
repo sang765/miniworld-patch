@@ -3,9 +3,9 @@
 is meant to touch it.
 
 Allowed:
-  * the 12 smali files that carry the WebView/HWID/device-descriptor/
-    verifyPackage/ad-reward/MicroG-login patches and the two mod-menu
-    startup hooks
+  * the 14 smali files that carry the WebView/HWID/device-descriptor/
+    telemetry/verifyPackage/ad-reward/MicroG-login patches and the two
+    mod-menu startup hooks
   * AndroidManifest.xml (BrowserActivity exported=false + menu activity)
   * smali_classes8/modmenu/ - the mod-menu classes, new files that have no
     pristine counterpart; the entry classes must all be there
@@ -34,6 +34,8 @@ PATCHED_SMALI = {
     "smali/org/appplay/lib/utils/IdDevice.smali",
     "smali/cn/mini1/utils/b.smali",
     "smali/cn/mini1/utils/devices/b.smali",
+    "smali_classes6/com/miniworld/report/http/ReportHttpManager.smali",
+    "smali/org/appplay/lib/ClientMethodSubject.smali",
     "smali/org/appplay/lib/CommonNatives.smali",
     "smali/cn/mini1/google/GoogleApplication.smali",
     "smali/org/appplay/lib/AppPlayBaseActivity.smali",

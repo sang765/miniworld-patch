@@ -11,7 +11,7 @@ against the patched tree so that only the eleven patched smali files, the new
 `smali_classes8/modmenu/` classes, the manifest and the `$`-renamed resources
 may differ; entry, native-library, asset and `resources.arsc` counts are
 compared against the original; the package identity is read back from the
-built APK; and each of the 22 patches is confirmed by content, not merely by
+built APK; and each of the 25 patches is confirmed by content, not merely by
 "this file changed".
 
 ## What the mod does
@@ -28,6 +28,7 @@ built APK; and each of the 22 patches is confirmed by content, not merely by
 | 8 | An "Unsafe features" master switch for the high-ban-risk mods - off until a warning dialog is confirmed | pref `unsafe` behind `ModMenu.isUnsafe()`; the switch row and the confirm card live in `ModMenuSheet`, and the pref is only written after "Enable anyway" - tap outside, back or cancel flips the switch straight back off |
 | 9 | Switch the current player's gamemode (the engine's WorldType flip, create <-> run and gamemaker edit <-> run), in singleplayer and in multiplayer | `modmenu.GameMode`, shown only while `ModMenu.isUnsafe()` is on: the button ships one pcall-wrapped Lua script through `CommonNatives.javaCallLuaEvent` on the tap (the sheet is a dialog on the live game window, so the script loop is pumping), the script picks the path by role - `WorldMgr:hostToggleMpGameMode` + the pause menu's own `CurMainPlayer:changeGameMode` for single/host, `WorldMgr:clientToggleMpGameMode` for a room client, `changeMpGameMode` as the last resort - and after every attempt re-reads `WorldMgr:getGameMode()`, stopping on the first step that actually lands on the target (a step that moves the mode anywhere else aborts, so the cascade can never flip back); the result comes back through `files/mw_gm.json` and is toasted, with a distinct message for "not in a map" and for WorldTypes that have no switch |
 | 10 | Give any item to yourself, or to another player by UID - working in multiplayer and never as a ghost item | `modmenu.GiveItem`, shown only while `ModMenu.isUnsafe()` is on: a card over the sheet takes item id (with the name looked up live from `modmenu.IdNames`), count and recipient UID (0 = yourself) and ships one pcall-wrapped act script through `CommonNatives.javaCallLuaEvent`. Which primitive it uses is decided by a capability probe on the target object itself, because the same Lua call lands in different C++ code depending on the control the engine handed us: `CurMainPlayer:setItem` builds `PB_BackPackSetItemCH` - sent as a room client, applied locally by the host, real either way; `target:gainItems(want)` makes the bag hold at least `want` on a host and returns -1 doing nothing on a room client, so asking for what the bag already holds is a free non-mutating probe; `target:gainItemsUserdata` carries the target's own uin into `PB_GainItemsUserDatastrToBackPackCH`, so a client can name another player as the recipient. When the object is local-only and we are not the host there is no client-reachable message that carries an attacker-chosen recipient, so the script reports that instead of writing to the mirror - that would be a ghost item, gone the moment the host next corrects our bag. A give is a network round trip, not a local flip: the act script returns a pending state plus the bag count it promised, and a check script is re-dispatched every 450 ms until the count lands, so success is reported from the verified count and never from the attempt; the answer comes back through `files/mw_give.json` and is toasted, with a distinct message for "not in a map", "no player with that UID", "host-only", "backpack full" and bad input |
+| 11 | Anti-track: the game stops uploading its telemetry while you play - the report SDK's HTTP (`device_collect`, `logpost5`) and the uin/nickname/push-token post to `tj3` - while gameplay traffic is untouched | toggle `antiTrack` (on by default) behind `ModMenu.isAntiTrack()`; stubs at the two `ReportHttpManager.newCall` overloads (the report SDK's only HTTP layer, fed by the Tech/Device/Third report nodes) and at `ClientMethodSubject.uploadRegistrationId`; the accepted cost of the second one is that the push token never reaches the server, so push notifications may stop arriving |
 
 Constants live in `spoof.env`.
 
@@ -43,9 +44,9 @@ was never an option either: a stopped activity is what a battery-aware ROM
 (MIUI) recycles, which read as the game being killed). That activity stays
 as the fallback entry for when there is no live window to attach to. The
 switches persist in
-`SharedPreferences`, default to on — which is exactly changes 1, 2 and 4
+`SharedPreferences`, default to on — which is exactly changes 1, 2, 4 and 11
 above — and gate their stubs through `ModMenu.isWebBlocked()` / `isSpoofOn()`
-/ `isRewardBypass()`. The third switch makes the
+/ `isRewardBypass()` / `isAntiTrack()`. The third switch makes the
 `reqSdkAD` stub skip the ad SDK and fire the exact success pair (`onWatchAD(1001)` plus the
 `DeliverAdEvent` Lua event) a moment later, so the reward credits with no ad
 ever loading — which also covers devices where low RAM drops the game to its
@@ -200,7 +201,7 @@ getters are redirected.
 
 ```
 patches/patch.py        inserts toggle-gated stubs, menu hooks and fallback
-                        branches at the head of 22 smali methods
+                        branches at the head of 25 smali methods
 patches/modmenu/        mod-menu sources: Java under src/, regen.sh rebuilds the
                         smali under smali/ (javac -> d8 -> apktool); CI copies
                         that smali as-is, no JDK needed there

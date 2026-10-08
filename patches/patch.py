@@ -138,6 +138,28 @@ def build_patches(GAID, DTOKEN, UNIQUE, FLYER, MODEL, OS):
         ("B7", "smali/cn/mini1/utils/devices/b.smali",
          "o()Ljava/lang/String;", 1,
          gated("isSpoofOn", desc_stub(OS))),
+        # --- G: block the game's own telemetry (toggle: antiTrack) ---
+        # ReportHttpManager is the single HTTP layer of the report SDK: the
+        # Tech/Device/Third report nodes (device_collect, logpost5 - the
+        # store a third-party UID checker reads device and behaviour data
+        # from) all funnel through ReportManager into these two overloads,
+        # and ReportTrackingUtil's own events ride the client it configures
+        # for that same manager. Nothing gameplay-related is posted through
+        # it - room, login and social traffic use their own channels.
+        ("G1", "smali_classes6/com/miniworld/report/http/ReportHttpManager.smali",
+         "newCall(Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;"
+         "Lcom/miniworld/report/http/ReportFormatType;Lokhttp3/Callback;)V", 1,
+         gated("isAntiTrack", ["return-void"])),
+        ("G2", "smali_classes6/com/miniworld/report/http/ReportHttpManager.smali",
+         "newCall(Ljava/lang/String;Lokhttp3/RequestBody;Ljava/util/Map;"
+         "Lokhttp3/Callback;)V", 2,
+         gated("isAntiTrack", ["return-void"])),
+        # uploadRegistrationId posts {uin, nickname, push token} to tj3; the
+        # token never reaching the server is the accepted cost of the block.
+        ("G3", "smali/org/appplay/lib/ClientMethodSubject.smali",
+         "uploadRegistrationId(Ljava/lang/String;Ljava/lang/String;"
+         "Ljava/lang/String;)Ljava/lang/String;", 1,
+         gated("isAntiTrack", ['const-string v0, ""', "return-object v0"])),
         # --- C: keep SDK init alive after re-sign (forced, no toggle) ---
         ("C1", "smali/org/appplay/lib/CommonNatives.smali",
          "verifyPackage(Landroid/content/Context;)Z", 1,

@@ -61,6 +61,7 @@ public final class ModMenuSheet implements View.OnClickListener,
     private Switch webSwitch;
     private Switch hwidSwitch;
     private Switch rewardSwitch;
+    private Switch trackSwitch;
     private Switch unsafeSwitch;
     private Button rotateBtn;
     /** Only on screen while the unsafe master switch is on. */
@@ -202,15 +203,19 @@ public final class ModMenuSheet implements View.OnClickListener,
         webSwitch = makeSwitch(p);
         hwidSwitch = makeSwitch(p);
         rewardSwitch = makeSwitch(p);
+        trackSwitch = makeSwitch(p);
         webSwitch.setChecked(ModMenu.isWebBlocked());
         hwidSwitch.setChecked(ModMenu.isSpoofOn());
         rewardSwitch.setChecked(ModMenu.isRewardBypass());
+        trackSwitch.setChecked(ModMenu.isAntiTrack());
         sheet.addView(settingRow(p, I18n.t(host, "mod_web_label"),
                 I18n.t(host, "mod_web_desc"), webSwitch));
         sheet.addView(settingRow(p, I18n.t(host, "mod_hwid_label"),
                 I18n.t(host, "mod_hwid_desc"), hwidSwitch));
         sheet.addView(settingRow(p, I18n.t(host, "mod_reward_label"),
                 I18n.t(host, "mod_reward_desc"), rewardSwitch));
+        sheet.addView(settingRow(p, I18n.t(host, "mod_antitrack_label"),
+                I18n.t(host, "mod_antitrack_desc"), trackSwitch));
 
         unsafeSwitch = makeSwitch(p);
         unsafeSwitch.setChecked(ModMenu.isUnsafe());
@@ -393,6 +398,8 @@ public final class ModMenuSheet implements View.OnClickListener,
             ModMenu.setHwidSpoof(host, isChecked);
         } else if (buttonView == rewardSwitch) {
             ModMenu.setRewardBypass(host, isChecked);
+        } else if (buttonView == trackSwitch) {
+            ModMenu.setAntiTrack(host, isChecked);
         } else if (buttonView == unsafeSwitch) {
             if (isChecked) {
                 // the pref only follows a confirmed warning, so cancelling

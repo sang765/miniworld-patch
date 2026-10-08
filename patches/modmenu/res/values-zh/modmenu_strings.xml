@@ -9,6 +9,8 @@
     <string name="mod_hwid_desc">模拟设备标识——或轮换为新 ID</string>
     <string name="mod_reward_label">跳过激励广告</string>
     <string name="mod_reward_desc">跳过广告——点击即可立即获得奖励</string>
+    <string name="mod_antitrack_label">反追踪</string>
+    <string name="mod_antitrack_desc">阻止上传遥测数据——设备报告、事件、昵称</string>
     <string name="mod_unsafe_label">不安全功能</string>
     <string name="mod_unsafe_desc">风险高——账号可能被封禁</string>
     <string name="mod_unsafe_dialog_title">开启不安全功能？</string>

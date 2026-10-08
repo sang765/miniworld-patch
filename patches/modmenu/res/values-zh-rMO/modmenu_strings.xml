@@ -9,6 +9,8 @@
     <string name="mod_hwid_desc">模擬裝置識別碼——或輪換為新 ID</string>
     <string name="mod_reward_label">跳過激勵廣告</string>
     <string name="mod_reward_desc">跳過廣告——點擊即可立即獲得獎勵</string>
+    <string name="mod_antitrack_label">反追蹤</string>
+    <string name="mod_antitrack_desc">阻止上傳遙測資料——裝置報告、事件、暱稱</string>
     <string name="mod_unsafe_label">不安全功能</string>
     <string name="mod_unsafe_desc">風險高——帳號可能被封禁</string>
     <string name="mod_unsafe_dialog_title">開啟不安全功能？</string>
