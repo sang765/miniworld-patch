@@ -45,6 +45,16 @@ mkdir -p "$OUT/signed"
 # therefore never matches, so it re-extracts. A marker whose apks/ was deleted
 # out from under it is the same broken state and re-extracts too - otherwise
 # the find below fails with a bare "No such file" instead of doing the work.
+# Anti-ban overlay: assets/script_res.pkg inside the asset pack gains the
+# seven patched Lua scripts in patches/antiban/. The pristine stock pkg is
+# captured when the splits are first extracted, so a repeated build overlays
+# the same base instead of stacking a second copy of the payloads onto an
+# already-overlaid pack (which would grow it by ~1.3 MB per run).
+AB_PACK="$OUT/apks/split_mini_asset_pack.apk"
+AB_MANIFEST="$PATCHES/antiban/manifest.txt"
+AB_STOCK="$OUT/script_res.stock.pkg"
+AB_MERGED="$OUT/script_res.merged.pkg"
+
 src_id=$(wc -c < "$SRC_FILE" | tr -d ' ')
 marker="$OUT/.extracted"
 if [ ! -d "$OUT/apks" ] || [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$src_id" ]; then
@@ -52,6 +62,9 @@ if [ ! -d "$OUT/apks" ] || [ ! -f "$marker" ] || [ "$(cat "$marker")" != "$src_i
     echo "splits came from a different source ($(cat "$marker") bytes, now $src_id) - re-extracting"
   fi
   rm -rf "$OUT/apks"
+  # the cached pristine pkg belongs to the old source - leaving it would make
+  # pkgwrite overlay the new splits on a stale base
+  rm -f "$AB_STOCK"
   mkdir -p "$OUT/apks"
   unzip -o -q "$SRC_FILE" \
     base.apk 'split_config.*.apk' split_mini_asset_pack.apk \
@@ -63,6 +76,12 @@ fi
 count=$(find "$OUT/apks" -name '*.apk' | wc -l)
 echo "apks extracted: $count (expect $MIN_APKS)"
 [ "$count" -eq "$MIN_APKS" ] || { echo "unexpected split set"; exit 1; }
+
+if [ -f "$AB_MANIFEST" ]; then
+  # a tree extracted before this feature has no cached pristine copy yet
+  [ -f "$AB_STOCK" ] || unzip -p "$AB_PACK" assets/script_res.pkg > "$AB_STOCK"
+  python3 "$TOOLS/pkgwrite.py" "$AB_STOCK" "$AB_MANIFEST" "$AB_MERGED"
+fi
 
 # info.json is copied through untouched: it already describes this exact
 # bundle (2 ABI, 24 languages, 7 densities), and verify_bundle.sh reads it
@@ -77,6 +96,17 @@ cp "$BUILD/base-mod.apk" "$OUT/apks/base.apk"
 # Dropping the entry makes SourceStamp "not present" - the normal case, and the
 # same state the rebuilt base.apk is already in.
 for f in "$OUT"/apks/*.apk; do
+  # the asset pack is rewritten here for its stamp anyway, so the anti-ban
+  # pkg goes in on the same pass - a second rewrite would copy 974 MB again
+  if [ -f "$AB_MERGED" ] && [ "$f" -ef "$AB_PACK" ]; then
+    python3 "$TOOLS/zipalign.py" --drop stamp-cert-sha256 \
+      --replace assets/script_res.pkg "$AB_MERGED" \
+      "$f" "$OUT/apks/.strip.tmp" >/dev/null
+    mv -f "$OUT/apks/.strip.tmp" "$f"
+    echo "stripped stamp + anti-ban script_res.pkg: $(basename "$f")"
+    rm -f "$AB_MERGED"
+    continue
+  fi
   if unzip -Z1 "$f" | grep -qx 'stamp-cert-sha256'; then
     python3 "$TOOLS/zipalign.py" --drop stamp-cert-sha256 "$f" "$OUT/apks/.strip.tmp" >/dev/null
     mv -f "$OUT/apks/.strip.tmp" "$f"

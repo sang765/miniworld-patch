@@ -19,10 +19,16 @@ from the original signer points at a certificate that no longer signs anything
 (SourceStampVerifier then reports SOURCE_STAMP_SIGNATURE_BLOCK_WITHOUT_CERT_DIGEST
 because apksigner does not emit a stamp signing block). An APK without the
 entry is simply "SourceStamp not present", which is the normal case.
+
+`replace` swaps a named entry's payload for new bytes, re-writing it STORED so
+the replacement still lands on an aligned offset. That is how the anti-ban
+overlay reaches assets/script_res.pkg inside the asset pack: the merged pkg is
+built by tools/pkgwrite.py, then written in place of the original.
 """
 import struct
 import sys
 import zipfile
+import zlib
 
 LFH_SIG = 0x04034B50
 CDH_SIG = 0x02014B50
@@ -30,12 +36,17 @@ EOCD_SIG = 0x06054B50
 
 
 def align(src_path: str, dst_path: str, alignment: int = 4,
-          drop=frozenset()) -> dict:
+          drop=frozenset(), replace=None) -> dict:
+    """Rewrite a zip, aligning STORED entries. `replace` maps an entry name to
+    new raw bytes: that entry is re-written STORED (whatever it was before) with
+    the new payload, so the replacement still lands on an aligned offset."""
+    replace = replace or {}
     zin = zipfile.ZipFile(src_path)
     infos = sorted(zin.infolist(), key=lambda i: i.header_offset)
     start_dir = zin.start_dir
 
-    stats = {"entries": 0, "padded": 0, "max_pad": 0, "dropped": 0}
+    stats = {"entries": 0, "padded": 0, "max_pad": 0, "dropped": 0,
+             "replaced": 0}
     central = []
 
     with open(src_path, "rb") as src, open(dst_path, "wb") as dst:
@@ -47,9 +58,14 @@ def align(src_path: str, dst_path: str, alignment: int = 4,
             hdr = src.read(30)
             if len(hdr) < 30:
                 raise SystemExit(f"truncated local header at {info.header_offset}")
-            (sig, ver, flags, method, mt, md, crc, cs, us, nlen, elen) = struct.unpack(
+            # the central directory is authoritative for crc and sizes: an
+            # entry written with a data descriptor (flag bit 3) leaves all
+            # three as 0 in its local header, and writing those through would
+            # zero the entry - unzip then reports "invalid compressed data".
+            (sig, ver, flags, method, mt, md, _lcrc, _lcs, _lus, nlen, elen) = struct.unpack(
                 "<IHHHHHIIIHH", hdr
             )
+            crc, cs, us = info.CRC, info.compress_size, info.file_size
             if sig != LFH_SIG:
                 raise SystemExit(f"bad local signature at {info.header_offset}")
             name = src.read(nlen)
@@ -59,6 +75,13 @@ def align(src_path: str, dst_path: str, alignment: int = 4,
             # the central directory. That range also swallows any data descriptor.
             end = infos[i + 1].header_offset if i + 1 < len(infos) else start_dir
             body = src.read(end - data_start)
+
+            if info.filename in replace:
+                body = replace[info.filename]
+                method = zipfile.ZIP_STORED
+                flags = 0
+                crc, cs, us = zlib.crc32(body) & 0xFFFFFFFF, len(body), len(body)
+                stats["replaced"] += 1
 
             header_off = dst.tell()
             if method == zipfile.ZIP_STORED:
@@ -75,11 +98,13 @@ def align(src_path: str, dst_path: str, alignment: int = 4,
             dst.write(extra + b"\x00" * pad)
             dst.write(body)
 
-            central.append((info, header_off, name, extra + b"\x00" * pad, flags, method, mt, md))
+            central.append((info, header_off, name, extra + b"\x00" * pad,
+                            flags, method, mt, md, crc, cs, us))
             stats["entries"] += 1
 
         cd_start = dst.tell()
-        for info, header_off, name, extra, flags, method, mt, md in central:
+        for (info, header_off, name, extra, flags, method, mt, md,
+             crc, cs, us) in central:
             version_made_by = (info.create_system << 8) | info.create_version
             dst.write(struct.pack(
                 "<IHHHHHHIIIHHHHHII",
@@ -90,9 +115,9 @@ def align(src_path: str, dst_path: str, alignment: int = 4,
                 method,
                 mt,
                 md,
-                info.CRC,
-                info.compress_size,
-                info.file_size,
+                crc,
+                cs,
+                us,
                 len(name),
                 len(extra),
                 len(info.comment),
@@ -116,22 +141,29 @@ def align(src_path: str, dst_path: str, alignment: int = 4,
 def main() -> int:
     args = sys.argv[1:]
     drop = set()
+    replace = {}
     positional = []
     while args:
         if args[0] == "--drop" and len(args) > 1:
             drop.add(args[1])
             args = args[2:]
+        elif args[0] == "--replace" and len(args) > 2:
+            replace[args[1]] = args[2]
+            args = args[3:]
         else:
             positional.append(args.pop(0))
     if not positional:
-        print("usage: zipalign.py [--drop <name>]... <apk> [out.apk]")
+        print("usage: zipalign.py [--drop <name>] [--replace <name> <file>]... "
+              "<apk> [out.apk]")
         return 2
 
     src = positional[0]
     dst = positional[1] if len(positional) > 1 else src + ".aligned"
-    stats = align(src, dst, drop=frozenset(drop))
+    payload = {name: open(path, "rb").read() for name, path in replace.items()}
+    stats = align(src, dst, drop=frozenset(drop), replace=payload)
     print(f"{dst}: {stats['entries']} entries, padded {stats['padded']} "
-          f"(max {stats['max_pad']} bytes), dropped {stats['dropped']}")
+          f"(max {stats['max_pad']} bytes), dropped {stats['dropped']}, "
+          f"replaced {stats['replaced']}")
     return 0
 
 

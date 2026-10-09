@@ -1,0 +1,11 @@
+# Anti-ban overlay: <path inside script_res.pkg>  <file next to this manifest>
+# Local paths are resolved against this file's own directory, so the manifest
+# runs from any working directory. Applied by scripts/repack.sh via
+# tools/pkgwrite.py. See NOTICE for origin.
+../commonresource/script/luascript/ugc/scriptsupport/scriptsupporttask.lua files/scriptsupporttask.lua
+../commonresource/script/sandboxengine/plugin/weaponskin/weaponskin_helpermodule.lua files/weaponskin_helpermodule.lua
+../commonresource/script/sandboxengine/sandboxengine/sandboxcore/netmsg/luamsghandle.lua files/luamsghandle.lua
+../script/luascript/clientex/accountmanager.lua files/accountmanager.lua
+../script/luascript/clientex/gm.lua files/gm.lua
+../script/miniui/module/socialhall/manager/socialhalldatamgr.lua files/socialhalldatamgr.lua
+../script/miniui/module/teamuphelper/teamupservice.lua files/teamupservice.lua

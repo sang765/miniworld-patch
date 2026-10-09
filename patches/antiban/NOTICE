@@ -1,0 +1,38 @@
+Anti-Ban Lua overlay
+====================
+
+These seven scripts come from "Anti Beta (PC + Mobile)" by Lão Ký
+(https://github.com/LaoKy/MiniWorld-Anti-Ban-Cheat-Beta), used under the MIT
+License. They are stock Mini World 1.7.15 scripts with a firewall patch:
+member->host attack messages (crash invite, teleport pull, remote HP kill,
+fake vote-kick, GameVm skybox/weather) and WS chatpush kicks (gm.kick,
+device_limit_kick, fake room invite) are dropped, and a device-id rotation
+is applied for anti-ban. gm.lua additionally drops the in-game GM console
+(loadstring/setfenv/io.open), which is a hardening, not a loss of anything
+this mod menu uses.
+
+The original mod ships as a 32-bit-only APK, but nothing here is
+architecture specific: it is Lua bytecode inside assets/script_res.pkg, and
+the stock .so of the anti build is bit-identical to ours (md5 6f1c805c...).
+scripts/repack.sh overlays these files onto the stock pkg via tools/pkgwrite.py,
+so the 64-bit bundle gets the same anti-ban.
+
+MIT License - Copyright (c) 2026 Lao Ky
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
