@@ -26,12 +26,13 @@ import java.io.FileInputStream;
  * loop keeps pumping while it is up and the dispatch ships on the tap
  * instead of waiting for the menu to close.
  *
- * The script picks the path by role (single/host go through
- * hostToggleMpGameMode and the UI's own changeGameMode, a room client goes
- * through clientToggleMpGameMode) and never trusts a return value: after
- * every attempt it re-reads WorldMgr:getGameMode() and stops on the first
- * step that lands on the target, so a binding that silently does nothing
- * falls through to the next one instead of reporting a lie.
+ * The script picks the path by asking the engine instead of by name: a room
+ * client is whoever accepts clientToggleMpGameMode at the mode it already
+ * holds, and everyone else goes through hostToggleMpGameMode and the UI's
+ * own changeGameMode. It never trusts a return value: after every attempt it
+ * re-reads WorldMgr:getGameMode() and stops on the first step that lands on
+ * the target, so a binding that silently does nothing falls through to the
+ * next one instead of reporting a lie.
  */
 public final class GameMode {
     private static final String TAG = "MWGameMode";
@@ -269,29 +270,46 @@ public final class GameMode {
                 + " elseif cur==5 then target=4 end"
                 + " if target==nil then"
                 + " w('{\"r\":\"unsupported\",\"cur\":'..cur..'}') return end"
-                + " local single=false local host=false local known=false"
-                + " local o1,v1=pcall(function() return UGCCommon:IsSingleGame() end)"
-                + " if o1 then known=true single=(v1==true or v1==1) end"
-                + " local o2,v2=pcall(function() return UGCCommon:IsHost() end)"
-                + " if o2 then known=true host=(v2==true or v2==1) end"
                 // the pause menu passes this flag to changeGameMode; default
                 // matches the binding's own default when the query is absent
                 + " local fb=true"
                 + " pcall(function()"
                 + " fb=(if_open_scene_fallback()==true) end)"
+                // Two role probes, because neither can be trusted alone.
+                // GameNetMgr:isHost() is the engine's own answer; the old
+                // script asked UGCCommon instead, a class with no binding in
+                // this build, so every probe failed, "unknown" collapsed into
+                // the host branch, and a room client ran the host steps. The
+                // second probe aims the client toggle at the mode it already
+                // holds: all of its guards run before anything moves, so it
+                // reports whether that path is usable - and reports no for a
+                // host - without changing anything. It only decides anything
+                // when the engine's own answer is unavailable.
+                + " local client=false"
+                + " pcall(function()"
+                + " client=(WorldMgr:clientToggleMpGameMode(cur,cur)==true) end)"
+                + " local host=false local hostKnown=false"
+                + " pcall(function()"
+                + " local v=GameNetMgr:isHost()"
+                + " hostKnown=true host=(v==true or v==1) end)"
                 + " local S={}"
-                + " if (not known) or single or host then"
+                // A room client only ever gets the local switch: it writes
+                // WorldMgr's mode and fires GE_TOGGLE_GAMEMODE without
+                // putting anything on the wire. The host steps are the ones
+                // that talk to the room, and CurMainPlayer:changeMpGameMode
+                // is gone from both - it pushes PB_GAME_MODE_CHANGE (6215),
+                // the message only a host may send, and a client that sends
+                // it is kicked out of the room.
+                + " local useClient=((hostKnown and not host)"
+                + " or ((not hostKnown) and client))"
+                + " if useClient then"
+                + " S[#S+1]=function()"
+                + " WorldMgr:clientToggleMpGameMode(cur,target) end"
+                + " else"
                 // host/single: the MP flip first (it fires the room events),
-                // then the pause menu's own path, then the reporting variant
+                // then the pause menu's own path
                 + " if cur==1 or cur==3 then S[#S+1]=function()"
                 + " WorldMgr:hostToggleMpGameMode() end end"
-                + " S[#S+1]=function() CurMainPlayer:changeGameMode(fb) end"
-                + " S[#S+1]=function() CurMainPlayer:changeMpGameMode(false) end"
-                + " else"
-                // room client: the network path first, the local switch last
-                + " if cur==1 or cur==3 then S[#S+1]=function()"
-                + " WorldMgr:clientToggleMpGameMode(cur,target) end end"
-                + " S[#S+1]=function() CurMainPlayer:changeMpGameMode(false) end"
                 + " S[#S+1]=function() CurMainPlayer:changeGameMode(fb) end"
                 + " end"
                 + " for i=1,#S do"

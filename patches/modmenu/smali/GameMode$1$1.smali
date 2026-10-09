@@ -43,7 +43,7 @@
         }
     .end annotation
 
-    .line 85
+    .line 86
     iput-object p1, p0, Lmodmenu/GameMode$1$1;->this$0:Lmodmenu/GameMode$1;
 
     iput-object p2, p0, Lmodmenu/GameMode$1$1;->val$state:Ljava/lang/String;
@@ -58,7 +58,7 @@
 .method public run()V
     .locals 2
 
-    .line 88
+    .line 89
     iget-object v0, p0, Lmodmenu/GameMode$1$1;->this$0:Lmodmenu/GameMode$1;
 
     iget-object v0, v0, Lmodmenu/GameMode$1;->val$app:Landroid/content/Context;
@@ -67,13 +67,13 @@
 
     invoke-static {v0, v1}, Lmodmenu/GameMode;->access$200(Landroid/content/Context;Ljava/lang/String;)V
 
-    .line 89
+    .line 90
     iget-object v0, p0, Lmodmenu/GameMode$1$1;->this$0:Lmodmenu/GameMode$1;
 
     iget-object v0, v0, Lmodmenu/GameMode$1;->val$done:Ljava/lang/Runnable;
 
     invoke-interface {v0}, Ljava/lang/Runnable;->run()V
 
-    .line 90
+    .line 91
     return-void
 .end method
