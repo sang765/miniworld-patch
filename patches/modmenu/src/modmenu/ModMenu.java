@@ -1,6 +1,7 @@
 package modmenu;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -10,6 +11,7 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Process;
 
 import java.lang.ref.WeakReference;
 
@@ -34,6 +36,7 @@ public final class ModMenu {
     private static final String KEY_REWARD = "reward";
     private static final String KEY_ANTITRACK = "antitrack";
     private static final String KEY_GEN = "hwid_gen";
+    private static final String KEY_GEN_AUTO = "hwid_auto";
     private static final String KEY_UNSAFE = "unsafe";
 
     private static final int NOTIF_ID = 1071;
@@ -45,6 +48,7 @@ public final class ModMenu {
     private static volatile boolean hwidSpoof = true;
     private static volatile boolean rewardBypass = true;
     private static volatile boolean antiTrack = true;
+    private static volatile boolean hwidAutoRotate;
 
     private static volatile boolean unsafe;
 
@@ -52,6 +56,7 @@ public final class ModMenu {
     /** The live game window, where the menu sheet attaches. */
     private static WeakReference<Activity> game = new WeakReference<Activity>(null);
     private static boolean loaded;
+    private static boolean bootRotated;
     private static boolean notifyStarted;
     private static boolean posted;
     private static int retryIdx;
@@ -61,6 +66,11 @@ public final class ModMenu {
     /** Injected at the head of GoogleApplication.onCreate, before any stub can run. */
     public static void onAppCreate(Context ctx) {
         loadPrefs(ctx);
+        // step the identity once per process, before any spoof stub reads it
+        if (hwidAutoRotate && !bootRotated) {
+            bootRotated = true;
+            rotateHwid(ctx);
+        }
         // before anything else can throw: the crash screen is only useful
         // while the handler is still the one watching the threads
         CrashHandler.install(ctx);
@@ -133,6 +143,10 @@ public final class ModMenu {
         return antiTrack;
     }
 
+    public static boolean isHwidAutoRotate() {
+        return hwidAutoRotate;
+    }
+
     /**
      * The gate for the high-ban-risk features: off until the player has
      * confirmed the warning dialog in the menu.
@@ -161,6 +175,11 @@ public final class ModMenu {
         antiTrack = value;
     }
 
+    public static void setHwidAutoRotate(Context ctx, boolean value) {
+        prefs(ctx).edit().putBoolean(KEY_GEN_AUTO, value).apply();
+        hwidAutoRotate = value;
+    }
+
     public static void setUnsafe(Context ctx, boolean value) {
         prefs(ctx).edit().putBoolean(KEY_UNSAFE, value).apply();
         unsafe = value;
@@ -183,6 +202,26 @@ public final class ModMenu {
     public static void rotateHwid(Context ctx) {
         SharedPreferences sp = prefs(ctx);
         sp.edit().putInt(KEY_GEN, sp.getInt(KEY_GEN, 0) + 1).apply();
+    }
+
+    /**
+     * Restart the game so a freshly rotated HWID is read from a clean login.
+     * The relaunch is scheduled through AlarmManager before the process dies:
+     * the alarm lives in the system server and fires after we are gone, so the
+     * game cold-starts on its own instead of the player force-closing it.
+     */
+    public static void restartGame(Context ctx) {
+        Context c = ctx.getApplicationContext();
+        Intent i = c.getPackageManager().getLaunchIntentForPackage(c.getPackageName());
+        AlarmManager am = (AlarmManager) c.getSystemService(Context.ALARM_SERVICE);
+        if (i == null || am == null) {
+            return; // no launcher intent or alarm service: nothing safe to do
+        }
+        i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pi = PendingIntent.getActivity(c, (int) (System.currentTimeMillis() & 0x7fffffff),
+                i, PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE);
+        am.set(AlarmManager.RTC, System.currentTimeMillis() + 400, pi);
+        Process.killProcess(Process.myPid());
     }
 
     public static void loadPrefs(Context ctx) {

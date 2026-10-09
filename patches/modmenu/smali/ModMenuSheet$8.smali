@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 582
+    .line 670
     iput-object p1, p0, Lmodmenu/ModMenuSheet$8;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,25 +46,25 @@
 .method public afterTextChanged(Landroid/text/Editable;)V
     .locals 0
 
-    .line 593
+    .line 681
     iget-object p1, p0, Lmodmenu/ModMenuSheet$8;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {p1}, Lmodmenu/ModMenuSheet;->access$1000(Lmodmenu/ModMenuSheet;)V
+    invoke-static {p1}, Lmodmenu/ModMenuSheet;->access$1200(Lmodmenu/ModMenuSheet;)V
 
-    .line 594
+    .line 682
     return-void
 .end method
 
 .method public beforeTextChanged(Ljava/lang/CharSequence;III)V
     .locals 0
 
-    .line 585
+    .line 673
     return-void
 .end method
 
 .method public onTextChanged(Ljava/lang/CharSequence;III)V
     .locals 0
 
-    .line 589
+    .line 677
     return-void
 .end method

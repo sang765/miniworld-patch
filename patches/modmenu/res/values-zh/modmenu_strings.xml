@@ -7,6 +7,8 @@
     <string name="mod_web_desc">阻止在游戏内打开浏览器或任何网页</string>
     <string name="mod_hwid_label">伪造 HWID</string>
     <string name="mod_hwid_desc">模拟设备标识——或轮换为新 ID</string>
+    <string name="mod_hwid_auto_label">启动时自动更换 HWID</string>
+    <string name="mod_hwid_auto_desc">每次启动游戏都换一个新的伪造 HWID</string>
     <string name="mod_reward_label">跳过激励广告</string>
     <string name="mod_reward_desc">跳过广告——点击即可立即获得奖励</string>
     <string name="mod_antitrack_label">反追踪</string>
@@ -20,6 +22,10 @@
     <string name="mod_rotate">更换伪造的 HWID</string>
     <string name="mod_close">关闭</string>
     <string name="mod_rotate_toast">HWID 已更换——下次启动游戏时生效</string>
+    <string name="mod_restart_title">重启以应用？</string>
+    <string name="mod_restart_body">新的 HWID 在下次启动时生效。现在重启游戏吗？</string>
+    <string name="mod_restart_now">立即重启</string>
+    <string name="mod_restart_later">稍后</string>
     <string name="mod_gm_label">切换游戏模式</string>
     <string name="mod_gm_ok">已切换游戏模式</string>
     <string name="mod_gm_fail">无法切换游戏模式</string>

@@ -7,6 +7,8 @@
     <string name="mod_web_desc">Prevent opening the browser or any web page in game</string>
     <string name="mod_hwid_label">Spoof HWID</string>
     <string name="mod_hwid_desc">Emulate the device identity - or rotate to a new ID</string>
+    <string name="mod_hwid_auto_label">Auto-change HWID on launch</string>
+    <string name="mod_hwid_auto_desc">Pick a fresh spoofed HWID every time the game starts</string>
     <string name="mod_reward_label">Skip rewarded ads</string>
     <string name="mod_reward_desc">Bypass ads - reward credited right after you tap</string>
     <string name="mod_antitrack_label">Anti-track</string>
@@ -20,6 +22,10 @@
     <string name="mod_rotate">Change spoofed HWID</string>
     <string name="mod_close">Close</string>
     <string name="mod_rotate_toast">HWID changed - applies on next game launch</string>
+    <string name="mod_restart_title">Restart to apply?</string>
+    <string name="mod_restart_body">The new HWID takes effect on the next launch. Restart the game now?</string>
+    <string name="mod_restart_now">Restart now</string>
+    <string name="mod_restart_later">Later</string>
     <string name="mod_gm_label">Change gamemode</string>
     <string name="mod_gm_ok">Gamemode changed</string>
     <string name="mod_gm_fail">Could not change gamemode</string>

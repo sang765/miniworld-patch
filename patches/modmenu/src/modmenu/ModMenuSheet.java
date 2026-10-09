@@ -62,6 +62,7 @@ public final class ModMenuSheet implements View.OnClickListener,
 
     private Switch webSwitch;
     private Switch hwidSwitch;
+    private Switch autoRotateSwitch;
     private Switch rewardSwitch;
     private Switch trackSwitch;
     private Switch unsafeSwitch;
@@ -87,6 +88,10 @@ public final class ModMenuSheet implements View.OnClickListener,
     private TextView givePreview;
     private Button giveCancelBtn;
     private Button giveGoBtn;
+    /** The restart card's full-screen scrim; null while it is closed. */
+    private View restartVeil;
+    private Button restartCancelBtn;
+    private Button restartGoBtn;
 
     /** Show the menu on `host`; a second tap reuses the open sheet. */
     static ModMenuSheet show(Activity host, boolean openIds) {
@@ -132,6 +137,10 @@ public final class ModMenuSheet implements View.OnClickListener,
                 }
                 if (unsafeVeil != null) {
                     cancelUnsafe(); // reverts the switch, the pref never took
+                    return;
+                }
+                if (restartVeil != null) {
+                    dismissRestart(); // the rotation already landed
                     return;
                 }
                 if (browser != null && browser.isShowing()) {
@@ -206,16 +215,20 @@ public final class ModMenuSheet implements View.OnClickListener,
 
         webSwitch = makeSwitch(p);
         hwidSwitch = makeSwitch(p);
+        autoRotateSwitch = makeSwitch(p);
         rewardSwitch = makeSwitch(p);
         trackSwitch = makeSwitch(p);
         webSwitch.setChecked(ModMenu.isWebBlocked());
         hwidSwitch.setChecked(ModMenu.isSpoofOn());
+        autoRotateSwitch.setChecked(ModMenu.isHwidAutoRotate());
         rewardSwitch.setChecked(ModMenu.isRewardBypass());
         trackSwitch.setChecked(ModMenu.isAntiTrack());
         sheet.addView(settingRow(p, I18n.t(host, "mod_web_label"),
                 I18n.t(host, "mod_web_desc"), webSwitch));
         sheet.addView(settingRow(p, I18n.t(host, "mod_hwid_label"),
                 I18n.t(host, "mod_hwid_desc"), hwidSwitch));
+        sheet.addView(settingRow(p, I18n.t(host, "mod_hwid_auto_label"),
+                I18n.t(host, "mod_hwid_auto_desc"), autoRotateSwitch));
         sheet.addView(settingRow(p, I18n.t(host, "mod_reward_label"),
                 I18n.t(host, "mod_reward_desc"), rewardSwitch));
         sheet.addView(settingRow(p, I18n.t(host, "mod_antitrack_label"),
@@ -410,6 +423,8 @@ public final class ModMenuSheet implements View.OnClickListener,
             ModMenu.setWebBlocked(host, isChecked);
         } else if (buttonView == hwidSwitch) {
             ModMenu.setHwidSpoof(host, isChecked);
+        } else if (buttonView == autoRotateSwitch) {
+            ModMenu.setHwidAutoRotate(host, isChecked);
         } else if (buttonView == rewardSwitch) {
             ModMenu.setRewardBypass(host, isChecked);
         } else if (buttonView == trackSwitch) {
@@ -500,6 +515,76 @@ public final class ModMenuSheet implements View.OnClickListener,
         unsafeVeil = null;
     }
 
+    /** Restart card over the sheet, shown right after a HWID rotation. */
+    private void showRestartConfirm() {
+        if (restartVeil != null) {
+            return;
+        }
+
+        LinearLayout card = new LinearLayout(host);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setClickable(true); // consume taps so only the veil outside dismisses
+        card.setBackground(round(dp(24), p.surface));
+        card.setPadding(dp(24), dp(20), dp(24), dp(8));
+
+        TextView title = new TextView(host);
+        title.setText(I18n.t(host, "mod_restart_title"));
+        title.setTextSize(18);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setTextColor(p.onSurface);
+        card.addView(title);
+
+        TextView body = new TextView(host);
+        body.setText(I18n.t(host, "mod_restart_body"));
+        body.setTextSize(14);
+        body.setTextColor(p.onSurfaceVariant);
+        LinearLayout.LayoutParams bLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        bLp.topMargin = dp(10);
+        card.addView(body, bLp);
+
+        // one listener for all three: makeButton wires every pill to onClick
+        restartCancelBtn = makeButton(I18n.t(host, "mod_restart_later"),
+                0, p.onSurfaceVariant, (p.onSurface & 0x00FFFFFF) | 0x14000000);
+        restartGoBtn = makeButton(I18n.t(host, "mod_restart_now"),
+                p.primary, p.onPrimary, (p.onPrimary & 0x00FFFFFF) | 0x1F000000);
+        LinearLayout buttons = new LinearLayout(host);
+        buttons.setGravity(Gravity.RIGHT);
+        LinearLayout.LayoutParams kLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40));
+        kLp.rightMargin = dp(4);
+        buttons.addView(restartCancelBtn, kLp);
+        buttons.addView(restartGoBtn, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, dp(40)));
+        LinearLayout.LayoutParams gLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        gLp.topMargin = dp(16);
+        card.addView(buttons, gLp);
+
+        FrameLayout veil = new FrameLayout(host);
+        veil.setBackground(new ColorDrawable(p.scrim));
+        veil.setClickable(true);
+        veil.setOnClickListener(this); // tap outside = dismiss
+        FrameLayout.LayoutParams vLp = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                Gravity.CENTER);
+        vLp.leftMargin = vLp.rightMargin = dp(28);
+        veil.addView(card, vLp);
+        restartVeil = veil;
+        root.addView(veil);
+    }
+
+    /** Declined the restart: the rotation stands and applies on next launch. */
+    private void dismissRestart() {
+        root.removeView(restartVeil);
+        restartVeil = null;
+        Toast.makeText(host, I18n.t(host, "mod_rotate_toast"),
+                Toast.LENGTH_SHORT).show();
+    }
+
     @Override
     public void onClick(View v) {
         if (v == unsafeVeil || v == unsafeCancelBtn) {
@@ -519,8 +604,11 @@ public final class ModMenuSheet implements View.OnClickListener,
             v.performHapticFeedback(Build.VERSION.SDK_INT >= 23
                     ? HapticFeedbackConstants.CONTEXT_CLICK
                     : HapticFeedbackConstants.VIRTUAL_KEY);
-            Toast.makeText(host, I18n.t(host, "mod_rotate_toast"),
-                    Toast.LENGTH_SHORT).show();
+            showRestartConfirm();
+        } else if (v == restartVeil || v == restartCancelBtn) {
+            dismissRestart();
+        } else if (v == restartGoBtn) {
+            ModMenu.restartGame(host);
         } else if (v == gmBtn) {
             requestGameMode();
         } else if (v == giveBtn) {

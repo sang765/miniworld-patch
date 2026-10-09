@@ -7,6 +7,8 @@
     <string name="mod_web_desc">Không mở trình duyệt hoặc trang web trong game</string>
     <string name="mod_hwid_label">Giả mạo HWID</string>
     <string name="mod_hwid_desc">Giả lập định danh thiết bị — hoặc xoay sang ID mới</string>
+    <string name="mod_hwid_auto_label">Tự đổi HWID khi khởi động</string>
+    <string name="mod_hwid_auto_desc">Chọn HWID giả mạo mới mỗi lần mở game</string>
     <string name="mod_reward_label">Nhận thưởng không xem quảng cáo</string>
     <string name="mod_reward_desc">Bỏ qua quảng cáo — cộng thưởng ngay khi bấm</string>
     <string name="mod_antitrack_label">Chặn theo dõi</string>
@@ -20,6 +22,10 @@
     <string name="mod_rotate">Đổi HWID giả mạo</string>
     <string name="mod_close">Đóng</string>
     <string name="mod_rotate_toast">Đã đổi HWID — áp dụng ở lần mở game sau</string>
+    <string name="mod_restart_title">Khởi động lại để áp dụng?</string>
+    <string name="mod_restart_body">HWID mới có hiệu lực ở lần mở sau. Bạn có muốn khởi động lại game ngay không?</string>
+    <string name="mod_restart_now">Khởi động lại ngay</string>
+    <string name="mod_restart_later">Để sau</string>
     <string name="mod_gm_label">Đổi gamemode</string>
     <string name="mod_gm_ok">Đã đổi gamemode</string>
     <string name="mod_gm_fail">Không đổi được gamemode</string>
