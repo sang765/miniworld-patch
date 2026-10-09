@@ -23,6 +23,7 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.PathInterpolator;
 import android.widget.Button;
@@ -30,6 +31,7 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -71,6 +73,8 @@ public final class ModMenuSheet implements View.OnClickListener,
     private Button unsafeCancelBtn;
     private Button unsafeConfirmBtn;
     private LinearLayout sheet;
+    /** Wraps the sheet so a tall feature list scrolls instead of clipping. */
+    private ScrollView scroller;
     private FrameLayout root;
     private IdBrowser browser;
     /** The confirm card's full-screen scrim; null while the dialog is closed. */
@@ -274,7 +278,14 @@ public final class ModMenuSheet implements View.OnClickListener,
         cLp.topMargin = dp(6);
         sheet.addView(close, cLp);
 
-        root.addView(sheet, new FrameLayout.LayoutParams(
+        scroller = new ScrollView(host);
+        scroller.setVerticalScrollBarEnabled(false);
+        // the sheet keeps its own background/padding; the scroller only
+        // clips+scrolls it once the content outgrows the screen
+        scroller.addView(sheet, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+        root.addView(scroller, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM));
         dialog.setContentView(root, new FrameLayout.LayoutParams(
@@ -374,13 +385,16 @@ public final class ModMenuSheet implements View.OnClickListener,
     }
 
     private void slideSheetUp() {
-        sheet.post(new Runnable() {
+        scroller.post(new Runnable() {
             @Override
             public void run() {
                 // ObjectAnimator instead of View.animate(): the class behind
-                // animate()'s return type is not binary-stable across SDKs
-                ObjectAnimator a = ObjectAnimator.ofFloat(sheet, "translationY",
-                        sheet.getHeight(), 0f);
+                // animate()'s return type is not binary-stable across SDKs.
+                // Animate the scroller (the visible panel), not the sheet:
+                // a translated sheet would just slide inside the scroller's
+                // clip rect instead of moving the whole panel.
+                ObjectAnimator a = ObjectAnimator.ofFloat(scroller, "translationY",
+                        scroller.getHeight(), 0f);
                 a.setDuration(300);
                 if (Build.VERSION.SDK_INT >= 21) {
                     a.setInterpolator(new PathInterpolator(0.05f, 0f, 0f, 1f));

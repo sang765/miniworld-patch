@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 377
+    .line 388
     iput-object p1, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,21 +46,21 @@
 .method public run()V
     .locals 5
 
-    .line 382
+    .line 396
     iget-object v0, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
-    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$800(Lmodmenu/ModMenuSheet;)Landroid/widget/LinearLayout;
+    invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$800(Lmodmenu/ModMenuSheet;)Landroid/widget/ScrollView;
 
     move-result-object v0
 
     iget-object v1, p0, Lmodmenu/ModMenuSheet$6;->this$0:Lmodmenu/ModMenuSheet;
 
-    .line 383
-    invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$800(Lmodmenu/ModMenuSheet;)Landroid/widget/LinearLayout;
+    .line 397
+    invoke-static {v1}, Lmodmenu/ModMenuSheet;->access$800(Lmodmenu/ModMenuSheet;)Landroid/widget/ScrollView;
 
     move-result-object v1
 
-    invoke-virtual {v1}, Landroid/widget/LinearLayout;->getHeight()I
+    invoke-virtual {v1}, Landroid/widget/ScrollView;->getHeight()I
 
     move-result v1
 
@@ -80,26 +80,26 @@
 
     aput v3, v2, v1
 
-    .line 382
+    .line 396
     const-string v1, "translationY"
 
     invoke-static {v0, v1, v2}, Landroid/animation/ObjectAnimator;->ofFloat(Ljava/lang/Object;Ljava/lang/String;[F)Landroid/animation/ObjectAnimator;
 
     move-result-object v0
 
-    .line 384
+    .line 398
     const-wide/16 v1, 0x12c
 
     invoke-virtual {v0, v1, v2}, Landroid/animation/ObjectAnimator;->setDuration(J)Landroid/animation/ObjectAnimator;
 
-    .line 385
+    .line 399
     sget v1, Landroid/os/Build$VERSION;->SDK_INT:I
 
     const/16 v2, 0x15
 
     if-lt v1, v2, :cond_0
 
-    .line 386
+    .line 400
     new-instance v1, Landroid/view/animation/PathInterpolator;
 
     const v2, 0x3d4ccccd    # 0.05f
@@ -110,10 +110,10 @@
 
     invoke-virtual {v0, v1}, Landroid/animation/ObjectAnimator;->setInterpolator(Landroid/animation/TimeInterpolator;)V
 
-    .line 388
+    .line 402
     :cond_0
     invoke-virtual {v0}, Landroid/animation/ObjectAnimator;->start()V
 
-    .line 389
+    .line 403
     return-void
 .end method

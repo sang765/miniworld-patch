@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 745
+    .line 759
     iput-object p1, p0, Lmodmenu/ModMenuSheet$10;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,7 +46,7 @@
 .method public run()V
     .locals 1
 
-    .line 750
+    .line 764
     iget-object v0, p0, Lmodmenu/ModMenuSheet$10;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$600(Lmodmenu/ModMenuSheet;)Landroid/app/Dialog;
@@ -55,6 +55,6 @@
 
     invoke-virtual {v0}, Landroid/app/Dialog;->cancel()V
 
-    .line 751
+    .line 765
     return-void
 .end method

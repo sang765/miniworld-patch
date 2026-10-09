@@ -33,7 +33,7 @@
         }
     .end annotation
 
-    .line 673
+    .line 687
     iput-object p1, p0, Lmodmenu/ModMenuSheet$9;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
@@ -46,7 +46,7 @@
 .method public run()V
     .locals 2
 
-    .line 676
+    .line 690
     iget-object v0, p0, Lmodmenu/ModMenuSheet$9;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$1100(Lmodmenu/ModMenuSheet;)Landroid/widget/Button;
@@ -55,7 +55,7 @@
 
     if-eqz v0, :cond_0
 
-    .line 677
+    .line 691
     iget-object v0, p0, Lmodmenu/ModMenuSheet$9;->this$0:Lmodmenu/ModMenuSheet;
 
     invoke-static {v0}, Lmodmenu/ModMenuSheet;->access$1100(Lmodmenu/ModMenuSheet;)Landroid/widget/Button;
@@ -66,7 +66,7 @@
 
     invoke-virtual {v0, v1}, Landroid/widget/Button;->setEnabled(Z)V
 
-    .line 679
+    .line 693
     :cond_0
     return-void
 .end method
