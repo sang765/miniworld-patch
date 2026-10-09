@@ -353,3 +353,22 @@ with SAI or APKMirror Installer.
   APK signing block change every run, so the sha256 printed in the release
   notes is specific to that build. Verify a download against the notes for the
   release you took it from.
+
+## License
+
+The patch code in this repository — `patches/`, `scripts/`, `tools/`, the
+mod-menu sources and their committed smali — is MIT, see [`LICENSE`](LICENSE).
+
+That covers this repo's own code only. It does **not** extend to:
+
+- **Mini World: CREATA** and every asset, smali, native library and `.pkg`
+  payload inside the bundle. Those belong to Miniwan/MiniPlay, and this repo
+  ships none of them: `scripts/fetch_source.sh` downloads the source bundle at
+  build time, so nothing proprietary is redistributed here.
+- **`patches/antiban/`** — the seven anti-ban Lua scripts — which are MIT
+  © 2026 Lão Ký from
+  [MiniWorld-Anti-Ban-Cheat-Beta](https://github.com/LaoKy/MiniWorld-Anti-Ban-Cheat-Beta),
+  kept under their own terms with the notice in `patches/antiban/NOTICE`.
+
+Rebuilding produces a modified client for personal use. Redistributing a built
+bundle means distributing Miniwan's code, which this license does not grant.
