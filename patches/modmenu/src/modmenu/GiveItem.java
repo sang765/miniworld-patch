@@ -31,19 +31,20 @@ import java.io.FileInputStream;
  * the target object itself, because the same Lua call lands in different C++
  * code depending on the control the engine handed us:
  *
- *   CurMainPlayer:setItem        builds PB_BackPackSetItemCH and sends it
- *                                when our session says we are a room client,
- *                                applies it locally when we are the host -
- *                                real either way.
+ *   CurMainPlayer:setItem        applies the slot when we are the host. Its
+ *                                core builds the local event and never calls
+ *                                a send, so on its own it leaves a room
+ *                                client waiting on a bag that never moves.
  *   target:gainItems(want)       on a host makes the bag hold at least want,
  *                                on a room client returns -1 and does
  *                                nothing. Asking for what the bag already
  *                                holds cannot add anything, so the return
  *                                value is a free capability probe.
- *   target:gainItemsUserdata     carries the target's own uin into
- *                                PB_GainItemsUserDatastrToBackPackCH, so a
- *                                client can name another player as the
- *                                recipient.
+ *   target:gainItemsUserdata     carries a uin into
+ *                                PB_GainItemsUserDatastrToBackPackCH, so the
+ *                                request reaches the host that owns the bag
+ *                                - naming another player when the give is
+ *                                aimed elsewhere, ourselves when it is not.
  *
  * When the object turns out to be local-only and we are not the host, there
  * is no client-reachable message that carries an attacker-chosen recipient,
@@ -101,8 +102,11 @@ public final class GiveItem {
                 @Override
                 public void run() {
                     String state;
+                    String why = null;
                     try {
                         state = awaitGuarded(p, TIMEOUT_MS);
+                        // before verify() drops the answer file
+                        why = reason(p);
                         if ("wait".equals(state)) {
                             state = verify(p, item, uid);
                         }
@@ -114,11 +118,12 @@ public final class GiveItem {
                     }
                     polling = false;
                     final String out = "timeout".equals(state) ? "fail" : state;
-                    Log.d(TAG, "give done: " + out);
+                    final String code = why;
+                    Log.d(TAG, "give done: " + out + " " + code);
                     MAIN.post(new Runnable() {
                         @Override
                         public void run() {
-                            toast(app, out);
+                            toast(app, out, code);
                             done.run();
                         }
                     });
@@ -176,14 +181,19 @@ public final class GiveItem {
     }
 
     private static void toast(Context c, String state) {
+        toast(c, state, null);
+    }
+
+    private static void toast(Context c, String state, String code) {
         try {
-            Toast.makeText(c, message(c, state), Toast.LENGTH_SHORT).show();
+            Toast.makeText(c, message(c, state, code), Toast.LENGTH_SHORT)
+                    .show();
         } catch (RuntimeException e) {
             Log.d(TAG, "toast failed: " + e);
         }
     }
 
-    private static String message(Context c, String state) {
+    private static String message(Context c, String state, String code) {
         if ("ok".equals(state)) {
             return I18n.t(c, "mod_give_ok");
         }
@@ -202,7 +212,37 @@ public final class GiveItem {
         if ("bad".equals(state)) {
             return I18n.t(c, "mod_give_bad");
         }
-        return I18n.t(c, "mod_give_fail");
+        String base = I18n.t(c, "mod_give_fail");
+        // A refusal before the send and a give the host never applied both
+        // land here, and only the script can tell them apart - carrying its
+        // own word is what makes a failing round reportable instead of a
+        // bare "could not give".
+        return code == null || code.length() == 0 ? base
+                : base + " (" + code + ")";
+    }
+
+    /** The act script's own word for the outcome, read before verify() starts
+     *  dropping the answer file. A "wait" that never resolves is an
+     *  unanswered send, not a script refusal, so it reads as a timeout. */
+    private static String reason(String[] paths) {
+        for (int i = 0; i < paths.length; i++) {
+            JSONObject o = obj(paths[i]);
+            if (o == null || o.optInt("started", 0) != 0) {
+                continue;
+            }
+            String why = o.optString("why", null);
+            if (why != null && why.length() > 0) {
+                return why;
+            }
+            String r = o.optString("r", null);
+            if ("wait".equals(r)) {
+                return "timeout";
+            }
+            if (r != null && r.length() > 0) {
+                return r;
+            }
+        }
+        return "timeout";
     }
 
     /** External files dir first, internal as fallback; both are written. */
@@ -382,6 +422,12 @@ public final class GiveItem {
                 + " CurMainPlayer:setItem(ITEM,idx,N) sent=true end)"
                 + " if not sent then"
                 + " w('{\"r\":\"fail\",\"why\":\"nosend\"}') return end"
+                // setItem never reaches a send, so a room client also names
+                // itself through the message that does. Both aim at the same
+                // total, which makes the second call a no-op where the first
+                // one already landed instead of a second stack.
+                + " pcall(function()"
+                + " CurMainPlayer:gainItemsUserdata(ITEM,b0+N,'') end)"
                 + " w('{\"r\":\"wait\",\"want\":'..(b0+N)..',\"u\":0}')"
                 + " return end"
                 // --- to another player ------------------------------
@@ -405,12 +451,8 @@ public final class GiveItem {
                 + " if not probed or type(r)~='number' then"
                 + " w('{\"r\":\"fail\",\"why\":\"nogain\"}') return end"
                 + " local auth=false"
-                + " pcall(function() local v=UGCCommon:IsSingleGame()"
-                + " auth=(v==true or v==1) end)"
-                + " if not auth then pcall(function()"
-                + " local v=UGCCommon:IsHost() auth=(v==true or v==1) end) end"
-                + " if not auth then pcall(function()"
-                + " local v=GameNetMgr:isHost() auth=(v==true or v==1) end) end"
+                + " pcall(function()"
+                + " local v=GameNetMgr:isHost() auth=(v==true or v==1) end)"
                 + " if r<0 then"
                 // the request goes out naming this player as the recipient
                 + " local sent=false"

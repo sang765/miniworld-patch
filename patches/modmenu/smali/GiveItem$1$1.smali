@@ -20,18 +20,22 @@
 # instance fields
 .field final synthetic this$0:Lmodmenu/GiveItem$1;
 
+.field final synthetic val$code:Ljava/lang/String;
+
 .field final synthetic val$out:Ljava/lang/String;
 
 
 # direct methods
-.method constructor <init>(Lmodmenu/GiveItem$1;Ljava/lang/String;)V
+.method constructor <init>(Lmodmenu/GiveItem$1;Ljava/lang/String;Ljava/lang/String;)V
     .locals 0
     .annotation system Ldalvik/annotation/MethodParameters;
         accessFlags = {
             0x8010,
+            0x1010,
             0x1010
         }
         names = {
+            null,
             null,
             null
         }
@@ -43,10 +47,12 @@
         }
     .end annotation
 
-    .line 118
+    .line 123
     iput-object p1, p0, Lmodmenu/GiveItem$1$1;->this$0:Lmodmenu/GiveItem$1;
 
     iput-object p2, p0, Lmodmenu/GiveItem$1$1;->val$out:Ljava/lang/String;
+
+    iput-object p3, p0, Lmodmenu/GiveItem$1$1;->val$code:Ljava/lang/String;
 
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
@@ -56,24 +62,26 @@
 
 # virtual methods
 .method public run()V
-    .locals 2
+    .locals 3
 
-    .line 121
+    .line 126
     iget-object v0, p0, Lmodmenu/GiveItem$1$1;->this$0:Lmodmenu/GiveItem$1;
 
     iget-object v0, v0, Lmodmenu/GiveItem$1;->val$app:Landroid/content/Context;
 
     iget-object v1, p0, Lmodmenu/GiveItem$1$1;->val$out:Ljava/lang/String;
 
-    invoke-static {v0, v1}, Lmodmenu/GiveItem;->access$300(Landroid/content/Context;Ljava/lang/String;)V
+    iget-object v2, p0, Lmodmenu/GiveItem$1$1;->val$code:Ljava/lang/String;
 
-    .line 122
+    invoke-static {v0, v1, v2}, Lmodmenu/GiveItem;->access$400(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)V
+
+    .line 127
     iget-object v0, p0, Lmodmenu/GiveItem$1$1;->this$0:Lmodmenu/GiveItem$1;
 
     iget-object v0, v0, Lmodmenu/GiveItem$1;->val$done:Ljava/lang/Runnable;
 
     invoke-interface {v0}, Ljava/lang/Runnable;->run()V
 
-    .line 123
+    .line 128
     return-void
 .end method
