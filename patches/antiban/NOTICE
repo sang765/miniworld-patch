@@ -26,7 +26,12 @@ diagnostics sit next to it: msr| breadcrumbs through gFunc_LogTimeStamp
 (plain print never reaches logcat, so they show up in a fox-log capture
 instead), and a watchdog on the auth ShowNoTransparentLoadLoop/Hide pairs
 - a login the server never answers at all releases the loader and returns
-to login after 20 seconds rather than hanging for good. The file
+to login after 20 seconds rather than hanging for good. The account-login
+button specifically lands in loginV2ByAuthInfo, which blocks in
+data_update() with no loader window of its own (so the window watchdog
+never arms there); it therefore carries its own watchdog arm that also
+closes the conn, unwinding the stuck stack through its own error branch.
+The file
 keeps its full source embedded in the Lua debug field; to rebuild it, extract
 that source, patch it, compile with chunkname = source and run
 tools/luatranscode.py to convert the luac dump to the engine's chunk format
