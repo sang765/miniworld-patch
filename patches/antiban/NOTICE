@@ -31,6 +31,14 @@ button specifically lands in loginV2ByAuthInfo, which blocks in
 data_update() with no loader window of its own (so the window watchdog
 never arms there); it therefore carries its own watchdog arm that also
 closes the conn, unwinding the stuck stack through its own error branch.
+For diagnosis the file also wraps the global Show/HideNoTransparentLoadLoop
+pair with observe-only breadcrumbs (show/hide/hook on) - the login frame
+calls those globals directly, so before the hook a stuck modal loader was
+invisible in a capture log - and logs the data_update result as
+msr|l2v2 code=..., since this path has no ban-check call to report it.
+A main-thread heartbeat (msr|beat every 5s via MiniUIScheduler) closes the
+set: the lobby-phase freeze shows no loader at all, so a gap between beats
+is the only way to pin the second the lua main loop wedged from a log.
 The file
 keeps its full source embedded in the Lua debug field; to rebuild it, extract
 that source, patch it, compile with chunkname = source and run
