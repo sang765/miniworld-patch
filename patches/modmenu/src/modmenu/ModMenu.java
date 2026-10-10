@@ -155,33 +155,35 @@ public final class ModMenu {
         return unsafe;
     }
 
+    // commit, not apply: restartGame SIGKILLs the process right after a
+    // toggle, and apply()'s async disk write can still be queued then
     public static void setWebBlocked(Context ctx, boolean value) {
-        prefs(ctx).edit().putBoolean(KEY_WEB, value).apply();
+        prefs(ctx).edit().putBoolean(KEY_WEB, value).commit();
         webBlocked = value;
     }
 
     public static void setHwidSpoof(Context ctx, boolean value) {
-        prefs(ctx).edit().putBoolean(KEY_HWID, value).apply();
+        prefs(ctx).edit().putBoolean(KEY_HWID, value).commit();
         hwidSpoof = value;
     }
 
     public static void setRewardBypass(Context ctx, boolean value) {
-        prefs(ctx).edit().putBoolean(KEY_REWARD, value).apply();
+        prefs(ctx).edit().putBoolean(KEY_REWARD, value).commit();
         rewardBypass = value;
     }
 
     public static void setAntiTrack(Context ctx, boolean value) {
-        prefs(ctx).edit().putBoolean(KEY_ANTITRACK, value).apply();
+        prefs(ctx).edit().putBoolean(KEY_ANTITRACK, value).commit();
         antiTrack = value;
     }
 
     public static void setHwidAutoRotate(Context ctx, boolean value) {
-        prefs(ctx).edit().putBoolean(KEY_GEN_AUTO, value).apply();
+        prefs(ctx).edit().putBoolean(KEY_GEN_AUTO, value).commit();
         hwidAutoRotate = value;
     }
 
     public static void setUnsafe(Context ctx, boolean value) {
-        prefs(ctx).edit().putBoolean(KEY_UNSAFE, value).apply();
+        prefs(ctx).edit().putBoolean(KEY_UNSAFE, value).commit();
         unsafe = value;
     }
 
@@ -201,7 +203,7 @@ public final class ModMenu {
     /** Menu button: step the identity to a fresh rotation. */
     public static void rotateHwid(Context ctx) {
         SharedPreferences sp = prefs(ctx);
-        sp.edit().putInt(KEY_GEN, sp.getInt(KEY_GEN, 0) + 1).apply();
+        sp.edit().putInt(KEY_GEN, sp.getInt(KEY_GEN, 0) + 1).commit();
     }
 
     /**
@@ -234,6 +236,7 @@ public final class ModMenu {
         hwidSpoof = sp.getBoolean(KEY_HWID, true);
         rewardBypass = sp.getBoolean(KEY_REWARD, true);
         antiTrack = sp.getBoolean(KEY_ANTITRACK, true);
+        hwidAutoRotate = sp.getBoolean(KEY_GEN_AUTO, false);
         unsafe = sp.getBoolean(KEY_UNSAFE, false);
         loaded = true;
     }
