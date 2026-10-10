@@ -17,6 +17,16 @@ the stock .so of the anti build is bit-identical to ours (md5 6f1c805c...).
 scripts/repack.sh overlays these files onto the stock pkg via tools/pkgwrite.py,
 so the 64-bit bundle gets the same anti-ban.
 
+accountmanager.lua carries one local modification on top of Lão Ký's work:
+the firewalled device_limit_kick popup left a server ban (device/IP/UID)
+with no UI at all, so the client hung on the modal loader instead of going
+back to login. msr_ban_logout(code) now spots the ban error codes on every
+login-fail path, toasts the message and returns to the login frame. The file
+keeps its full source embedded in the Lua debug field; to rebuild it, extract
+that source, patch it, compile with chunkname = source and run
+tools/luatranscode.py to convert the luac dump to the engine's chunk format
+(4-byte size_t + rotated opcode block).
+
 MIT License - Copyright (c) 2026 Lao Ky
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
